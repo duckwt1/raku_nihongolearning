@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import type { Question } from '@raku/core';
 import { auth } from '../services/firebase';
+import { getApiUrl } from '../services/apiClient';
 
 interface AiQuizGeneratorModalProps {
   isOpen: boolean;
@@ -39,7 +40,7 @@ export function AiQuizGeneratorModal({
         throw new Error('Bạn cần đăng nhập (hoặc dùng thử ẩn danh) để gọi AI.');
       }
 
-      const res = await fetch('/api/ai/generate', {
+      const res = await fetch(getApiUrl('/api/ai/generate'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

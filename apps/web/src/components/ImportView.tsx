@@ -15,6 +15,7 @@ import {
   type ImportRecord
 } from '@raku/core';
 import { auth } from '../services/firebase';
+import { getApiUrl } from '../services/apiClient';
 
 interface ImportViewProps {
   onImportSuccess?: (count: number) => void;
@@ -97,7 +98,7 @@ export function ImportView({ onImportSuccess }: ImportViewProps) {
         throw new Error('Bạn cần đăng nhập để gửi phân tích AI.');
       }
 
-      const res = await fetch('/api/ai/import-analyze', {
+      const res = await fetch(getApiUrl('/api/ai/import-analyze'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
