@@ -10,15 +10,20 @@ import {
   Moon,
   Sun,
   Search,
-  Play,
   User as UserIcon
 } from 'lucide-react';
 import {
   SEED_KANJI,
-  SEED_WORDS,
   buildReviewQueue,
   type StudyCard,
-  createNewCard
+  type Deck,
+  type Folder,
+  type UserStudyStats,
+  DEFAULT_FOLDERS,
+  DEFAULT_DECKS,
+  buildDefaultCards,
+  recordStudyActivity,
+  createInitialStudyStats
 } from '@raku/core';
 import { auth, signInAnonymously, onAuthStateChanged, type User } from './services/firebase';
 import { syncUserProfile, saveCardProgress } from './services/firestoreSync';
@@ -29,6 +34,8 @@ import { GrammarPracticeView } from './components/GrammarPracticeView';
 import { AiQuizGeneratorModal } from './components/AiQuizGeneratorModal';
 import { AuthModal } from './components/AuthModal';
 import { KanjiModal } from './components/KanjiModal';
+import { TodayStatsBar } from './components/TodayStatsBar';
+import { DeckFolderView } from './components/DeckFolderView';
 
 export function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -46,9 +53,80 @@ export function App() {
 
   // Active study session state
   const [isStudying, setIsStudying] = useState(false);
+  const [activeStudyTarget, setActiveStudyTarget] = useState<{
+    type: 'deck' | 'folder' | 'all';
+    id?: string;
+    title: string;
+  } | null>(null);
+
+  // Folders & Decks state (with LocalStorage persistence)
+  const [folders, setFolders] = useState<Folder[]>(() => {
+    try {
+      const saved = localStorage.getItem('raku_folders');
+      return saved ? JSON.parse(saved) : DEFAULT_FOLDERS;
+    } catch {
+      return DEFAULT_FOLDERS;
+    }
+  });
+
+  const [decks, setDecks] = useState<Deck[]>(() => {
+    try {
+      const saved = localStorage.getItem('raku_decks');
+      return saved ? JSON.parse(saved) : DEFAULT_DECKS;
+    } catch {
+      return DEFAULT_DECKS;
+    }
+  });
+
+  // Daily Study Stats state (with LocalStorage persistence)
+  const [studyStats, setStudyStats] = useState<UserStudyStats>(() => {
+    try {
+      const saved = localStorage.getItem('raku_study_stats');
+      if (saved) {
+        return recordStudyActivity(JSON.parse(saved), 0);
+      }
+    } catch {}
+    return createInitialStudyStats();
+  });
+
+  // StudyCards state (Words, Kanji, Grammar initialized)
+  const [allCards, setAllCards] = useState<StudyCard[]>(() => {
+    try {
+      const saved = localStorage.getItem('raku_cards');
+      if (saved) {
+        const parsed: StudyCard[] = JSON.parse(saved);
+        return parsed.map((c) => ({
+          ...c,
+          fsrsCard: {
+            ...c.fsrsCard,
+            due: new Date(c.fsrsCard.due),
+            last_review: c.fsrsCard.last_review ? new Date(c.fsrsCard.last_review) : undefined
+          }
+        }));
+      }
+    } catch {}
+    return buildDefaultCards();
+  });
 
   // Kanji Explorer search
   const [kanjiSearch, setKanjiSearch] = useState('');
+
+  // Active study timer: track active seconds spent in study session
+  useEffect(() => {
+    if (!isStudying) return;
+
+    const timer = setInterval(() => {
+      setStudyStats((prev) => {
+        const next = recordStudyActivity(prev, 1);
+        try {
+          localStorage.setItem('raku_study_stats', JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isStudying]);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -75,19 +153,6 @@ export function App() {
     document.documentElement.classList.toggle('dark');
   };
 
-  // Convert seed words to StudyCards
-  const allCards = useMemo<StudyCard[]>(() => {
-    return SEED_WORDS.map((w, idx) => ({
-      id: `c_${w.id}`,
-      type: 'word',
-      refId: w.id,
-      word: w,
-      fsrsCard: createNewCard(),
-      isNew: idx < 20,
-      isDue: idx < 20
-    }));
-  }, []);
-
   // Filtered Kanji list for Kanji tab
   const filteredKanji = useMemo(() => {
     const q = kanjiSearch.trim().toLowerCase();
@@ -101,9 +166,152 @@ export function App() {
     });
   }, [kanjiSearch]);
 
-  const activeReviewQueue = useMemo(() => {
-    return buildReviewQueue(allCards, 15, 30).queue;
+  // Overall totals due and new across all cards
+  const { totalDueToday, totalNewToday } = useMemo(() => {
+    let due = 0;
+    let nw = 0;
+    const now = new Date();
+    for (const card of allCards) {
+      if (card.fsrsCard.state === 0 || card.isNew) {
+        nw++;
+      } else if (card.fsrsCard.due.getTime() <= now.getTime()) {
+        due++;
+      }
+    }
+    return { totalDueToday: due, totalNewToday: nw };
   }, [allCards]);
+
+  // Target cards for active study session
+  const targetCards = useMemo(() => {
+    if (!activeStudyTarget || activeStudyTarget.type === 'all') {
+      return allCards;
+    }
+    if (activeStudyTarget.type === 'deck') {
+      return allCards.filter((c) => c.deckId === activeStudyTarget.id);
+    }
+    if (activeStudyTarget.type === 'folder') {
+      const childDeckIds = new Set(
+        decks.filter((d) => d.folderId === activeStudyTarget.id).map((d) => d.id)
+      );
+      return allCards.filter((c) => c.deckId && childDeckIds.has(c.deckId));
+    }
+    return allCards;
+  }, [allCards, activeStudyTarget, decks]);
+
+  const activeReviewQueue = useMemo(() => {
+    const deck =
+      activeStudyTarget?.type === 'deck'
+        ? decks.find((d) => d.id === activeStudyTarget.id)
+        : undefined;
+
+    const newLimit = deck ? deck.newCardsPerDay : 20;
+    const dueLimit = deck ? deck.maxReviewsPerDay : 50;
+
+    return buildReviewQueue(targetCards, newLimit, dueLimit).queue;
+  }, [targetCards, activeStudyTarget, decks]);
+
+  // Handle deck & folder actions
+  const handleSelectDeckToStudy = (deck: Deck) => {
+    setActiveStudyTarget({
+      type: 'deck',
+      id: deck.id,
+      title: deck.name
+    });
+    setIsStudying(true);
+  };
+
+  const handleSelectFolderToStudy = (folder: Folder) => {
+    setActiveStudyTarget({
+      type: 'folder',
+      id: folder.id,
+      title: folder.name
+    });
+    setIsStudying(true);
+  };
+
+  const handleCreateFolder = (name: string, description?: string, color?: string) => {
+    const newFolder: Folder = {
+      id: `folder_custom_${Date.now()}`,
+      name,
+      description,
+      color: color || '#0284c7',
+      parentId: null,
+      createdAt: new Date().toISOString()
+    };
+    const updated = [...folders, newFolder];
+    setFolders(updated);
+    try {
+      localStorage.setItem('raku_folders', JSON.stringify(updated));
+    } catch {}
+  };
+
+  const handleCreateDeck = (
+    folderId: string | null,
+    name: string,
+    description?: string,
+    cardType?: 'word' | 'kanji' | 'grammar' | 'custom' | 'mixed',
+    newCardsPerDay = 20,
+    maxReviewsPerDay = 50
+  ) => {
+    const newDeck: Deck = {
+      id: `deck_custom_${Date.now()}`,
+      folderId,
+      name,
+      description,
+      cardType: cardType || 'word',
+      cardIds: [],
+      newCardsPerDay,
+      maxReviewsPerDay,
+      isDefault: false,
+      createdAt: new Date().toISOString()
+    };
+    const updated = [...decks, newDeck];
+    setDecks(updated);
+    try {
+      localStorage.setItem('raku_decks', JSON.stringify(updated));
+    } catch {}
+  };
+
+  const handleDeleteFolder = (folderId: string) => {
+    const updated = folders.filter((f) => f.id !== folderId);
+    setFolders(updated);
+    try {
+      localStorage.setItem('raku_folders', JSON.stringify(updated));
+    } catch {}
+  };
+
+  const handleDeleteDeck = (deckId: string) => {
+    const updated = decks.filter((d) => d.id !== deckId);
+    setDecks(updated);
+    try {
+      localStorage.setItem('raku_decks', JSON.stringify(updated));
+    } catch {}
+  };
+
+  const handleRateCard = (card: StudyCard, rating: number) => {
+    // 1. Update daily study stats
+    setStudyStats((prev) => {
+      const next = recordStudyActivity(prev, 0, rating);
+      try {
+        localStorage.setItem('raku_study_stats', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+
+    // 2. Update card in allCards
+    setAllCards((prevCards) => {
+      const updated = prevCards.map((c) => (c.id === card.id ? card : c));
+      try {
+        localStorage.setItem('raku_cards', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+
+    // 3. Sync to Firestore
+    if (user) {
+      saveCardProgress(user.uid, card, rating);
+    }
+  };
 
   return (
     <div className={`min-h-full flex flex-col ${darkMode ? 'dark' : ''}`}>
@@ -206,99 +414,76 @@ export function App() {
           </div>
         )}
 
-        {/* TAB 1: STUDY FLASHCARDS (Mục 4 & FSRS) */}
+        {/* TAB 1: STUDY FLASHCARDS & ANKI-STYLE DECKS/FOLDERS */}
         {activeTab === 'study' && (
           <div className="space-y-6">
             {!isStudying ? (
               <div className="space-y-6">
-                {/* Hero Session Card */}
-                <div className="bg-gradient-to-br from-sky-600 via-sky-700 to-indigo-800 rounded-3xl p-6 sm:p-8 text-white shadow-lg space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="px-3 py-1 rounded-full bg-white/20 backdrop-blur text-xs font-semibold">
-                      Lịch ôn FSRS hôm nay
-                    </span>
-                    <span className="text-xs text-white/80">Thuật toán lặp lại ngắt quãng</span>
-                  </div>
+                {/* 1. Today Study Statistics Bar */}
+                <TodayStatsBar
+                  stats={studyStats}
+                  totalDueToday={totalDueToday}
+                  totalNewToday={totalNewToday}
+                  onQuickStudy={() => {
+                    const firstDeck = decks[0];
+                    if (firstDeck) {
+                      handleSelectDeckToStudy(firstDeck);
+                    }
+                  }}
+                />
 
-                  <div>
-                    <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                      {activeReviewQueue.length} Thẻ Sẵn Sàng Ôn Tập
-                    </h2>
-                    <p className="text-xs sm:text-sm text-white/80 mt-1 max-w-lg">
-                      Gõ hiragana, chấm đáp án tự động, xem giải thích Hán Việt từng chữ và xếp lịch ôn tối ưu theo FSRS.
-                    </p>
-                  </div>
-
-                  <div className="pt-2 flex flex-wrap items-center gap-3">
-                    <button
-                      onClick={() => setIsStudying(true)}
-                      className="px-6 py-3 bg-white text-sky-800 hover:bg-slate-50 font-bold text-sm rounded-2xl shadow-md transition flex items-center space-x-2 touch-target"
-                    >
-                      <Play className="w-4 h-4 fill-current" />
-                      <span>Bắt đầu phiên học ngay</span>
-                    </button>
-
-                    <button
-                      onClick={() => setIsAiQuizModalOpen(true)}
-                      className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs rounded-2xl backdrop-blur transition flex items-center space-x-1.5 touch-target"
-                    >
-                      <Sparkles className="w-4 h-4" />
-                      <span>AI tạo bài trắc nghiệm</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Metrics Stats Grid */}
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center shadow-sm">
-                    <div className="text-2xl font-black text-sky-600 dark:text-sky-400">
-                      {SEED_WORDS.length}
-                    </div>
-                    <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
-                      Từ vựng N3
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center shadow-sm">
-                    <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                      {SEED_KANJI.length}
-                    </div>
-                    <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
-                      Chữ Kanji
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center shadow-sm">
-                    <div className="text-2xl font-black text-amber-600 dark:text-amber-400">
-                      100%
-                    </div>
-                    <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
-                      Độ phủ Hán Việt
-                    </div>
-                  </div>
-                </div>
+                {/* 2. Hierarchical Decks & Folders View (Anki style) */}
+                <DeckFolderView
+                  folders={folders}
+                  decks={decks}
+                  cards={allCards}
+                  onSelectDeckToStudy={handleSelectDeckToStudy}
+                  onSelectFolderToStudy={handleSelectFolderToStudy}
+                  onCreateFolder={handleCreateFolder}
+                  onCreateDeck={handleCreateDeck}
+                  onDeleteDeck={handleDeleteDeck}
+                  onDeleteFolder={handleDeleteFolder}
+                />
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
                   <button
                     onClick={() => setIsStudying(false)}
                     className="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center space-x-1"
                   >
                     <span>← Dừng phiên ôn tập</span>
                   </button>
+
+                  <span className="text-xs font-bold text-sky-700 dark:text-sky-300">
+                    Đang học: {activeStudyTarget?.title || 'Tất cả thẻ'}
+                  </span>
                 </div>
 
-                <FlashcardStudyView
-                  cards={activeReviewQueue}
-                  onComplete={() => setIsStudying(false)}
-                  onSelectKanji={(char) => setSelectedKanjiChar(char)}
-                  onRateCard={(card, rating) => {
-                    if (user) {
-                      saveCardProgress(user.uid, card, rating);
-                    }
-                  }}
-                />
+                {activeReviewQueue.length === 0 ? (
+                  <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+                    <div className="text-3xl">🎉</div>
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
+                      Tuyệt vời! Bạn đã hoàn thành tất cả thẻ cần học hôm nay!
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                      Không còn thẻ nào đến hạn trong bộ thẻ này. Thuật toán FSRS sẽ tự động tính toán lịch nhắc nhở tối ưu tiếp theo cho bạn.
+                    </p>
+                    <button
+                      onClick={() => setIsStudying(false)}
+                      className="px-5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-xl shadow-xs touch-target"
+                    >
+                      Trở về danh sách Deck
+                    </button>
+                  </div>
+                ) : (
+                  <FlashcardStudyView
+                    cards={activeReviewQueue}
+                    onComplete={() => setIsStudying(false)}
+                    onSelectKanji={(char) => setSelectedKanjiChar(char)}
+                    onRateCard={handleRateCard}
+                  />
+                )}
               </div>
             )}
           </div>

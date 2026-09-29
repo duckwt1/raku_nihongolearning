@@ -47,24 +47,41 @@ export function FlashcardStudyView({
     }
   }, [currentIndex]);
 
+  const isWord = Boolean(currentCard?.word);
+  const isKanji = Boolean(currentCard?.kanji);
+  const isGrammar = Boolean(currentCard?.grammar);
+
   const hasKanji = currentCard
-    ? Boolean(currentCard.word.kanji && currentCard.word.kanji.length > 0)
+    ? Boolean(currentCard.word?.kanji && currentCard.word.kanji.length > 0)
     : false;
+
+  const requiresInput = isWord ? hasKanji : isKanji;
 
   // Check user reading answer (Section 4)
   const handleCheckAnswer = useCallback(() => {
     if (!currentCard || isAnswerRevealed) return;
 
-    if (!hasKanji) {
-      // Kana-only card: reveal immediately
+    if (!requiresInput) {
+      // Kana-only or Grammar card: reveal immediately
       setIsAnswerRevealed(true);
       return;
     }
 
-    const result = gradeReadingAnswer(inputReading, currentCard.word.readings);
-    setGradeResult({ isCorrect: result.isCorrect });
+    if (currentCard.word) {
+      const result = gradeReadingAnswer(inputReading, currentCard.word.readings);
+      setGradeResult({ isCorrect: result.isCorrect });
+    } else if (currentCard.kanji) {
+      const validAnswers = [
+        ...(currentCard.kanji.hanViet || []),
+        ...(currentCard.kanji.onyomi || []),
+        ...(currentCard.kanji.kunyomi || [])
+      ];
+      const result = gradeReadingAnswer(inputReading, validAnswers);
+      setGradeResult({ isCorrect: result.isCorrect });
+    }
+
     setIsAnswerRevealed(true);
-  }, [currentCard, isAnswerRevealed, hasKanji, inputReading]);
+  }, [currentCard, isAnswerRevealed, requiresInput, inputReading]);
 
   // "Không biết" button handler
   const handleDoNotKnow = useCallback(() => {
@@ -149,7 +166,7 @@ export function FlashcardStudyView({
 
   // Calculate FSRS previews for all 4 buttons
   const previews = previewCardGrades(currentCard.fsrsCard);
-  const sentence = currentCard.word.exampleIds?.[0]
+  const sentence = currentCard.word?.exampleIds?.[0]
     ? SENTENCES_BY_ID.get(currentCard.word.exampleIds[0])
     : undefined;
 
@@ -193,18 +210,29 @@ export function FlashcardStudyView({
         <div>
           <label
             htmlFor="reading-input"
-            className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2"
+            className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 text-center"
           >
-            {hasKanji ? 'Cách đọc từ này là gì?' : 'Nghĩa của từ này là gì?'}
+            {isWord
+              ? hasKanji
+                ? 'Cách đọc từ này là gì?'
+                : 'Nghĩa của từ này là gì?'
+              : isKanji
+              ? 'Âm Hán Việt & Cách đọc của chữ này là gì?'
+              : isGrammar
+              ? 'Ý nghĩa và cách dùng của mẫu câu này là gì?'
+              : 'Nội dung thẻ'}
           </label>
 
-          {/* Word in large text */}
+          {/* Large Card Text */}
           <div className="text-4xl sm:text-5xl font-bold text-slate-900 dark:text-slate-50 font-sans tracking-wide text-center my-6">
-            {currentCard.word.surface}
+            {currentCard.word?.surface ||
+              currentCard.kanji?.char ||
+              currentCard.grammar?.title ||
+              currentCard.customPrompt}
           </div>
 
-          {/* Kanji Input / Buttons */}
-          {hasKanji && !isAnswerRevealed && (
+          {/* Input / Buttons for cards requiring input */}
+          {requiresInput && !isAnswerRevealed && (
             <div className="space-y-3 max-w-sm mx-auto">
               <input
                 id="reading-input"
@@ -214,7 +242,13 @@ export function FlashcardStudyView({
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck="false"
-                placeholder="Gõ hiragana..."
+                placeholder={
+                  isWord
+                    ? 'Gõ hiragana...'
+                    : isKanji
+                    ? 'Gõ Hán Việt hoặc cách đọc...'
+                    : 'Nhập câu trả lời...'
+                }
                 value={inputReading}
                 onChange={(e) => setInputReading(e.target.value)}
                 onCompositionStart={() => setIsComposing(true)}
@@ -240,7 +274,7 @@ export function FlashcardStudyView({
             </div>
           )}
 
-          {!hasKanji && !isAnswerRevealed && (
+          {!requiresInput && !isAnswerRevealed && (
             <div className="text-center mt-6">
               <button
                 onClick={() => setIsAnswerRevealed(true)}
@@ -275,63 +309,124 @@ export function FlashcardStudyView({
           )}
         </div>
 
-        {/* BACK FACE (Mặt sau, theo thứ tự mục 4) */}
+        {/* BACK FACE (Mặt sau) */}
         {isAnswerRevealed && (
           <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800 animate-in fade-in duration-300">
-            {/* 1. Cách đọc hiragana chữ lớn */}
-            <div className="text-2xl font-bold text-sky-600 dark:text-sky-400 font-sans text-center">
-              {currentCard.word.readings.join(' / ')}
-            </div>
+            {/* Word Card Back */}
+            {currentCard.word && (
+              <>
+                <div className="text-2xl font-bold text-sky-600 dark:text-sky-400 font-sans text-center">
+                  {currentCard.word.readings.join(' / ')}
+                </div>
 
-            {/* 2. Nghĩa tiếng Việt kèm Hán Việt từng chữ */}
-            <div className="text-center space-y-1">
-              <div className="text-base font-semibold text-slate-800 dark:text-slate-100">
-                {currentCard.word.meaningVi}
+                <div className="text-center space-y-1">
+                  <div className="text-base font-semibold text-slate-800 dark:text-slate-100">
+                    {currentCard.word.meaningVi}
+                  </div>
+
+                  {currentCard.word.kanji && currentCard.word.kanji.length > 0 && (
+                    <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center space-x-1.5 flex-wrap">
+                      <span>Hán Việt:</span>
+                      {currentCard.word.kanji.map((char, kIdx) => {
+                        const hv = currentCard.word?.hanVietBreakdown?.[kIdx] || '';
+                        return (
+                          <button
+                            key={`${char}-${kIdx}`}
+                            type="button"
+                            onClick={() => onSelectKanji && onSelectKanji(char)}
+                            className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-sky-100 dark:hover:bg-sky-900 text-sky-700 dark:text-sky-300 font-medium text-xs transition"
+                            title={`Xem chi tiết chữ ${char}`}
+                          >
+                            {char} ({hv})
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {currentCard.word.pos && (
+                  <div className="text-center">
+                    <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                      {currentCard.word.pos}
+                    </span>
+                  </div>
+                )}
+
+                {sentence && (
+                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 space-y-1 text-left">
+                    <div className="text-sm font-medium text-slate-800 dark:text-slate-100 leading-relaxed font-sans">
+                      {sentence.jp}
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                      {sentence.vi}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Kanji Card Back */}
+            {currentCard.kanji && (
+              <div className="text-center space-y-2">
+                <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                  {currentCard.kanji.hanViet.join(' - ')}
+                </div>
+                <div className="text-base font-semibold text-slate-800 dark:text-slate-100">
+                  {currentCard.kanji.meaningVi}
+                </div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 space-y-0.5">
+                  <div>
+                    <span className="font-semibold">Onyomi:</span>{' '}
+                    {currentCard.kanji.onyomi.join(', ') || '—'}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Kunyomi:</span>{' '}
+                    {currentCard.kanji.kunyomi.join(', ') || '—'}
+                  </div>
+                  {currentCard.kanji.strokeCount && (
+                    <div>Số nét: {currentCard.kanji.strokeCount} nét</div>
+                  )}
+                </div>
               </div>
+            )}
 
-              {currentCard.word.kanji && currentCard.word.kanji.length > 0 && (
-                <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center space-x-1.5 flex-wrap">
-                  <span>Hán Việt:</span>
-                  {currentCard.word.kanji.map((char, kIdx) => {
-                    const hv = currentCard.word.hanVietBreakdown?.[kIdx] || '';
-                    return (
-                      <button
-                        key={`${char}-${kIdx}`}
-                        type="button"
-                        onClick={() => onSelectKanji && onSelectKanji(char)}
-                        className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-sky-100 dark:hover:bg-sky-900 text-sky-700 dark:text-sky-300 font-medium text-xs transition"
-                        title={`Xem chi tiết chữ ${char}`}
+            {/* Grammar Card Back */}
+            {currentCard.grammar && (
+              <div className="space-y-3 text-left">
+                <div className="p-3.5 rounded-xl bg-amber-50/60 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-900/60">
+                  <div className="text-xs font-semibold text-amber-800 dark:text-amber-300 uppercase tracking-wider mb-1">
+                    Giải thích ngữ pháp:
+                  </div>
+                  <div className="text-xs sm:text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
+                    {currentCard.grammar.explanationVi}
+                  </div>
+                </div>
+
+                {currentCard.grammar.examples && currentCard.grammar.examples.length > 0 && (
+                  <div className="space-y-1.5">
+                    <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                      Ví dụ minh họa:
+                    </div>
+                    {currentCard.grammar.examples.slice(0, 2).map((ex, exIdx) => (
+                      <div
+                        key={exIdx}
+                        className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 space-y-0.5"
                       >
-                        {char} ({hv})
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* 3. Loại từ (pos) */}
-            {currentCard.word.pos && (
-              <div className="text-center">
-                <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                  {currentCard.word.pos}
-                </span>
+                        <div className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-100 font-sans">
+                          {ex.jp}
+                        </div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                          {ex.vi}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
-            {/* 4. Câu ví dụ tiếng Nhật & bản dịch bên dưới */}
-            {sentence && (
-              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 space-y-1 text-left">
-                <div className="text-sm font-medium text-slate-800 dark:text-slate-100 leading-relaxed font-sans">
-                  {sentence.jp}
-                </div>
-                <div className="text-xs text-slate-500 dark:text-slate-400">
-                  {sentence.vi}
-                </div>
-              </div>
-            )}
-
-            {/* 5. Số thứ tự thẻ */}
+            {/* Card ID */}
             <div className="text-[11px] text-slate-400 text-right">
               Mã thẻ: {currentCard.refId}
             </div>

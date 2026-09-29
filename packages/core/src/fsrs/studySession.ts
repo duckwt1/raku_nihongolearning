@@ -1,14 +1,19 @@
 import { Card, Rating, previewCardGrades, applyGrade, createNewCard } from '../fsrs/scheduler.js';
-import type { Word } from '../models/schemas.js';
+import type { Word, Kanji, Grammar } from '../models/schemas.js';
 
 export interface StudyCard {
   id: string; // card document id: `word_${wordId}`
   type: 'word' | 'kanji' | 'grammar' | 'custom';
   refId: string;
-  word: Word;
+  word?: Word;
+  kanji?: Kanji;
+  grammar?: Grammar;
+  customPrompt?: string;
+  customAnswer?: string;
   fsrsCard: Card;
   isNew: boolean;
   isDue: boolean;
+  deckId?: string;
 }
 
 export interface ReviewSessionState {

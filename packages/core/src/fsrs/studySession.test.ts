@@ -41,7 +41,7 @@ describe('buildReviewQueue', () => {
     const session = buildReviewQueue([newCard1, dueCard1], 10, 50, now);
     expect(session.totalCards).toBe(2);
     // Due cards must be first in queue
-    expect(session.queue[0]?.word.surface).toBe('due_1');
-    expect(session.queue[1]?.word.surface).toBe('new_1');
+    expect(session.queue[0]?.word?.surface).toBe('due_1');
+    expect(session.queue[1]?.word?.surface).toBe('new_1');
   });
 });

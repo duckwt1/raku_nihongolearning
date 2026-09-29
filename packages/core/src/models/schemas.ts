@@ -136,3 +136,54 @@ export const ImportRecordSchema = z.object({
   issues: z.array(z.string()).default([])
 });
 export type ImportRecord = z.infer<typeof ImportRecordSchema>;
+
+/**
+ * Folder Schema - for hierarchical organization of Decks (like Anki deck trees)
+ */
+export const FolderSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().optional(),
+  color: z.string().optional(),
+  parentId: z.string().nullable().default(null),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional()
+});
+export type Folder = z.infer<typeof FolderSchema>;
+
+/**
+ * Deck Schema - representing a collection of cards (like Anki decks)
+ */
+export const DeckSchema = z.object({
+  id: z.string().min(1),
+  folderId: z.string().nullable().default(null),
+  name: z.string().min(1),
+  description: z.string().optional(),
+  color: z.string().optional(),
+  cardType: z.enum(['word', 'kanji', 'grammar', 'custom', 'mixed']).default('mixed'),
+  cardIds: z.array(z.string()).default([]),
+  newCardsPerDay: z.number().int().default(20),
+  maxReviewsPerDay: z.number().int().default(50),
+  isDefault: z.boolean().default(false),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional()
+});
+export type Deck = z.infer<typeof DeckSchema>;
+
+/**
+ * Daily study statistics
+ */
+export interface DailyStudyStats {
+  date: string; // YYYY-MM-DD
+  studySeconds: number; // Time spent studying in seconds
+  reviewedCount: number; // Total reviews today
+  correctCount: number; // Hard, Good, Easy count
+  againCount: number; // Again count
+}
+
+export interface UserStudyStats {
+  todayStats: DailyStudyStats;
+  streakDays: number;
+  lastStudiedDate: string; // YYYY-MM-DD
+  totalCardsLearned: number;
+}
