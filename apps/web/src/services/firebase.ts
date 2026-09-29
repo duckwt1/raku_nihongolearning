@@ -37,9 +37,12 @@ export const db: Firestore = initializeFirestore(app, {
   })
 });
 
-// Automatically connect to Firebase Emulator in development mode if enabled
+// Automatically connect to Firebase Emulator in development mode ONLY IF explicitly requested or no real config is provided
 const shouldUseEmulator =
-  import.meta.env.DEV || import.meta.env.VITE_USE_EMULATOR === 'true';
+  import.meta.env.VITE_USE_EMULATOR === 'true' ||
+  (import.meta.env.DEV &&
+    (!import.meta.env.VITE_FIREBASE_API_KEY ||
+      import.meta.env.VITE_FIREBASE_API_KEY === 'fake-api-key-for-emulator'));
 
 if (shouldUseEmulator && typeof window !== 'undefined') {
   const host = window.location.hostname || '127.0.0.1';
