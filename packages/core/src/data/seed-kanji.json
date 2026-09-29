@@ -1,0 +1,8291 @@
+[
+  {
+    "char": "男",
+    "hanViet": [
+      "NAM"
+    ],
+    "onyomi": [
+      "ダン",
+      "ナン"
+    ],
+    "kunyomi": [
+      "おとこ",
+      "お"
+    ],
+    "meaningVi": "nam giới, đàn ông",
+    "jlpt": "N5",
+    "strokeCount": 7,
+    "lookalikes": [
+      "勇"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "性",
+    "hanViet": [
+      "TÍNH"
+    ],
+    "onyomi": [
+      "セイ",
+      "ショウ"
+    ],
+    "kunyomi": [
+      "さが"
+    ],
+    "meaningVi": "tính chất, giới tính",
+    "jlpt": "N3",
+    "strokeCount": 8,
+    "lookalikes": [
+      "快",
+      "情"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "女",
+    "hanViet": [
+      "NỮ"
+    ],
+    "onyomi": [
+      "ジョ",
+      "ニョ"
+    ],
+    "kunyomi": [
+      "おんな",
+      "め"
+    ],
+    "meaningVi": "nữ giới, phụ nữ",
+    "jlpt": "N5",
+    "strokeCount": 3,
+    "lookalikes": [
+      "好"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "高",
+    "hanViet": [
+      "CAO"
+    ],
+    "onyomi": [
+      "コウ"
+    ],
+    "kunyomi": [
+      "たか.い",
+      "たか"
+    ],
+    "meaningVi": "cao, đắt",
+    "jlpt": "N5",
+    "strokeCount": 10,
+    "lookalikes": [
+      "京"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "齢",
+    "hanViet": [
+      "LINH"
+    ],
+    "onyomi": [
+      "レイ"
+    ],
+    "kunyomi": [
+      "よわい",
+      "とし"
+    ],
+    "meaningVi": "tuổi tác",
+    "jlpt": "N3",
+    "strokeCount": 17,
+    "lookalikes": [
+      "歯"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "年",
+    "hanViet": [
+      "NIÊN"
+    ],
+    "onyomi": [
+      "ネン"
+    ],
+    "kunyomi": [
+      "とし"
+    ],
+    "meaningVi": "năm, tuổi",
+    "jlpt": "N5",
+    "strokeCount": 6,
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "上",
+    "hanViet": [
+      "THƯỢNG"
+    ],
+    "onyomi": [
+      "ジョウ",
+      "ショウ"
+    ],
+    "kunyomi": [
+      "うえ",
+      "あ.がる",
+      "のぼ.る"
+    ],
+    "meaningVi": "trên, bề trên",
+    "jlpt": "N5",
+    "strokeCount": 3,
+    "lookalikes": [
+      "下",
+      "止"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "目",
+    "hanViet": [
+      "MỤC"
+    ],
+    "onyomi": [
+      "モク",
+      "ボク"
+    ],
+    "kunyomi": [
+      "め",
+      "-め"
+    ],
+    "meaningVi": "mắt, mục lục",
+    "jlpt": "N5",
+    "strokeCount": 5,
+    "lookalikes": [
+      "日",
+      "自"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "先",
+    "hanViet": [
+      "TIÊN"
+    ],
+    "onyomi": [
+      "セン"
+    ],
+    "kunyomi": [
+      "さき",
+      "ま.ず"
+    ],
+    "meaningVi": "trước, đi đầu",
+    "jlpt": "N5",
+    "strokeCount": 6,
+    "lookalikes": [
+      "失"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "輩",
+    "hanViet": [
+      "BỐI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BỐI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "後",
+    "hanViet": [
+      "HẬU"
+    ],
+    "onyomi": [
+      "ゴ",
+      "コウ"
+    ],
+    "kunyomi": [
+      "のち",
+      "うし.ろ",
+      "あと",
+      "おく.れる"
+    ],
+    "meaningVi": "sau, đằng sau",
+    "jlpt": "N5",
+    "strokeCount": 9,
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "司",
+    "hanViet": [
+      "TY",
+      "TƯ"
+    ],
+    "onyomi": [
+      "シ"
+    ],
+    "kunyomi": [
+      "つかさど.る"
+    ],
+    "meaningVi": "cai quản, quản lý",
+    "jlpt": "N3",
+    "strokeCount": 5,
+    "lookalikes": [
+      "同",
+      "句"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "相",
+    "hanViet": [
+      "TƯƠNG",
+      "TƯỚNG"
+    ],
+    "onyomi": [
+      "ソウ",
+      "ショウ"
+    ],
+    "kunyomi": [
+      "あい-"
+    ],
+    "meaningVi": "lẫn nhau, bộ mặt, tướng",
+    "jlpt": "N3",
+    "strokeCount": 9,
+    "lookalikes": [
+      "想",
+      "木"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "手",
+    "hanViet": [
+      "THỦ"
+    ],
+    "onyomi": [
+      "シュ"
+    ],
+    "kunyomi": [
+      "て",
+      "て-"
+    ],
+    "meaningVi": "tay, bàn tay",
+    "jlpt": "N5",
+    "strokeCount": 4,
+    "lookalikes": [
+      "毛"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "知",
+    "hanViet": [
+      "TRI"
+    ],
+    "onyomi": [
+      "チ"
+    ],
+    "kunyomi": [
+      "し.る",
+      "し.らせる"
+    ],
+    "meaningVi": "biết, thông tri",
+    "jlpt": "N4",
+    "strokeCount": 8,
+    "lookalikes": [
+      "和"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "合",
+    "hanViet": [
+      "HỢP"
+    ],
+    "onyomi": [
+      "ゴウ",
+      "ガッ",
+      "カッ"
+    ],
+    "kunyomi": [
+      "あ.う",
+      "あ.わす",
+      "あ.わせる"
+    ],
+    "meaningVi": "hợp, đúng, cùng nhau",
+    "jlpt": "N3",
+    "strokeCount": 6,
+    "lookalikes": [
+      "会",
+      "台"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "友",
+    "hanViet": [
+      "HỮU"
+    ],
+    "onyomi": [
+      "ユウ"
+    ],
+    "kunyomi": [
+      "とも"
+    ],
+    "meaningVi": "bạn bè",
+    "jlpt": "N5",
+    "strokeCount": 4,
+    "lookalikes": [
+      "反",
+      "支"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "人",
+    "hanViet": [
+      "NHÂN"
+    ],
+    "onyomi": [
+      "ジン",
+      "ニン"
+    ],
+    "kunyomi": [
+      "ひと",
+      "-り",
+      "-と"
+    ],
+    "meaningVi": "người",
+    "jlpt": "N5",
+    "strokeCount": 2,
+    "lookalikes": [
+      "入",
+      "八"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "仲",
+    "hanViet": [
+      "TRỌNG"
+    ],
+    "onyomi": [
+      "チュウ"
+    ],
+    "kunyomi": [
+      "なか"
+    ],
+    "meaningVi": "mối quan hệ, thân thiết",
+    "jlpt": "N3",
+    "strokeCount": 6,
+    "lookalikes": [
+      "中",
+      "件"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "生",
+    "hanViet": [
+      "SINH"
+    ],
+    "onyomi": [
+      "セイ",
+      "ショウ"
+    ],
+    "kunyomi": [
+      "い.きる",
+      "う.まれる",
+      "なま"
+    ],
+    "meaningVi": "sống, sinh ra, tươi",
+    "jlpt": "N5",
+    "strokeCount": 5,
+    "lookalikes": [
+      "主"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "月",
+    "hanViet": [
+      "NGUYỆT"
+    ],
+    "onyomi": [
+      "ゲツ",
+      "ガツ"
+    ],
+    "kunyomi": [
+      "つき"
+    ],
+    "meaningVi": "mặt trăng, tháng",
+    "jlpt": "N5",
+    "strokeCount": 4,
+    "lookalikes": [
+      "日",
+      "用"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "日",
+    "hanViet": [
+      "NHẬT"
+    ],
+    "onyomi": [
+      "ニチ",
+      "ジツ"
+    ],
+    "kunyomi": [
+      "ひ",
+      "-び",
+      "-か"
+    ],
+    "meaningVi": "ngày, mặt trời, Nhật Bản",
+    "jlpt": "N5",
+    "strokeCount": 4,
+    "lookalikes": [
+      "目",
+      "白"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "誕",
+    "hanViet": [
+      "ĐẢN"
+    ],
+    "onyomi": [
+      "タン"
+    ],
+    "kunyomi": [],
+    "meaningVi": "sinh ra, giáng sinh",
+    "jlpt": "N3",
+    "strokeCount": 15,
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "出",
+    "hanViet": [
+      "XUẤT"
+    ],
+    "onyomi": [
+      "シュツ",
+      "スイ"
+    ],
+    "kunyomi": [
+      "で.る",
+      "だ.す"
+    ],
+    "meaningVi": "ra ngoài, đưa ra",
+    "jlpt": "N5",
+    "strokeCount": 5,
+    "lookalikes": [
+      "山"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "身",
+    "hanViet": [
+      "THÂN"
+    ],
+    "onyomi": [
+      "シン"
+    ],
+    "kunyomi": [
+      "み"
+    ],
+    "meaningVi": "thân thể, bản thân",
+    "jlpt": "N3",
+    "strokeCount": 7,
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "故",
+    "hanViet": [
+      "CỐ"
+    ],
+    "onyomi": [
+      "コ"
+    ],
+    "kunyomi": [
+      "ゆえ"
+    ],
+    "meaningVi": "cũ, nguyên nhân, quá cố",
+    "jlpt": "N3",
+    "strokeCount": 9,
+    "lookalikes": [
+      "政"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "郷",
+    "hanViet": [
+      "HƯƠNG"
+    ],
+    "onyomi": [
+      "キョウ",
+      "ゴウ"
+    ],
+    "kunyomi": [
+      "さと"
+    ],
+    "meaningVi": "quê hương, làng",
+    "jlpt": "N3",
+    "strokeCount": 11,
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "成",
+    "hanViet": [
+      "THÀNH"
+    ],
+    "onyomi": [
+      "セイ",
+      "ジョウ"
+    ],
+    "kunyomi": [
+      "な.る",
+      "な.す"
+    ],
+    "meaningVi": "thành công, trở thành",
+    "jlpt": "N3",
+    "strokeCount": 6,
+    "lookalikes": [
+      "城"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "長",
+    "hanViet": [
+      "TRƯỜNG",
+      "TRƯỞNG"
+    ],
+    "onyomi": [
+      "チョウ"
+    ],
+    "kunyomi": [
+      "なが.い",
+      "おさ"
+    ],
+    "meaningVi": "dài, người đứng đầu",
+    "jlpt": "N5",
+    "strokeCount": 8,
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "格",
+    "hanViet": [
+      "CÁCH"
+    ],
+    "onyomi": [
+      "カク",
+      "コウ"
+    ],
+    "kunyomi": [],
+    "meaningVi": "tư cách, quy cách",
+    "jlpt": "N3",
+    "strokeCount": 10,
+    "lookalikes": [
+      "村"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "進",
+    "hanViet": [
+      "TIẾN"
+    ],
+    "onyomi": [
+      "シン"
+    ],
+    "kunyomi": [
+      "すす.む",
+      "すす.める"
+    ],
+    "meaningVi": "tiến bộ, tiến lên",
+    "jlpt": "N3",
+    "strokeCount": 11,
+    "lookalikes": [
+      "近",
+      "道"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "学",
+    "hanViet": [
+      "HỌC"
+    ],
+    "onyomi": [
+      "ガク"
+    ],
+    "kunyomi": [
+      "まな.ぶ"
+    ],
+    "meaningVi": "học, trường học",
+    "jlpt": "N5",
+    "strokeCount": 8,
+    "lookalikes": [
+      "字"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "退",
+    "hanViet": [
+      "THOÁI"
+    ],
+    "onyomi": [
+      "タイ"
+    ],
+    "kunyomi": [
+      "しりぞ.く",
+      "ひ.く"
+    ],
+    "meaningVi": "lui lại, rút lui, nghỉ việc",
+    "jlpt": "N3",
+    "strokeCount": 9,
+    "lookalikes": [
+      "追"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "就",
+    "hanViet": [
+      "TỰU"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TỰU",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "職",
+    "hanViet": [
+      "CHỨC"
+    ],
+    "onyomi": [
+      "ショク"
+    ],
+    "kunyomi": [],
+    "meaningVi": "nghề nghiệp, chức vụ",
+    "jlpt": "N3",
+    "strokeCount": 18,
+    "lookalikes": [
+      "識"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "失",
+    "hanViet": [
+      "THẤT"
+    ],
+    "onyomi": [
+      "シツ"
+    ],
+    "kunyomi": [
+      "うしな.う"
+    ],
+    "meaningVi": "mất mát, thất bại",
+    "jlpt": "N3",
+    "strokeCount": 5,
+    "lookalikes": [
+      "矢",
+      "先"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "業",
+    "hanViet": [
+      "NGHIỆP"
+    ],
+    "onyomi": [
+      "ギョウ",
+      "ゴウ"
+    ],
+    "kunyomi": [
+      "わざ"
+    ],
+    "meaningVi": "sự nghiệp, nghề nghiệp",
+    "jlpt": "N3",
+    "strokeCount": 13,
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "残",
+    "hanViet": [
+      "TÀN"
+    ],
+    "onyomi": [
+      "ザン"
+    ],
+    "kunyomi": [
+      "のこ.る",
+      "のこ.す"
+    ],
+    "meaningVi": "còn lại, tàn tích",
+    "jlpt": "N3",
+    "strokeCount": 10,
+    "lookalikes": [
+      "桟"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "活",
+    "hanViet": [
+      "HOẠT"
+    ],
+    "onyomi": [
+      "カツ"
+    ],
+    "kunyomi": [
+      "い.きる"
+    ],
+    "meaningVi": "hoạt bát, sinh hoạt",
+    "jlpt": "N3",
+    "strokeCount": 9,
+    "lookalikes": [
+      "話"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "通",
+    "hanViet": [
+      "THÔNG"
+    ],
+    "onyomi": [
+      "ツウ",
+      "ツ"
+    ],
+    "kunyomi": [
+      "とお.る",
+      "かよ.う"
+    ],
+    "meaningVi": "đi lại, thông qua",
+    "jlpt": "N4",
+    "strokeCount": 10,
+    "lookalikes": [
+      "道"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "勤",
+    "hanViet": [
+      "CẦN"
+    ],
+    "onyomi": [
+      "キン",
+      "ゴン"
+    ],
+    "kunyomi": [
+      "つと.める",
+      "つと.まる"
+    ],
+    "meaningVi": "làm việc, cần mẫn",
+    "jlpt": "N3",
+    "strokeCount": 12,
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "歴",
+    "hanViet": [
+      "LỊCH"
+    ],
+    "onyomi": [
+      "レキ"
+    ],
+    "kunyomi": [],
+    "meaningVi": "lịch sử, trải qua",
+    "jlpt": "N3",
+    "strokeCount": 14,
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "給",
+    "hanViet": [
+      "CẤP"
+    ],
+    "onyomi": [
+      "キュウ"
+    ],
+    "kunyomi": [
+      "たま.う"
+    ],
+    "meaningVi": "tiền lương, cung cấp",
+    "jlpt": "N3",
+    "strokeCount": 12,
+    "lookalikes": [
+      "結"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "料",
+    "hanViet": [
+      "LIỆU"
+    ],
+    "onyomi": [
+      "リョウ"
+    ],
+    "kunyomi": [],
+    "meaningVi": "nguyên liệu, tiền phí",
+    "jlpt": "N4",
+    "strokeCount": 10,
+    "lookalikes": [
+      "科"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "面",
+    "hanViet": [
+      "DIỆN"
+    ],
+    "onyomi": [
+      "メン",
+      "ベン"
+    ],
+    "kunyomi": [
+      "おも",
+      "おもて",
+      "つら"
+    ],
+    "meaningVi": "mặt, phương diện",
+    "jlpt": "N3",
+    "strokeCount": 9,
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "接",
+    "hanViet": [
+      "TIẾP"
+    ],
+    "onyomi": [
+      "セツ",
+      "ショウ"
+    ],
+    "kunyomi": [
+      "つ.ぐ"
+    ],
+    "meaningVi": "tiếp xúc, nối liền",
+    "jlpt": "N3",
+    "strokeCount": 11,
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "休",
+    "hanViet": [
+      "HƯU"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HƯU",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "憩",
+    "hanViet": [
+      "KHẾ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KHẾ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "観",
+    "hanViet": [
+      "QUAN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: QUAN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "光",
+    "hanViet": [
+      "QUANG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: QUANG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "帰",
+    "hanViet": [
+      "QUY"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: QUY",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "国",
+    "hanViet": [
+      "QUỐC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: QUỐC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "省",
+    "hanViet": [
+      "TỈNH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TỈNH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "宅",
+    "hanViet": [
+      "TRẠCH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TRẠCH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "参",
+    "hanViet": [
+      "THAM"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THAM",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "加",
+    "hanViet": [
+      "GIA"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: GIA",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "席",
+    "hanViet": [
+      "TỊCH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TỊCH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "欠",
+    "hanViet": [
+      "KHIẾM"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KHIẾM",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "遅",
+    "hanViet": [
+      "TRÌ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TRÌ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "刻",
+    "hanViet": [
+      "KHẮC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KHẮC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "化",
+    "hanViet": [
+      "HÓA"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HÓA",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "粧",
+    "hanViet": [
+      "TRANG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TRANG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "計",
+    "hanViet": [
+      "KẾ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KẾ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "算",
+    "hanViet": [
+      "TOÁN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TOÁN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "画",
+    "hanViet": [
+      "HỌA"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HỌA",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "功",
+    "hanViet": [
+      "CÔNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CÔNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "敗",
+    "hanViet": [
+      "BẠI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BẠI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "準",
+    "hanViet": [
+      "CHUẨN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CHUẨN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "備",
+    "hanViet": [
+      "BỊ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BỊ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "整",
+    "hanViet": [
+      "CHỈNH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CHỈNH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "理",
+    "hanViet": [
+      "LÝ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: LÝ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "注",
+    "hanViet": [
+      "CHÚ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CHÚ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "文",
+    "hanViet": [
+      "VĂN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: VĂN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "貯",
+    "hanViet": [
+      "TRỮ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TRỮ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "金",
+    "hanViet": [
+      "KIM"
+    ],
+    "onyomi": [
+      "キン",
+      "コン"
+    ],
+    "kunyomi": [
+      "かね",
+      "かな-"
+    ],
+    "meaningVi": "vàng, tiền, thứ sáu",
+    "jlpt": "N5",
+    "strokeCount": 8,
+    "lookalikes": [
+      "全"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "徹",
+    "hanViet": [
+      "TRIỆT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TRIỆT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "夜",
+    "hanViet": [
+      "DẠ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DẠ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "引",
+    "hanViet": [
+      "DẪN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DẪN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "越",
+    "hanViet": [
+      "VIỆT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: VIỆT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "体",
+    "hanViet": [
+      "THỂ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THỂ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "重",
+    "hanViet": [
+      "TRỌNG",
+      "TRÙNG"
+    ],
+    "onyomi": [
+      "ジュウ",
+      "チョウ"
+    ],
+    "kunyomi": [
+      "おも.い",
+      "かさ.なる"
+    ],
+    "meaningVi": "nặng, quan trọng, chồng chất",
+    "jlpt": "N4",
+    "strokeCount": 9,
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "怪",
+    "hanViet": [
+      "QUÁI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: QUÁI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "我",
+    "hanViet": [
+      "NGÃ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NGÃ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "会",
+    "hanViet": [
+      "HỘI"
+    ],
+    "onyomi": [
+      "カイ",
+      "エ"
+    ],
+    "kunyomi": [
+      "あ.う"
+    ],
+    "meaningVi": "gặp gỡ, hội họp",
+    "jlpt": "N5",
+    "strokeCount": 6,
+    "lookalikes": [
+      "合"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "趣",
+    "hanViet": [
+      "THÚ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THÚ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "味",
+    "hanViet": [
+      "VỊ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: VỊ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "興",
+    "hanViet": [
+      "HƯNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HƯNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "思",
+    "hanViet": [
+      "TƯ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TƯ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "冗",
+    "hanViet": [
+      "NHŨNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NHŨNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "談",
+    "hanViet": [
+      "ĐÀM"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐÀM",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "的",
+    "hanViet": [
+      "ĐÍCH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐÍCH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "約",
+    "hanViet": [
+      "ƯỚC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ƯỚC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "束",
+    "hanViet": [
+      "THÚC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THÚC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "喋",
+    "hanViet": [
+      "ĐIỆP"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐIỆP",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "遠",
+    "hanViet": [
+      "VIỄN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: VIỄN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "慮",
+    "hanViet": [
+      "LỰ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: LỰ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "慢",
+    "hanViet": [
+      "MẠN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: MẠN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "迷",
+    "hanViet": [
+      "MÊ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: MÊ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "惑",
+    "hanViet": [
+      "HOẶC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HOẶC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "希",
+    "hanViet": [
+      "HY"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HY",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "望",
+    "hanViet": [
+      "VỌNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: VỌNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "夢",
+    "hanViet": [
+      "MỘNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: MỘNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "賛",
+    "hanViet": [
+      "TÁN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TÁN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "反",
+    "hanViet": [
+      "PHẢN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHẢN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "対",
+    "hanViet": [
+      "ĐỐI"
+    ],
+    "onyomi": [
+      "タイ",
+      "ツイ"
+    ],
+    "kunyomi": [
+      "あいて",
+      "こた.える"
+    ],
+    "meaningVi": "đối ứng, đối diện",
+    "jlpt": "N3",
+    "strokeCount": 7,
+    "lookalikes": [
+      "村"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "想",
+    "hanViet": [
+      "TƯỞNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TƯỞNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "像",
+    "hanViet": [
+      "TƯỢNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TƯỢNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "努",
+    "hanViet": [
+      "NỖ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NỖ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "力",
+    "hanViet": [
+      "LỰC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: LỰC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "太",
+    "hanViet": [
+      "THÁI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THÁI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "陽",
+    "hanViet": [
+      "DƯƠNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DƯƠNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "地",
+    "hanViet": [
+      "ĐỊA"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐỊA",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "球",
+    "hanViet": [
+      "CẦU"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CẦU",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "温",
+    "hanViet": [
+      "ÔN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ÔN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "度",
+    "hanViet": [
+      "ĐỘ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐỘ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "湿",
+    "hanViet": [
+      "THẤP"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THẤP",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "気",
+    "hanViet": [
+      "KHÍ"
+    ],
+    "onyomi": [
+      "キ",
+      "ケ"
+    ],
+    "kunyomi": [
+      "いき"
+    ],
+    "meaningVi": "khí, tinh thần, tâm trạng",
+    "jlpt": "N5",
+    "strokeCount": 6,
+    "lookalikes": [
+      "汽"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "梅",
+    "hanViet": [
+      "MAI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: MAI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "雨",
+    "hanViet": [
+      "VŨ"
+    ],
+    "onyomi": [
+      "ウ"
+    ],
+    "kunyomi": [
+      "あめ",
+      "あま-"
+    ],
+    "meaningVi": "mưa",
+    "jlpt": "N5",
+    "strokeCount": 8,
+    "lookalikes": [
+      "両"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "暖",
+    "hanViet": [
+      "NOÃN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NOÃN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "房",
+    "hanViet": [
+      "PHÒNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHÒNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "皮",
+    "hanViet": [
+      "BÌ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BÌ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "缶",
+    "hanViet": [
+      "PHẪU"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHẪU",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "番",
+    "hanViet": [
+      "PHIÊN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHIÊN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "組",
+    "hanViet": [
+      "TỔ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TỔ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "記",
+    "hanViet": [
+      "KÍ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KÍ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "事",
+    "hanViet": [
+      "SỰ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: SỰ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "近",
+    "hanViet": [
+      "CẬN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CẬN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "所",
+    "hanViet": [
+      "SỞ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: SỞ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "警",
+    "hanViet": [
+      "CẢNH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CẢNH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "察",
+    "hanViet": [
+      "SÁT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: SÁT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "犯",
+    "hanViet": [
+      "PHẠM"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHẠM",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "小",
+    "hanViet": [
+      "TIỂU"
+    ],
+    "onyomi": [
+      "ショウ"
+    ],
+    "kunyomi": [
+      "ちい.さい",
+      "こ-",
+      "お-"
+    ],
+    "meaningVi": "nhỏ, bé",
+    "jlpt": "N5",
+    "strokeCount": 3,
+    "lookalikes": [
+      "少"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "銭",
+    "hanViet": [
+      "TIỀN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TIỀN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "作",
+    "hanViet": [
+      "TÁC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TÁC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "者",
+    "hanViet": [
+      "GIẢ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: GIẢ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "品",
+    "hanViet": [
+      "PHẨM"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHẨM",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "制",
+    "hanViet": [
+      "CHẾ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CHẾ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "服",
+    "hanViet": [
+      "PHỤC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHỤC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "洗",
+    "hanViet": [
+      "TẨY"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TẨY",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "剤",
+    "hanViet": [
+      "TỄ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TỄ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "底",
+    "hanViet": [
+      "ĐỂ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐỂ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "下",
+    "hanViet": [
+      "HẠ"
+    ],
+    "onyomi": [
+      "カ",
+      "ゲ"
+    ],
+    "kunyomi": [
+      "した",
+      "さ.がる",
+      "くだ.る"
+    ],
+    "meaningVi": "dưới, phía dưới",
+    "jlpt": "N5",
+    "strokeCount": 3,
+    "lookalikes": [
+      "上",
+      "不"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "寺",
+    "hanViet": [
+      "TỰ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TỰ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "道",
+    "hanViet": [
+      "ĐẠO"
+    ],
+    "onyomi": [
+      "ドウ",
+      "トウ"
+    ],
+    "kunyomi": [
+      "みち"
+    ],
+    "meaningVi": "con đường, đạo",
+    "jlpt": "N5",
+    "strokeCount": 12,
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "路",
+    "hanViet": [
+      "LỘ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: LỘ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "坂",
+    "hanViet": [
+      "PHẢN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHẢN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "煙",
+    "hanViet": [
+      "YÊN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: YÊN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "灰",
+    "hanViet": [
+      "HÔI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HÔI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "判",
+    "hanViet": [
+      "PHÁN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHÁN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "名",
+    "hanViet": [
+      "DANH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DANH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "刺",
+    "hanViet": [
+      "THÍCH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THÍCH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "免",
+    "hanViet": [
+      "MIỄN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: MIỄN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "許",
+    "hanViet": [
+      "HỨA"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HỨA",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "多",
+    "hanViet": [
+      "ĐA"
+    ],
+    "onyomi": [
+      "タ"
+    ],
+    "kunyomi": [
+      "おお.い"
+    ],
+    "meaningVi": "nhiều",
+    "jlpt": "N5",
+    "strokeCount": 6,
+    "lookalikes": [
+      "夕"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "前",
+    "hanViet": [
+      "TIỀN"
+    ],
+    "onyomi": [
+      "ゼン"
+    ],
+    "kunyomi": [
+      "まえ"
+    ],
+    "meaningVi": "trước",
+    "jlpt": "N5",
+    "strokeCount": 9,
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "半",
+    "hanViet": [
+      "BÁN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BÁN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "最",
+    "hanViet": [
+      "TỐI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TỐI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "低",
+    "hanViet": [
+      "ĐÊ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐÊ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "初",
+    "hanViet": [
+      "SƠ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: SƠ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "自",
+    "hanViet": [
+      "TỰ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TỰ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "動",
+    "hanViet": [
+      "ĐỘNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐỘNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "種",
+    "hanViet": [
+      "CHỦNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CHỦNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "類",
+    "hanViet": [
+      "LOẠI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: LOẠI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "質",
+    "hanViet": [
+      "CHẤT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CHẤT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "順",
+    "hanViet": [
+      "THUẬN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THUẬN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "方",
+    "hanViet": [
+      "PHƯƠNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHƯƠNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "法",
+    "hanViet": [
+      "PHÁP"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHÁP",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "製",
+    "hanViet": [
+      "CHẾ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CHẾ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "値",
+    "hanViet": [
+      "TRỊ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TRỊ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "渇",
+    "hanViet": [
+      "KHÁT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KHÁT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "嗅",
+    "hanViet": [
+      "KHỨU"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KHỨU",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "叩",
+    "hanViet": [
+      "KHẤU"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KHẤU",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "殴",
+    "hanViet": [
+      "ẨU"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ẨU",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "蹴",
+    "hanViet": [
+      "THÚC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THÚC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "抱",
+    "hanViet": [
+      "BÃO"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BÃO",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "倒",
+    "hanViet": [
+      "ĐẢO"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐẢO",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "起",
+    "hanViet": [
+      "KHỞI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KHỞI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "尋",
+    "hanViet": [
+      "TẦM"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TẦM",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "呼",
+    "hanViet": [
+      "HÔ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HÔ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "叫",
+    "hanViet": [
+      "KHIẾU"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KHIẾU",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "黙",
+    "hanViet": [
+      "MẶC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: MẶC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "飼",
+    "hanViet": [
+      "TỰ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TỰ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "数",
+    "hanViet": [
+      "SỐ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: SỐ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "乾",
+    "hanViet": [
+      "CAN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CAN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "畳",
+    "hanViet": [
+      "ĐIỆP"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐIỆP",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "誘",
+    "hanViet": [
+      "DỤ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DỤ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "預",
+    "hanViet": [
+      "DỰ"
+    ],
+    "onyomi": [
+      "ヨ"
+    ],
+    "kunyomi": [
+      "あず.かる",
+      "あず.ける"
+    ],
+    "meaningVi": "gửi, giữ đồ, chăm sóc",
+    "jlpt": "N3",
+    "strokeCount": 13,
+    "lookalikes": [
+      "頂",
+      "領"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "決",
+    "hanViet": [
+      "QUYẾT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: QUYẾT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "写",
+    "hanViet": [
+      "TẢ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TẢ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "教",
+    "hanViet": [
+      "GIÁO"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: GIÁO",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "申",
+    "hanViet": [
+      "THÂN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THÂN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "込",
+    "hanViet": [
+      "NHẬP"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NHẬP",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "断",
+    "hanViet": [
+      "ĐOẠN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐOẠN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "見",
+    "hanViet": [
+      "KIẾN"
+    ],
+    "onyomi": [
+      "ケン"
+    ],
+    "kunyomi": [
+      "み.る",
+      "み.える",
+      "み.せる"
+    ],
+    "meaningVi": "nhìn, xem, thấy",
+    "jlpt": "N5",
+    "strokeCount": 7,
+    "lookalikes": [
+      "目",
+      "貝"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "捕",
+    "hanViet": [
+      "BỘ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BỘ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "乗",
+    "hanViet": [
+      "THỪA"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THỪA",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "降",
+    "hanViet": [
+      "HÀNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HÀNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "直",
+    "hanViet": [
+      "TRỰC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TRỰC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "治",
+    "hanViet": [
+      "TRỊ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TRỊ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "亡",
+    "hanViet": [
+      "VONG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: VONG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "訪",
+    "hanViet": [
+      "PHỎNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHỎNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "付",
+    "hanViet": [
+      "PHÓ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHÓ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "効",
+    "hanViet": [
+      "HIỆU"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HIỆU",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "経",
+    "hanViet": [
+      "KINH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KINH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "間",
+    "hanViet": [
+      "GIAN"
+    ],
+    "onyomi": [
+      "カン",
+      "ケン"
+    ],
+    "kunyomi": [
+      "あいだ",
+      "ま",
+      "あい"
+    ],
+    "meaningVi": "khoảng thời gian, khoảng giữa",
+    "jlpt": "N5",
+    "strokeCount": 12,
+    "lookalikes": [
+      "問",
+      "聞"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "違",
+    "hanViet": [
+      "VI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: VI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "掛",
+    "hanViet": [
+      "QUẢI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: QUẢI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "離",
+    "hanViet": [
+      "LY"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: LY",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "片",
+    "hanViet": [
+      "PHIẾN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHIẾN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "包",
+    "hanViet": [
+      "BAO"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BAO",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "張",
+    "hanViet": [
+      "TRƯƠNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TRƯƠNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "無",
+    "hanViet": [
+      "VÔ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: VÔ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "足",
+    "hanViet": [
+      "TÚC"
+    ],
+    "onyomi": [
+      "ソク"
+    ],
+    "kunyomi": [
+      "あし",
+      "た.りる",
+      "た.す"
+    ],
+    "meaningVi": "chân, đầy đủ",
+    "jlpt": "N5",
+    "strokeCount": 7,
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "腐",
+    "hanViet": [
+      "HỦ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HỦ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "滑",
+    "hanViet": [
+      "HOẠT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HOẠT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "積",
+    "hanViet": [
+      "TÍCH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TÍCH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "空",
+    "hanViet": [
+      "KHÔNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KHÔNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "冷",
+    "hanViet": [
+      "LÃNH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: LÃNH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "燃",
+    "hanViet": [
+      "NHIÊN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NHIÊN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "沸",
+    "hanViet": [
+      "PHÍ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHÍ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "鳴",
+    "hanViet": [
+      "MINH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: MINH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "役",
+    "hanViet": [
+      "DỊCH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DỊCH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "立",
+    "hanViet": [
+      "LẬP"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: LẬP",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "飾",
+    "hanViet": [
+      "SỨC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: SỨC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "遊",
+    "hanViet": [
+      "DU"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DU",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "集",
+    "hanViet": [
+      "TẬP"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TẬP",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "踊",
+    "hanViet": [
+      "DŨNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DŨNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "考",
+    "hanViet": [
+      "KHẢO"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KHẢO",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "伝",
+    "hanViet": [
+      "TRUYỀN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TRUYỀN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "働",
+    "hanViet": [
+      "ĐỘNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐỘNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "騒",
+    "hanViet": [
+      "TAO"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TAO",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "頼",
+    "hanViet": [
+      "LẠI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: LẠI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "疲",
+    "hanViet": [
+      "BÌ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BÌ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "始",
+    "hanViet": [
+      "THỦY"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THỦY",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "続",
+    "hanViet": [
+      "TỤC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TỤC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "暮",
+    "hanViet": [
+      "MỘ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: MỘ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "行",
+    "hanViet": [
+      "HÀNH",
+      "HÀNG"
+    ],
+    "onyomi": [
+      "コウ",
+      "ギョウ",
+      "アン"
+    ],
+    "kunyomi": [
+      "い.く",
+      "ゆ.く",
+      "おこな.う"
+    ],
+    "meaningVi": "đi, tiến hành, hàng",
+    "jlpt": "N5",
+    "strokeCount": 6,
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "急",
+    "hanViet": [
+      "CẤP"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CẤP",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "貸",
+    "hanViet": [
+      "THẢI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THẢI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "借",
+    "hanViet": [
+      "TÁ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TÁ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "勝",
+    "hanViet": [
+      "THẮNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THẮNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "負",
+    "hanViet": [
+      "PHỤ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHỤ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "迎",
+    "hanViet": [
+      "NGHÊNH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NGHÊNH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "終",
+    "hanViet": [
+      "CHUNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CHUNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "戻",
+    "hanViet": [
+      "LỆ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: LỆ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "別",
+    "hanViet": [
+      "BIỆT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BIỆT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "喜",
+    "hanViet": [
+      "HỈ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HỈ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "楽",
+    "hanViet": [
+      "LẠC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: LẠC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "笑",
+    "hanViet": [
+      "TIẾU"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TIẾU",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "驚",
+    "hanViet": [
+      "KINH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KINH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "怒",
+    "hanViet": [
+      "NỘ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NỘ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "悲",
+    "hanViet": [
+      "BI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "幸",
+    "hanViet": [
+      "HẠNH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HẠNH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "得",
+    "hanViet": [
+      "ĐẮC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐẮC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "意",
+    "hanViet": [
+      "Ý"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: Ý",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "苦",
+    "hanViet": [
+      "KHỔ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KHỔ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "熱",
+    "hanViet": [
+      "NHIỆT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NHIỆT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "心",
+    "hanViet": [
+      "TÂM"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TÂM",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "中",
+    "hanViet": [
+      "TRUNG"
+    ],
+    "onyomi": [
+      "チュウ"
+    ],
+    "kunyomi": [
+      "なか",
+      "うち",
+      "あた.る"
+    ],
+    "meaningVi": "ở giữa, bên trong",
+    "jlpt": "N5",
+    "strokeCount": 4,
+    "lookalikes": [
+      "申"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "屈",
+    "hanViet": [
+      "KHUẤT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KHUẤT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "健",
+    "hanViet": [
+      "KIỆN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KIỆN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "康",
+    "hanViet": [
+      "KHANG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KHANG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "平",
+    "hanViet": [
+      "BÌNH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BÌNH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "悔",
+    "hanViet": [
+      "HỐI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HỐI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "強",
+    "hanViet": [
+      "CƯỜNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CƯỜNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "正",
+    "hanViet": [
+      "CHÍNH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CHÍNH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "極",
+    "hanViet": [
+      "CỰC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CỰC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "消",
+    "hanViet": [
+      "TIÊU"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TIÊU",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "満",
+    "hanViet": [
+      "MÃN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: MÃN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "不",
+    "hanViet": [
+      "BẤT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BẤT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "安",
+    "hanViet": [
+      "AN"
+    ],
+    "onyomi": [
+      "アン"
+    ],
+    "kunyomi": [
+      "やす.い"
+    ],
+    "meaningVi": "rẻ, yên tâm, an toàn",
+    "jlpt": "N5",
+    "strokeCount": 6,
+    "lookalikes": [
+      "字"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "大",
+    "hanViet": [
+      "ĐẠI"
+    ],
+    "onyomi": [
+      "ダイ",
+      "タイ"
+    ],
+    "kunyomi": [
+      "おお-",
+      "おお.きい",
+      "おお.いに"
+    ],
+    "meaningVi": "lớn, to",
+    "jlpt": "N5",
+    "strokeCount": 3,
+    "lookalikes": [
+      "犬",
+      "太"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "変",
+    "hanViet": [
+      "BIẾN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BIẾN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "礼",
+    "hanViet": [
+      "LỄ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: LỄ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "当",
+    "hanViet": [
+      "ĐƯƠNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐƯƠNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "然",
+    "hanViet": [
+      "NHIÊN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NHIÊN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "外",
+    "hanViet": [
+      "NGOẠI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NGOẠI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "結",
+    "hanViet": [
+      "KẾT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KẾT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "構",
+    "hanViet": [
+      "CẤU"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CẤU",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "派",
+    "hanViet": [
+      "PHÁI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHÁI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "議",
+    "hanViet": [
+      "NGHỊ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NGHỊ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "由",
+    "hanViet": [
+      "DO"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DO",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "弱",
+    "hanViet": [
+      "NHƯỢC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NHƯỢC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "広",
+    "hanViet": [
+      "QUẢNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: QUẢNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "深",
+    "hanViet": [
+      "THÂM"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THÂM",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "世",
+    "hanViet": [
+      "THẾ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THẾ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "話",
+    "hanViet": [
+      "THOẠI"
+    ],
+    "onyomi": [
+      "ワ"
+    ],
+    "kunyomi": [
+      "はな.す",
+      "はなし"
+    ],
+    "meaningVi": "nói chuyện, cuộc trò chuyện",
+    "jlpt": "N5",
+    "strokeCount": 13,
+    "lookalikes": [
+      "語"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "家",
+    "hanViet": [
+      "GIA"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: GIA",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "庭",
+    "hanViet": [
+      "ĐÌNH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐÌNH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "協",
+    "hanViet": [
+      "HIỆP"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HIỆP",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "感",
+    "hanViet": [
+      "CẢM"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CẢM",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "謝",
+    "hanViet": [
+      "TẠ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TẠ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "詫",
+    "hanViet": [
+      "SÁ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: SÁ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "握",
+    "hanViet": [
+      "ÁC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ÁC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "節",
+    "hanViet": [
+      "TIẾT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TIẾT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "営",
+    "hanViet": [
+      "DOANH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DOANH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "実",
+    "hanViet": [
+      "THỰC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THỰC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "歩",
+    "hanViet": [
+      "BỘ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BỘ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "発",
+    "hanViet": [
+      "PHÁT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHÁT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "達",
+    "hanViet": [
+      "ĐẠT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐẠT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "場",
+    "hanViet": [
+      "TRƯỜNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TRƯỜNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "躍",
+    "hanViet": [
+      "DƯỢC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DƯỢC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "競",
+    "hanViet": [
+      "CẠNH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CẠNH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "争",
+    "hanViet": [
+      "TRANH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TRANH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "応",
+    "hanViet": [
+      "ỨNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ỨNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "援",
+    "hanViet": [
+      "VIỆN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: VIỆN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "拍",
+    "hanViet": [
+      "PHÁCH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHÁCH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "情",
+    "hanViet": [
+      "TÌNH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TÌNH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "報",
+    "hanViet": [
+      "BÁO"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BÁO",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "交",
+    "hanViet": [
+      "GIAO"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: GIAO",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "換",
+    "hanViet": [
+      "HOÁN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HOÁN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "流",
+    "hanViet": [
+      "LƯU"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: LƯU",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "宣",
+    "hanViet": [
+      "TUYÊN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TUYÊN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "告",
+    "hanViet": [
+      "CÁO"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CÁO",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "訳",
+    "hanViet": [
+      "DỊCH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DỊCH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "翻",
+    "hanViet": [
+      "PHIÊN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHIÊN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "言",
+    "hanViet": [
+      "NGÔN"
+    ],
+    "onyomi": [
+      "ゲン",
+      "ゴン"
+    ],
+    "kunyomi": [
+      "い.う",
+      "こと"
+    ],
+    "meaningVi": "nói, lời nói",
+    "jlpt": "N5",
+    "strokeCount": 7,
+    "lookalikes": [
+      "話"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "録",
+    "hanViet": [
+      "LỤC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: LỤC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "混",
+    "hanViet": [
+      "HỖN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HỖN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "雑",
+    "hanViet": [
+      "TẠP"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TẠP",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "渋",
+    "hanViet": [
+      "SÁP"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: SÁP",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "滞",
+    "hanViet": [
+      "TRỆ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TRỆ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "衝",
+    "hanViet": [
+      "XUNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: XUNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "突",
+    "hanViet": [
+      "ĐỘT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐỘT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "被",
+    "hanViet": [
+      "BỊ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BỊ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "害",
+    "hanViet": [
+      "HẠI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HẠI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "件",
+    "hanViet": [
+      "KIỆN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KIỆN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "障",
+    "hanViet": [
+      "CHƯỚNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CHƯỚNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "修",
+    "hanViet": [
+      "TU"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TU",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "停",
+    "hanViet": [
+      "ĐÌNH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐÌNH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "電",
+    "hanViet": [
+      "ĐIỆN"
+    ],
+    "onyomi": [
+      "デン"
+    ],
+    "kunyomi": [],
+    "meaningVi": "điện",
+    "jlpt": "N5",
+    "strokeCount": 13,
+    "lookalikes": [
+      "雷"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "調",
+    "hanViet": [
+      "ĐIỀU"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐIỀU",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "子",
+    "hanViet": [
+      "TỬ"
+    ],
+    "onyomi": [
+      "シ",
+      "ス"
+    ],
+    "kunyomi": [
+      "こ",
+      "-こ"
+    ],
+    "meaningVi": "con, đứa trẻ",
+    "jlpt": "N5",
+    "strokeCount": 3,
+    "lookalikes": [
+      "了"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "緊",
+    "hanViet": [
+      "KHẨN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KHẨN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "奮",
+    "hanViet": [
+      "PHẤN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHẤN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "予",
+    "hanViet": [
+      "DỰ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DỰ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "専",
+    "hanViet": [
+      "CHUYÊN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CHUYÊN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "門",
+    "hanViet": [
+      "MÔN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: MÔN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "研",
+    "hanViet": [
+      "NGHIÊN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NGHIÊN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "究",
+    "hanViet": [
+      "CỨU"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CỨU",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "査",
+    "hanViet": [
+      "TRA"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TRA",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "原",
+    "hanViet": [
+      "NGUYÊN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NGUYÊN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "因",
+    "hanViet": [
+      "NHÂN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NHÂN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "果",
+    "hanViet": [
+      "QUẢ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: QUẢ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "解",
+    "hanViet": [
+      "GIẢI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: GIẢI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "確",
+    "hanViet": [
+      "XÁC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: XÁC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "認",
+    "hanViet": [
+      "NHẬN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NHẬN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "利",
+    "hanViet": [
+      "LỢI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: LỢI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "用",
+    "hanViet": [
+      "DỤNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DỤNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "明",
+    "hanViet": [
+      "MINH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: MINH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "関",
+    "hanViet": [
+      "QUAN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: QUAN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "係",
+    "hanViet": [
+      "HỆ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HỆ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "団",
+    "hanViet": [
+      "ĐOÀN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐOÀN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "選",
+    "hanViet": [
+      "TUYỂN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TUYỂN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "挙",
+    "hanViet": [
+      "CỬ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CỬ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "税",
+    "hanViet": [
+      "THUẾ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THUẾ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "責",
+    "hanViet": [
+      "TRÁCH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TRÁCH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "任",
+    "hanViet": [
+      "NHIỆM"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NHIỆM",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "書",
+    "hanViet": [
+      "THƯ"
+    ],
+    "onyomi": [
+      "ショ"
+    ],
+    "kunyomi": [
+      "か.く"
+    ],
+    "meaningVi": "viết, sách",
+    "jlpt": "N5",
+    "strokeCount": 10,
+    "lookalikes": [
+      "昼"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "題",
+    "hanViet": [
+      "ĐỀ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐỀ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "条",
+    "hanViet": [
+      "ĐIỀU"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐIỀU",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "締",
+    "hanViet": [
+      "ĐẾ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐẾ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "切",
+    "hanViet": [
+      "THIẾT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THIẾT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "期",
+    "hanViet": [
+      "KÌ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KÌ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "倍",
+    "hanViet": [
+      "BỘI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BỘI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "辺",
+    "hanViet": [
+      "BIÊN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BIÊN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "周",
+    "hanViet": [
+      "CHU"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CHU",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "穴",
+    "hanViet": [
+      "HUYỆT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HUYỆT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "列",
+    "hanViet": [
+      "LIỆT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: LIỆT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "幅",
+    "hanViet": [
+      "BỨC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BỨC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "範",
+    "hanViet": [
+      "PHẠM"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHẠM",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "囲",
+    "hanViet": [
+      "VI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: VI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "内",
+    "hanViet": [
+      "NỘI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NỘI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "容",
+    "hanViet": [
+      "DUNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DUNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "特",
+    "hanViet": [
+      "ĐẶC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐẶC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "徴",
+    "hanViet": [
+      "TRƯNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TRƯNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "普",
+    "hanViet": [
+      "PHỔ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHỔ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "偽",
+    "hanViet": [
+      "NGỤY"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NGỤY",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "籍",
+    "hanViet": [
+      "TỊCH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TỊCH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "東",
+    "hanViet": [
+      "ĐÔNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐÔNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "洋",
+    "hanViet": [
+      "DƯƠNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DƯƠNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "西",
+    "hanViet": [
+      "TÂY"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TÂY",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "際",
+    "hanViet": [
+      "TẾ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TẾ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "景",
+    "hanViet": [
+      "CẢNH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CẢNH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "色",
+    "hanViet": [
+      "SẮC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: SẮC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "宗",
+    "hanViet": [
+      "TÔNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TÔNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "愛",
+    "hanViet": [
+      "ÁI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ÁI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "届",
+    "hanViet": [
+      "GIỚI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: GIỚI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "抑",
+    "hanViet": [
+      "ỨC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ỨC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "比",
+    "hanViet": [
+      "BỈ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BỈ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "似",
+    "hanViet": [
+      "TỰ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TỰ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "分",
+    "hanViet": [
+      "PHÂN",
+      "PHẬN"
+    ],
+    "onyomi": [
+      "ブン",
+      "フン",
+      "ブ"
+    ],
+    "kunyomi": [
+      "わ.ける",
+      "わ.かる"
+    ],
+    "meaningVi": "phần, phút, hiểu",
+    "jlpt": "N5",
+    "strokeCount": 4,
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "増",
+    "hanViet": [
+      "TĂNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TĂNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "減",
+    "hanViet": [
+      "GIẢM"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: GIẢM",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "替",
+    "hanViet": [
+      "THẾ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THẾ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "返",
+    "hanViet": [
+      "PHẢN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHẢN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "譲",
+    "hanViet": [
+      "NHƯỢNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NHƯỢNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "助",
+    "hanViet": [
+      "TRỢ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TRỢ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "騙",
+    "hanViet": [
+      "BIỂN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BIỂN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "盗",
+    "hanViet": [
+      "ĐẠO"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐẠO",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "殺",
+    "hanViet": [
+      "SÁT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: SÁT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "隠",
+    "hanViet": [
+      "ẨN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ẨN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "埋",
+    "hanViet": [
+      "MAI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: MAI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "詰",
+    "hanViet": [
+      "CẬT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CẬT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "開",
+    "hanViet": [
+      "KHAI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KHAI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "閉",
+    "hanViet": [
+      "BẾ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BẾ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "飛",
+    "hanViet": [
+      "PHI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "振",
+    "hanViet": [
+      "CHẤN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CHẤN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "試",
+    "hanViet": [
+      "THÍ"
+    ],
+    "onyomi": [
+      "シ"
+    ],
+    "kunyomi": [
+      "こころ.みる",
+      "ため.す"
+    ],
+    "meaningVi": "thử nghiệm, kỳ thi",
+    "jlpt": "N4",
+    "strokeCount": 13,
+    "lookalikes": [
+      "話"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "繰",
+    "hanViet": [
+      "TẢO"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TẢO",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "慣",
+    "hanViet": [
+      "QUÁN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: QUÁN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "建",
+    "hanViet": [
+      "KIẾN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KIẾN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "育",
+    "hanViet": [
+      "DỤC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DỤC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "汚",
+    "hanViet": [
+      "Ô"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: Ô",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "壊",
+    "hanViet": [
+      "HOẠI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HOẠI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "割",
+    "hanViet": [
+      "CÁT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CÁT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "折",
+    "hanViet": [
+      "CHIẾT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CHIẾT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "破",
+    "hanViet": [
+      "PHÁ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHÁ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "曲",
+    "hanViet": [
+      "KHÚC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KHÚC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "揺",
+    "hanViet": [
+      "DAO"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DAO",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "濡",
+    "hanViet": [
+      "NHU"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NHU",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "悩",
+    "hanViet": [
+      "NÃO"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NÃO",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "慌",
+    "hanViet": [
+      "HOẢNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HOẢNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "覚",
+    "hanViet": [
+      "GIÁC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: GIÁC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "眠",
+    "hanViet": [
+      "MIÊN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: MIÊN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "祈",
+    "hanViet": [
+      "KÌ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KÌ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "祝",
+    "hanViet": [
+      "CHÚC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CHÚC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "濃",
+    "hanViet": [
+      "NỒNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NỒNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "薄",
+    "hanViet": [
+      "BẠC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BẠC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "酸",
+    "hanViet": [
+      "TOAN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TOAN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "臭",
+    "hanViet": [
+      "XÚ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: XÚ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "親",
+    "hanViet": [
+      "THÂN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THÂN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "詳",
+    "hanViet": [
+      "TƯỜNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TƯỜNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "細",
+    "hanViet": [
+      "TẾ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TẾ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "浅",
+    "hanViet": [
+      "THIỂN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THIỂN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "固",
+    "hanViet": [
+      "CỐ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CỐ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "硬",
+    "hanViet": [
+      "NGẠNH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NGẠNH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "蒸",
+    "hanViet": [
+      "CHƯNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CHƯNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "暑",
+    "hanViet": [
+      "THỬ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THỬ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "清",
+    "hanViet": [
+      "THANH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THANH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "潔",
+    "hanViet": [
+      "KHIẾT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KHIẾT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "新",
+    "hanViet": [
+      "TÂN"
+    ],
+    "onyomi": [
+      "シン"
+    ],
+    "kunyomi": [
+      "あたら.しい",
+      "あら.た"
+    ],
+    "meaningVi": "mới",
+    "jlpt": "N5",
+    "strokeCount": 13,
+    "lookalikes": [
+      "親"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "鮮",
+    "hanViet": [
+      "TIÊN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TIÊN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "豊",
+    "hanViet": [
+      "PHONG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHONG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "要",
+    "hanViet": [
+      "YẾU",
+      "YÊU"
+    ],
+    "onyomi": [
+      "ヨウ"
+    ],
+    "kunyomi": [
+      "い.る",
+      "かなめ"
+    ],
+    "meaningVi": "quan trọng, cần thiết",
+    "jlpt": "N3",
+    "strokeCount": 9,
+    "lookalikes": [
+      "西",
+      "安"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "必",
+    "hanViet": [
+      "TẤT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TẤT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "激",
+    "hanViet": [
+      "KÍCH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KÍCH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "適",
+    "hanViet": [
+      "THÍCH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THÍCH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "完",
+    "hanViet": [
+      "HOÀN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HOÀN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "全",
+    "hanViet": [
+      "TOÀN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TOÀN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "盛",
+    "hanViet": [
+      "THỊNH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THỊNH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "様",
+    "hanViet": [
+      "DẠNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DẠNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "可",
+    "hanViet": [
+      "KHẢ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KHẢ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "能",
+    "hanViet": [
+      "NĂNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NĂNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "基",
+    "hanViet": [
+      "CƠ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CƠ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "本",
+    "hanViet": [
+      "BẢN"
+    ],
+    "onyomi": [
+      "ホン"
+    ],
+    "kunyomi": [
+      "もと"
+    ],
+    "meaningVi": "sách, gốc, bản",
+    "jlpt": "N5",
+    "strokeCount": 5,
+    "lookalikes": [
+      "木",
+      "体"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "非",
+    "hanViet": [
+      "PHI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "常",
+    "hanViet": [
+      "THƯỜNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THƯỜNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "同",
+    "hanViet": [
+      "ĐỒNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐỒNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "時",
+    "hanViet": [
+      "THỜI"
+    ],
+    "onyomi": [
+      "ジ"
+    ],
+    "kunyomi": [
+      "とき",
+      "-どき"
+    ],
+    "meaningVi": "thời gian, giờ",
+    "jlpt": "N5",
+    "strokeCount": 10,
+    "lookalikes": [
+      "待",
+      "持"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "次",
+    "hanViet": [
+      "THỨ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THỨ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "案",
+    "hanViet": [
+      "ÁN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ÁN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "読",
+    "hanViet": [
+      "ĐỘC"
+    ],
+    "onyomi": [
+      "ドク",
+      "トク"
+    ],
+    "kunyomi": [
+      "よ.む"
+    ],
+    "meaningVi": "đọc",
+    "jlpt": "N5",
+    "strokeCount": 14,
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "演",
+    "hanViet": [
+      "DIỄN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DIỄN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "奏",
+    "hanViet": [
+      "TẤU"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TẤU",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "芸",
+    "hanViet": [
+      "NGHỆ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NGHỆ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "術",
+    "hanViet": [
+      "THUẬT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THUẬT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "検",
+    "hanViet": [
+      "KIỂM"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KIỂM",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "血",
+    "hanViet": [
+      "HUYẾT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HUYẾT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "液",
+    "hanViet": [
+      "DỊCH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DỊCH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "療",
+    "hanViet": [
+      "LIỆU"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: LIỆU",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "症",
+    "hanViet": [
+      "CHỨNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CHỨNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "状",
+    "hanViet": [
+      "TRẠNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TRẠNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "防",
+    "hanViet": [
+      "PHÒNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHÒNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "栄",
+    "hanViet": [
+      "VINH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: VINH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "養",
+    "hanViet": [
+      "DƯỠNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DƯỠNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "死",
+    "hanViet": [
+      "TỬ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TỬ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "命",
+    "hanViet": [
+      "MỆNH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: MỆNH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "一",
+    "hanViet": [
+      "NHẤT"
+    ],
+    "onyomi": [
+      "イチ",
+      "イツ"
+    ],
+    "kunyomi": [
+      "ひと",
+      "ひと.つ"
+    ],
+    "meaningVi": "một, số một",
+    "jlpt": "N5",
+    "strokeCount": 1,
+    "lookalikes": [
+      "二",
+      "十"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "誤",
+    "hanViet": [
+      "NGỘ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NGỘ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "態",
+    "hanViet": [
+      "THÁI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THÁI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "癖",
+    "hanViet": [
+      "PHÍCH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHÍCH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "儀",
+    "hanViet": [
+      "NGHI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NGHI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "句",
+    "hanViet": [
+      "CÚ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CÚ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "表",
+    "hanViet": [
+      "BIỂU"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BIỂU",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "禁",
+    "hanViet": [
+      "CẤM"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CẤM",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "止",
+    "hanViet": [
+      "CHỈ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CHỈ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "課",
+    "hanViet": [
+      "KHÓA"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KHÓA",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "例",
+    "hanViet": [
+      "LỆ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: LỆ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "来",
+    "hanViet": [
+      "LAI"
+    ],
+    "onyomi": [
+      "ライ",
+      "タイ"
+    ],
+    "kunyomi": [
+      "く.る",
+      "きた.る",
+      "き.たる"
+    ],
+    "meaningVi": "đến, tới",
+    "jlpt": "N5",
+    "strokeCount": 7,
+    "lookalikes": [
+      "未",
+      "米"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "機",
+    "hanViet": [
+      "CƠ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CƠ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "距",
+    "hanViet": [
+      "CỰ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CỰ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "提",
+    "hanViet": [
+      "ĐỀ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐỀ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "取",
+    "hanViet": [
+      "THỦ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THỦ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "識",
+    "hanViet": [
+      "THỨC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THỨC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "段",
+    "hanViet": [
+      "ĐOẠN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐOẠN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "代",
+    "hanViet": [
+      "ĐẠI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐẠI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "影",
+    "hanViet": [
+      "ẢNH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ẢNH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "響",
+    "hanViet": [
+      "HƯỞNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HƯỞNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "印",
+    "hanViet": [
+      "ẤN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ẤN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "象",
+    "hanViet": [
+      "TƯỢNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TƯỢNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "図",
+    "hanViet": [
+      "ĐỒ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐỒ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "共",
+    "hanViet": [
+      "CỘNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CỘNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "略",
+    "hanViet": [
+      "LƯỢC"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: LƯỢC",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "挑",
+    "hanViet": [
+      "THIÊU"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THIÊU",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "戦",
+    "hanViet": [
+      "CHIẾN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CHIẾN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "勇",
+    "hanViet": [
+      "DŨNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DŨNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "資",
+    "hanViet": [
+      "TƯ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TƯ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "請",
+    "hanViet": [
+      "THỈNH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THỈNH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "契",
+    "hanViet": [
+      "KHẾ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KHẾ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "証",
+    "hanViet": [
+      "CHỨNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CHỨNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "更",
+    "hanViet": [
+      "CANH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CANH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "保",
+    "hanViet": [
+      "BẢO"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BẢO",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "存",
+    "hanViet": [
+      "TỒN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TỒN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "護",
+    "hanViet": [
+      "HỘ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HỘ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "環",
+    "hanViet": [
+      "HOÀN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HOÀN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "境",
+    "hanViet": [
+      "CẢNH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CẢNH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "源",
+    "hanViet": [
+      "NGUYÊN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: NGUYÊN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "均",
+    "hanViet": [
+      "QUÂN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: QUÂN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "商",
+    "hanViet": [
+      "THƯƠNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THƯƠNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "売",
+    "hanViet": [
+      "MẠI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: MẠI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "型",
+    "hanViet": [
+      "HÌNH"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HÌNH",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "産",
+    "hanViet": [
+      "SẢN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: SẢN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "費",
+    "hanViet": [
+      "PHÍ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: PHÍ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "物",
+    "hanViet": [
+      "VẬT"
+    ],
+    "onyomi": [
+      "ブツ",
+      "モツ"
+    ],
+    "kunyomi": [
+      "もの"
+    ],
+    "meaningVi": "đồ vật, sự vật",
+    "jlpt": "N4",
+    "strokeCount": 8,
+    "lookalikes": [
+      "特"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "価",
+    "hanViet": [
+      "GIÁ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: GIÁ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "携",
+    "hanViet": [
+      "HUỀ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HUỀ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "帯",
+    "hanViet": [
+      "ĐỚI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐỚI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "現",
+    "hanViet": [
+      "HIỆN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HIỆN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "紀",
+    "hanViet": [
+      "KỶ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KỶ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "都",
+    "hanViet": [
+      "ĐÔ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: ĐÔ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "市",
+    "hanViet": [
+      "THỊ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THỊ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "和",
+    "hanViet": [
+      "HÒA"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HÒA",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "超",
+    "hanViet": [
+      "SIÊU"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: SIÊU",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "過",
+    "hanViet": [
+      "QUÁ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: QUÁ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "移",
+    "hanViet": [
+      "DI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "連",
+    "hanViet": [
+      "LIÊN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: LIÊN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "寄",
+    "hanViet": [
+      "KÍ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KÍ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "与",
+    "hanViet": [
+      "DỮ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DỮ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "向",
+    "hanViet": [
+      "HƯỚNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HƯỚNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "勧",
+    "hanViet": [
+      "KHUYẾN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: KHUYẾN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "薦",
+    "hanViet": [
+      "TIẾN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TIẾN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "守",
+    "hanViet": [
+      "THỦ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THỦ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "臨",
+    "hanViet": [
+      "LÂM"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: LÂM",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "信",
+    "hanViet": [
+      "TÍN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TÍN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "飽",
+    "hanViet": [
+      "BÃO"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BÃO",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "巻",
+    "hanViet": [
+      "QUYỂN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: QUYỂN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "済",
+    "hanViet": [
+      "TẾ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TẾ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "伸",
+    "hanViet": [
+      "THÂN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THÂN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "延",
+    "hanViet": [
+      "DUYÊN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DUYÊN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "載",
+    "hanViet": [
+      "TẢI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TẢI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "揃",
+    "hanViet": [
+      "TIỄN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TIỄN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "纏",
+    "hanViet": [
+      "TRIỀN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TRIỀN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "溶",
+    "hanViet": [
+      "DUNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DUNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "含",
+    "hanViet": [
+      "HÀM"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HÀM",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "抜",
+    "hanViet": [
+      "BẠT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: BẠT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "散",
+    "hanViet": [
+      "TÁN"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TÁN",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "差",
+    "hanViet": [
+      "SAI"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: SAI",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "炊",
+    "hanViet": [
+      "XUY"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: XUY",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "煮",
+    "hanViet": [
+      "CHỬ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: CHỬ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "炒",
+    "hanViet": [
+      "SAO"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: SAO",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "焼",
+    "hanViet": [
+      "THIÊU"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: THIÊU",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "揚",
+    "hanViet": [
+      "DƯƠNG"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: DƯƠNG",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "互",
+    "hanViet": [
+      "HỖ"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: HỖ",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "絶",
+    "hanViet": [
+      "TUYỆT"
+    ],
+    "onyomi": [],
+    "kunyomi": [],
+    "meaningVi": "Âm Hán Việt: TUYỆT",
+    "jlpt": "N3",
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "少",
+    "hanViet": [
+      "THIỂU",
+      "THIẾU"
+    ],
+    "onyomi": [
+      "ショウ"
+    ],
+    "kunyomi": [
+      "すく.ない",
+      "すこ.し"
+    ],
+    "meaningVi": "ít, một chút",
+    "jlpt": "N5",
+    "strokeCount": 4,
+    "lookalikes": [
+      "小"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "二",
+    "hanViet": [
+      "NHỊ"
+    ],
+    "onyomi": [
+      "ニ",
+      "ジ"
+    ],
+    "kunyomi": [
+      "ふた",
+      "ふた.つ"
+    ],
+    "meaningVi": "hai, số hai",
+    "jlpt": "N5",
+    "strokeCount": 2,
+    "lookalikes": [
+      "一",
+      "三"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "三",
+    "hanViet": [
+      "TAM"
+    ],
+    "onyomi": [
+      "サン"
+    ],
+    "kunyomi": [
+      "み",
+      "み.つ",
+      "みっ.つ"
+    ],
+    "meaningVi": "ba, số ba",
+    "jlpt": "N5",
+    "strokeCount": 3,
+    "lookalikes": [
+      "二"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "四",
+    "hanViet": [
+      "TỨ"
+    ],
+    "onyomi": [
+      "シ"
+    ],
+    "kunyomi": [
+      "よ",
+      "よ.つ",
+      "よっ.つ",
+      "よん"
+    ],
+    "meaningVi": "bốn, số bốn",
+    "jlpt": "N5",
+    "strokeCount": 5,
+    "lookalikes": [
+      "西",
+      "匹"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "五",
+    "hanViet": [
+      "NGŨ"
+    ],
+    "onyomi": [
+      "ゴ"
+    ],
+    "kunyomi": [
+      "いつ",
+      "いつ.つ"
+    ],
+    "meaningVi": "năm, số năm",
+    "jlpt": "N5",
+    "strokeCount": 4,
+    "lookalikes": [
+      "互"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "六",
+    "hanViet": [
+      "LỤC"
+    ],
+    "onyomi": [
+      "ロク"
+    ],
+    "kunyomi": [
+      "む",
+      "む.つ",
+      "むっ.つ",
+      "むい"
+    ],
+    "meaningVi": "sáu, số sáu",
+    "jlpt": "N5",
+    "strokeCount": 4,
+    "lookalikes": [
+      "穴",
+      "立"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "七",
+    "hanViet": [
+      "THẤT"
+    ],
+    "onyomi": [
+      "シチ"
+    ],
+    "kunyomi": [
+      "なな",
+      "なな.つ",
+      "なの"
+    ],
+    "meaningVi": "bảy, số bảy",
+    "jlpt": "N5",
+    "strokeCount": 2,
+    "lookalikes": [
+      "匕",
+      "九"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "八",
+    "hanViet": [
+      "BÁT"
+    ],
+    "onyomi": [
+      "ハチ"
+    ],
+    "kunyomi": [
+      "や",
+      "や.つ",
+      "やっ.つ",
+      "よう"
+    ],
+    "meaningVi": "tám, số tám",
+    "jlpt": "N5",
+    "strokeCount": 2,
+    "lookalikes": [
+      "人",
+      "入"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "九",
+    "hanViet": [
+      "CỬU"
+    ],
+    "onyomi": [
+      "キュウ",
+      "ク"
+    ],
+    "kunyomi": [
+      "ここの",
+      "ここの.つ"
+    ],
+    "meaningVi": "chín, số chín",
+    "jlpt": "N5",
+    "strokeCount": 2,
+    "lookalikes": [
+      "力",
+      "丸"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "十",
+    "hanViet": [
+      "THẬP"
+    ],
+    "onyomi": [
+      "ジュウ",
+      "ジッ"
+    ],
+    "kunyomi": [
+      "とお",
+      "と"
+    ],
+    "meaningVi": "mười, số mười",
+    "jlpt": "N5",
+    "strokeCount": 2,
+    "lookalikes": [
+      "千",
+      "土"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "百",
+    "hanViet": [
+      "BÁCH"
+    ],
+    "onyomi": [
+      "ヒャク"
+    ],
+    "kunyomi": [
+      "もも"
+    ],
+    "meaningVi": "trăm, số một trăm",
+    "jlpt": "N5",
+    "strokeCount": 6,
+    "lookalikes": [
+      "白"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "千",
+    "hanViet": [
+      "THIÊN"
+    ],
+    "onyomi": [
+      "セン"
+    ],
+    "kunyomi": [
+      "ち"
+    ],
+    "meaningVi": "nghìn, số một nghìn",
+    "jlpt": "N5",
+    "strokeCount": 3,
+    "lookalikes": [
+      "十",
+      "干"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "万",
+    "hanViet": [
+      "VẠN"
+    ],
+    "onyomi": [
+      "マン",
+      "バン"
+    ],
+    "kunyomi": [
+      "よろず"
+    ],
+    "meaningVi": "vạn, mười nghìn",
+    "jlpt": "N5",
+    "strokeCount": 3,
+    "lookalikes": [
+      "方"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "円",
+    "hanViet": [
+      "VIÊN"
+    ],
+    "onyomi": [
+      "エン"
+    ],
+    "kunyomi": [
+      "まる.い"
+    ],
+    "meaningVi": "đồng yên Nhật, hình tròn",
+    "jlpt": "N5",
+    "strokeCount": 4,
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "火",
+    "hanViet": [
+      "HỎA"
+    ],
+    "onyomi": [
+      "カ"
+    ],
+    "kunyomi": [
+      "ひ",
+      "-び",
+      "ほ-"
+    ],
+    "meaningVi": "lửa, thứ ba",
+    "jlpt": "N5",
+    "strokeCount": 4,
+    "lookalikes": [
+      "水"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "水",
+    "hanViet": [
+      "THỦY"
+    ],
+    "onyomi": [
+      "スイ"
+    ],
+    "kunyomi": [
+      "みず",
+      "みず-"
+    ],
+    "meaningVi": "nước, thứ tư",
+    "jlpt": "N5",
+    "strokeCount": 4,
+    "lookalikes": [
+      "氷",
+      "永"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "木",
+    "hanViet": [
+      "MỘC"
+    ],
+    "onyomi": [
+      "ボク",
+      "モク"
+    ],
+    "kunyomi": [
+      "き",
+      "こ-"
+    ],
+    "meaningVi": "cây, gỗ, thứ năm",
+    "jlpt": "N5",
+    "strokeCount": 4,
+    "lookalikes": [
+      "本",
+      "禾"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "土",
+    "hanViet": [
+      "THỔ"
+    ],
+    "onyomi": [
+      "ド",
+      "ト"
+    ],
+    "kunyomi": [
+      "つち"
+    ],
+    "meaningVi": "đất, thứ bảy",
+    "jlpt": "N5",
+    "strokeCount": 3,
+    "lookalikes": [
+      "士",
+      "十"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "校",
+    "hanViet": [
+      "HIỆU"
+    ],
+    "onyomi": [
+      "コウ"
+    ],
+    "kunyomi": [],
+    "meaningVi": "trường học",
+    "jlpt": "N5",
+    "strokeCount": 10,
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "今",
+    "hanViet": [
+      "KIM"
+    ],
+    "onyomi": [
+      "コン",
+      "キン"
+    ],
+    "kunyomi": [
+      "いま"
+    ],
+    "meaningVi": "bây giờ, nay",
+    "jlpt": "N5",
+    "strokeCount": 4,
+    "lookalikes": [
+      "令"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "語",
+    "hanViet": [
+      "NGỮ"
+    ],
+    "onyomi": [
+      "ゴ"
+    ],
+    "kunyomi": [
+      "かた.る",
+      "かた.らう"
+    ],
+    "meaningVi": "ngôn ngữ, kể chuyện",
+    "jlpt": "N5",
+    "strokeCount": 14,
+    "lookalikes": [
+      "話"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "何",
+    "hanViet": [
+      "HÀ"
+    ],
+    "onyomi": [
+      "カ"
+    ],
+    "kunyomi": [
+      "なに",
+      "なん"
+    ],
+    "meaningVi": "cái gì, mấy",
+    "jlpt": "N5",
+    "strokeCount": 7,
+    "lookalikes": [
+      "向",
+      "伺"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "父",
+    "hanViet": [
+      "PHỤ"
+    ],
+    "onyomi": [
+      "フ"
+    ],
+    "kunyomi": [
+      "ちち"
+    ],
+    "meaningVi": "cha, bố",
+    "jlpt": "N5",
+    "strokeCount": 4,
+    "lookalikes": [
+      "文"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "母",
+    "hanViet": [
+      "MẪU"
+    ],
+    "onyomi": [
+      "ボ"
+    ],
+    "kunyomi": [
+      "はは"
+    ],
+    "meaningVi": "mẹ",
+    "jlpt": "N5",
+    "strokeCount": 5,
+    "lookalikes": [
+      "毎"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "車",
+    "hanViet": [
+      "XA"
+    ],
+    "onyomi": [
+      "シャ"
+    ],
+    "kunyomi": [
+      "くるま"
+    ],
+    "meaningVi": "xe cộ, ô tô",
+    "jlpt": "N5",
+    "strokeCount": 7,
+    "lookalikes": [
+      "東"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "食",
+    "hanViet": [
+      "THỰC"
+    ],
+    "onyomi": [
+      "ショク",
+      "ジキ"
+    ],
+    "kunyomi": [
+      "た.べる",
+      "く.う"
+    ],
+    "meaningVi": "ăn, món ăn",
+    "jlpt": "N5",
+    "strokeCount": 9,
+    "lookalikes": [
+      "飲"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "飲",
+    "hanViet": [
+      "ẨM"
+    ],
+    "onyomi": [
+      "イン"
+    ],
+    "kunyomi": [
+      "の.む"
+    ],
+    "meaningVi": "uống",
+    "jlpt": "N5",
+    "strokeCount": 12,
+    "lookalikes": [
+      "食"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "聞",
+    "hanViet": [
+      "VĂN",
+      "VẤN"
+    ],
+    "onyomi": [
+      "ブン",
+      "モン"
+    ],
+    "kunyomi": [
+      "き.く",
+      "き.こえる"
+    ],
+    "meaningVi": "nghe, hỏi",
+    "jlpt": "N5",
+    "strokeCount": 14,
+    "lookalikes": [
+      "問",
+      "間"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "買",
+    "hanViet": [
+      "MÃI"
+    ],
+    "onyomi": [
+      "バイ"
+    ],
+    "kunyomi": [
+      "か.う"
+    ],
+    "meaningVi": "mua",
+    "jlpt": "N5",
+    "strokeCount": 12,
+    "lookalikes": [
+      "売"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "入",
+    "hanViet": [
+      "NHẬP"
+    ],
+    "onyomi": [
+      "ニュウ"
+    ],
+    "kunyomi": [
+      "はい.る",
+      "い.る",
+      "い.れる"
+    ],
+    "meaningVi": "vào, cho vào",
+    "jlpt": "N5",
+    "strokeCount": 2,
+    "lookalikes": [
+      "人",
+      "八"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "古",
+    "hanViet": [
+      "CỔ"
+    ],
+    "onyomi": [
+      "コ"
+    ],
+    "kunyomi": [
+      "ふる.い"
+    ],
+    "meaningVi": "cũ",
+    "jlpt": "N5",
+    "strokeCount": 5,
+    "lookalikes": [
+      "舌"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "耳",
+    "hanViet": [
+      "NHĨ"
+    ],
+    "onyomi": [
+      "ジ"
+    ],
+    "kunyomi": [
+      "みみ"
+    ],
+    "meaningVi": "tai, thính giác",
+    "jlpt": "N5",
+    "strokeCount": 6,
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "口",
+    "hanViet": [
+      "KHẨU"
+    ],
+    "onyomi": [
+      "コウ",
+      "ク"
+    ],
+    "kunyomi": [
+      "くち"
+    ],
+    "meaningVi": "miệng, cửa",
+    "jlpt": "N5",
+    "strokeCount": 3,
+    "lookalikes": [
+      "日",
+      "品"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "社",
+    "hanViet": [
+      "XÃ"
+    ],
+    "onyomi": [
+      "シャ"
+    ],
+    "kunyomi": [
+      "やしろ"
+    ],
+    "meaningVi": "công ty, đền thần",
+    "jlpt": "N5",
+    "strokeCount": 7,
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "店",
+    "hanViet": [
+      "ĐIẾM"
+    ],
+    "onyomi": [
+      "テン"
+    ],
+    "kunyomi": [
+      "みせ",
+      "たな"
+    ],
+    "meaningVi": "cửa tiệm, cửa hàng",
+    "jlpt": "N5",
+    "strokeCount": 8,
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "駅",
+    "hanViet": [
+      "DỊCH"
+    ],
+    "onyomi": [
+      "エキ"
+    ],
+    "kunyomi": [],
+    "meaningVi": "nhà ga",
+    "jlpt": "N5",
+    "strokeCount": 14,
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "天",
+    "hanViet": [
+      "THIÊN"
+    ],
+    "onyomi": [
+      "テン"
+    ],
+    "kunyomi": [
+      "あまつ",
+      "あめ",
+      "あま"
+    ],
+    "meaningVi": "trời, bầu trời",
+    "jlpt": "N5",
+    "strokeCount": 4,
+    "lookalikes": [
+      "夫",
+      "矢"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "白",
+    "hanViet": [
+      "BẠCH"
+    ],
+    "onyomi": [
+      "ハク",
+      "ビャク"
+    ],
+    "kunyomi": [
+      "しろ",
+      "しろ.い"
+    ],
+    "meaningVi": "màu trắng",
+    "jlpt": "N5",
+    "strokeCount": 5,
+    "lookalikes": [
+      "百",
+      "日"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "黒",
+    "hanViet": [
+      "HẮC"
+    ],
+    "onyomi": [
+      "コク"
+    ],
+    "kunyomi": [
+      "くろ",
+      "くろ.い"
+    ],
+    "meaningVi": "màu đen",
+    "jlpt": "N5",
+    "strokeCount": 11,
+    "lookalikes": [
+      "里"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "赤",
+    "hanViet": [
+      "XÍCH"
+    ],
+    "onyomi": [
+      "セキ",
+      "シャク"
+    ],
+    "kunyomi": [
+      "あか",
+      "あか.い"
+    ],
+    "meaningVi": "màu đỏ",
+    "jlpt": "N5",
+    "strokeCount": 7,
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "青",
+    "hanViet": [
+      "THANH"
+    ],
+    "onyomi": [
+      "セイ",
+      "ショウ"
+    ],
+    "kunyomi": [
+      "あお",
+      "あお.い"
+    ],
+    "meaningVi": "màu xanh lam",
+    "jlpt": "N5",
+    "strokeCount": 8,
+    "lookalikes": [],
+    "radicals": []
+  },
+  {
+    "char": "荷",
+    "hanViet": [
+      "HÀ"
+    ],
+    "onyomi": [
+      "カ"
+    ],
+    "kunyomi": [
+      "に"
+    ],
+    "meaningVi": "hành lý, vác",
+    "jlpt": "N3",
+    "strokeCount": 10,
+    "lookalikes": [
+      "何"
+    ],
+    "radicals": []
+  },
+  {
+    "char": "験",
+    "hanViet": [
+      "NGHIỆM"
+    ],
+    "onyomi": [
+      "ケン",
+      "ゲン"
+    ],
+    "kunyomi": [
+      "ため.す"
+    ],
+    "meaningVi": "thí nghiệm, trải nghiệm",
+    "jlpt": "N4",
+    "strokeCount": 18,
+    "lookalikes": [
+      "険"
+    ],
+    "radicals": []
+  }
+]
