@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildReviewQueue, type StudyCard } from './studySession.js';
+import { buildReviewQueue, applyReviewLogsToCards, type StudyCard } from './studySession.js';
 import { createNewCard } from './scheduler.js';
 
 describe('buildReviewQueue', () => {
@@ -113,4 +113,41 @@ describe('buildReviewQueue', () => {
     expect(sessionMay4.queue.length).toBe(1);
     expect(sessionMay4.queue[0]?.word?.surface).toBe('word_due_later');
   });
+
+  it('reconstructs card FSRS state from reviewLogs sequence', () => {
+    const freshCard: StudyCard = {
+      id: 'c_word_w1',
+      type: 'word',
+      refId: 'w1',
+      word: { ...dummyWord, id: 'w1', surface: '預かる' },
+      fsrsCard: createNewCard(),
+      isNew: true,
+      isDue: false
+    };
+
+    const reviewDate1 = new Date('2026-05-01T10:00:00Z');
+    const reviewDate2 = new Date('2026-05-02T10:00:00Z');
+
+    const logs = [
+      {
+        cardId: 'c_word_w1',
+        rating: 3, // Good
+        reviewedAt: reviewDate1
+      },
+      {
+        cardId: 'c_word_w1',
+        rating: 3, // Good
+        reviewedAt: reviewDate2
+      }
+    ];
+
+    const [updated] = applyReviewLogsToCards([freshCard], logs, new Date('2026-05-02T12:00:00Z'));
+    expect(updated).toBeDefined();
+    expect(updated!.isNew).toBe(false);
+    expect(updated!.fsrsCard.reps).toBe(2);
+    expect(updated!.fsrsCard.last_review?.toISOString()).toBe(reviewDate2.toISOString());
+    // After 2 Good ratings, due date is in the future (> May 2)
+    expect(updated!.fsrsCard.due.getTime()).toBeGreaterThan(reviewDate2.getTime());
+  });
 });
+

@@ -41,7 +41,8 @@ import {
   getPendingSyncCount,
   enqueueOfflineReview,
   syncFoldersAndDecks,
-  syncUserStudyStats
+  syncUserStudyStats,
+  loadAndApplyFirestoreReviewLogs
 } from './services/firestoreSync';
 import { DataLicensesModal } from './components/DataLicensesModal';
 import { FlashcardStudyView } from './components/FlashcardStudyView';
@@ -249,6 +250,25 @@ export function App() {
               );
             }
           } catch {}
+
+          // Automatically load and apply Firestore reviewLogs to reconstruct FSRS state
+          try {
+            const { updatedCards, logsCount } = await loadAndApplyFirestoreReviewLogs(
+              currentUser.uid,
+              allCards
+            );
+            if (logsCount > 0) {
+              setAllCards(updatedCards);
+              try {
+                localStorage.setItem('raku_cards', JSON.stringify(updatedCards));
+              } catch {}
+              console.log(
+                `✓ Đã khôi phục thành công trạng thái FSRS từ ${logsCount} lượt reviewLogs trên Firestore.`
+              );
+            }
+          } catch (err) {
+            console.warn('Không thể nạp reviewLogs khi đăng nhập:', err);
+          }
         }
       }
     });
@@ -518,34 +538,21 @@ export function App() {
     setIsPulling(true);
     setPullResult(null);
     try {
+      // 1. Tải và tái hiện toàn bộ tiến độ FSRS từ reviewLogs trên Firestore
+      const { updatedCards, logsCount } = await loadAndApplyFirestoreReviewLogs(
+        user.uid,
+        allCards
+      );
+      if (logsCount > 0) {
+        setAllCards(updatedCards);
+        try {
+          localStorage.setItem('raku_cards', JSON.stringify(updatedCards));
+        } catch {}
+      }
+
+      // 2. Tải decks, folders và thẻ cards
       const data = await pullDataFromFirestore(user.uid);
       const cardCount = Object.keys(data.cards).length;
-
-      if (cardCount > 0) {
-        setAllCards((prevCards) => {
-          const updated = prevCards.map((c) => {
-            const remote = data.cards[c.id];
-            if (remote) {
-              return {
-                ...c,
-                fsrsCard: {
-                  ...c.fsrsCard,
-                  due: remote.due ? new Date(remote.due) : c.fsrsCard.due,
-                  stability: remote.stability ?? c.fsrsCard.stability,
-                  difficulty: remote.difficulty ?? c.fsrsCard.difficulty,
-                  state: remote.state ?? c.fsrsCard.state,
-                  reps: remote.reps ?? c.fsrsCard.reps
-                }
-              };
-            }
-            return c;
-          });
-          try {
-            localStorage.setItem('raku_cards', JSON.stringify(updated));
-          } catch {}
-          return updated;
-        });
-      }
 
       if (data.folders) {
         setFolders(data.folders);
@@ -562,7 +569,7 @@ export function App() {
       }
 
       setPullResult(
-        `✓ Đã đồng bộ thành công! Tìm thấy ${cardCount} thẻ đã ôn và ${data.decks?.length || 0} decks từ Firestore.`
+        `✓ Đã đồng bộ thành công! Đã nạp ${logsCount} lượt reviewLogs, tái lập chính xác thuật toán FSRS cho ${cardCount} thẻ và cập nhật ${data.decks?.length || 0} decks từ Firestore.`
       );
     } catch (err: any) {
       setPullResult(`❌ Lỗi khi tải dữ liệu: ${err.message || err}`);

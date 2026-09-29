@@ -13,6 +13,8 @@ import {
   type Folder,
   type Deck,
   type UserStudyStats,
+  type CardReviewLog,
+  applyReviewLogsToCards,
   SEED_KANJI,
   SEED_WORDS,
   SEED_GRAMMAR,
@@ -320,12 +322,62 @@ export async function seedAllN3DataToFirestore(
 }
 
 /**
- * Tải toàn bộ tiến độ thẻ và cấu trúc Deck từ Firestore về máy
+ * Tải danh sách reviewLogs từ Firestore và tái hiện lại trạng thái thẻ qua FSRS
+ */
+export async function loadAndApplyFirestoreReviewLogs(
+  userId: string,
+  currentCards: StudyCard[]
+): Promise<{ updatedCards: StudyCard[]; logsCount: number }> {
+  try {
+    const logsSnapshot = await getDocs(collection(db, 'users', userId, 'reviewLogs'));
+    const reviewLogs: CardReviewLog[] = [];
+
+    logsSnapshot.forEach((d) => {
+      const data = d.data();
+      if (!data.cardId) return;
+
+      let reviewedAt = new Date();
+      if (data.reviewedAt) {
+        if (typeof data.reviewedAt.toDate === 'function') {
+          reviewedAt = data.reviewedAt.toDate();
+        } else if (typeof data.reviewedAt === 'string') {
+          reviewedAt = new Date(data.reviewedAt);
+        } else if (data.reviewedAt.seconds) {
+          reviewedAt = new Date(data.reviewedAt.seconds * 1000);
+        }
+      }
+
+      reviewLogs.push({
+        cardId: String(data.cardId),
+        rating: Number(data.rating || 3),
+        state: data.state,
+        reviewedAt
+      });
+    });
+
+    if (reviewLogs.length === 0) {
+      return { updatedCards: currentCards, logsCount: 0 };
+    }
+
+    const updatedCards = applyReviewLogsToCards(currentCards, reviewLogs);
+    console.log(
+      `✓ Đã áp dụng thành công ${reviewLogs.length} reviewLogs từ Firestore vào thuật toán FSRS`
+    );
+    return { updatedCards, logsCount: reviewLogs.length };
+  } catch (err) {
+    console.warn('Lỗi khi nạp reviewLogs từ Firestore:', err);
+    return { updatedCards: currentCards, logsCount: 0 };
+  }
+}
+
+/**
+ * Tải toàn bộ tiến độ thẻ, nhật ký reviewLogs và cấu trúc Deck từ Firestore về máy
  */
 export async function pullDataFromFirestore(userId: string): Promise<{
   cards: Record<string, any>;
   folders?: Folder[];
   decks?: Deck[];
+  reviewLogsCount: number;
 }> {
   const cardsMap: Record<string, any> = {};
 
@@ -350,14 +402,18 @@ export async function pullDataFromFirestore(userId: string): Promise<{
       decks.push(d.data() as Deck);
     });
 
+    // 4. Đếm số lượng reviewLogs
+    const logsSnapshot = await getDocs(collection(db, 'users', userId, 'reviewLogs'));
+
     return {
       cards: cardsMap,
       folders: folders.length > 0 ? folders : undefined,
-      decks: decks.length > 0 ? decks : undefined
+      decks: decks.length > 0 ? decks : undefined,
+      reviewLogsCount: logsSnapshot.size
     };
   } catch (err) {
     console.warn('Lỗi khi tải dữ liệu từ Firestore:', err);
-    return { cards: {} };
+    return { cards: {}, reviewLogsCount: 0 };
   }
 }
 

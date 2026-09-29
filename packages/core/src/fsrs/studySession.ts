@@ -85,4 +85,79 @@ export function buildReviewQueue(
   };
 }
 
+export interface CardReviewLog {
+  cardId: string;
+  rating: number; // 1 | 2 | 3 | 4
+  reviewedAt: Date;
+  state?: number;
+}
+
+/**
+ * Replays a chronological sequence of review logs through the FSRS algorithm
+ * to reconstruct the exact card state (due date, stability, difficulty, reps).
+ */
+export function applyReviewLogsToCards(
+  cards: StudyCard[],
+  logs: CardReviewLog[],
+  now: Date = new Date()
+): StudyCard[] {
+  if (!logs || logs.length === 0) return cards;
+
+  // Group logs by normalized cardId
+  const logsByCard = new Map<string, CardReviewLog[]>();
+  for (const log of logs) {
+    if (!log.cardId) continue;
+    const cleanId = String(log.cardId).trim();
+    const noPrefix = cleanId.replace(/^c_/, '');
+
+    const list1 = logsByCard.get(cleanId) || [];
+    list1.push(log);
+    logsByCard.set(cleanId, list1);
+
+    if (noPrefix !== cleanId) {
+      const list2 = logsByCard.get(noPrefix) || [];
+      list2.push(log);
+      logsByCard.set(noPrefix, list2);
+    }
+  }
+
+  // Sort each card's logs chronologically
+  for (const [, list] of logsByCard) {
+    list.sort((a, b) => a.reviewedAt.getTime() - b.reviewedAt.getTime());
+  }
+
+  return cards.map((c) => {
+    const cardLogs =
+      logsByCard.get(c.id) ||
+      logsByCard.get(c.id.replace(/^c_/, '')) ||
+      logsByCard.get(c.refId);
+
+    if (!cardLogs || cardLogs.length === 0) {
+      return c;
+    }
+
+    const firstLog = cardLogs[0]!;
+
+    // Start with a fresh card initialized at first review time
+    let fsrs = createNewCard(firstLog.reviewedAt);
+
+    // Replay each review through FSRS algorithm
+    for (const log of cardLogs) {
+      const grade = (log.rating >= 1 && log.rating <= 4 ? log.rating : 3) as 1 | 2 | 3 | 4;
+      const record = applyGrade(fsrs, grade, log.reviewedAt);
+      fsrs = record.card;
+    }
+
+    const isDue = fsrs.due.getTime() <= now.getTime();
+
+    return {
+      ...c,
+      fsrsCard: fsrs,
+      isNew: false,
+      isDue
+    };
+  });
+}
+
 export { previewCardGrades, applyGrade, createNewCard, Rating };
+
