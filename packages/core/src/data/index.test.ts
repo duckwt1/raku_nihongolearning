@@ -3,6 +3,7 @@ import {
   SEED_KANJI,
   SEED_WORDS,
   SEED_SENTENCES,
+  SEED_GRAMMAR,
   KANJI_BY_CHAR,
   WORDS_BY_ID,
   getWordsByKanji
@@ -54,5 +55,20 @@ describe('Seed Data Integrity', () => {
     const sentence = SEED_SENTENCES.find((s) => s.id === sentenceId);
     expect(sentence).toBeDefined();
     expect(sentence?.tokens.length).toBeGreaterThan(0);
+  });
+
+  it('loads and validates all 97 N3 grammar patterns', () => {
+    expect(SEED_GRAMMAR.length).toBe(97);
+    for (const g of SEED_GRAMMAR) {
+      expect(g.id).toBeDefined();
+      expect(g.title.length).toBeGreaterThan(0);
+      expect(g.explanationVi.length).toBeGreaterThan(0);
+      expect(g.jlpt).toBe('N3');
+      expect(g.examples.length).toBeGreaterThan(0);
+      for (const ex of g.examples) {
+        expect(ex.jp.length).toBeGreaterThan(0);
+        expect(ex.vi.length).toBeGreaterThan(0);
+      }
+    }
   });
 });

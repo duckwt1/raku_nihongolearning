@@ -1,82 +1,1246 @@
 [
   {
-    "id": "g_te_kara",
-    "title": "〜てから (Sau khi làm V1 thì làm V2)",
-    "explanationVi": "Diễn tả hành động V2 được thực hiện ngay sau khi hành động V1 kết thúc.",
-    "jlpt": "N5",
+    "id": "g_n3_01_0",
+    "title": "うちに (Trong lúc / Trong khi)",
+    "explanationVi": "Diễn tả hành động tranh thủ làm gì trước khi trạng thái thay đổi, hoặc trong khi đang diễn ra hành động thì có sự biến đổi tự nhiên.",
     "examples": [
       {
-        "jp": "ご飯を食べてから、薬を飲みます。",
-        "vi": "Sau khi ăn cơm xong, tôi sẽ uống thuốc."
+        "jp": "毎日話しているうちに、好きになりました。",
+        "vi": "Ví dụ minh họa cho mẫu câu うちに"
       },
       {
-        "jp": "手を洗ってから、料理を作ります。",
-        "vi": "Sau khi rửa tay, tôi sẽ nấu ăn."
+        "jp": "熱いうちに食べてください。",
+        "vi": "Ví dụ minh họa cho mẫu câu うちに"
       }
-    ]
+    ],
+    "jlpt": "N3"
   },
   {
-    "id": "g_mae_ni",
-    "title": "〜まえに (Trước khi làm V)",
-    "explanationVi": "Diễn tả một hành động xảy ra trước một hành động khác. Động từ trước まえに luôn ở dạng từ điển (V-ru).",
-    "jlpt": "N5",
+    "id": "g_n3_02_1",
+    "title": "間・間に (Trong suốt khoảng thời gian / Trong khi)",
+    "explanationVi": "「間」biểu thị trạng thái diễn ra liên tục trong suốt khoảng thời gian;「間に」biểu thị một hành động xảy ra tại một thời điểm nào đó trong khoảng thời gian đó.",
     "examples": [
       {
-        "jp": "寝るまえに、本を読みます。",
-        "vi": "Trước khi đi ngủ, tôi đọc sách."
+        "jp": "留守の間にどろぼうが入った",
+        "vi": "Ví dụ minh họa cho mẫu câu 間・間に"
       },
       {
-        "jp": "出かけるまえに、天気を調べました。",
-        "vi": "Trước khi ra ngoài, tôi đã tra cứu thời tiết."
+        "jp": "彼は会議の間ずっと眠りをしていた。",
+        "vi": "Ví dụ minh họa cho mẫu câu 間・間に"
       }
-    ]
+    ],
+    "jlpt": "N3"
   },
   {
-    "id": "g_hou_ga_ii",
-    "title": "〜ほうがいい (Nên / Không nên làm gì)",
-    "explanationVi": "Dùng để đưa ra lời khuyên cho đối phương. Khuyên nên làm dùng V-ta + ほうがいい, khuyên không nên dùng V-nai + ほうがいい.",
-    "jlpt": "N4",
+    "id": "g_n3_03_2",
+    "title": "最中に (Đúng lúc đang...)",
+    "explanationVi": "Diễn tả một hành động đang diễn ra sôi nổi nhất thì có một sự việc bất ngờ khác chen ngang.",
     "examples": [
       {
-        "jp": "病院へ行ったほうがいいですよ。",
-        "vi": "Bạn nên đi đến bệnh viện đi."
-      },
-      {
-        "jp": "夜遅くにお菓子を食べないほうがいいです。",
-        "vi": "Không nên ăn bánh kẹo vào ban đêm muộn."
+        "jp": "面接の最中におなかが鳴ってしまった。",
+        "vi": "Ví dụ minh họa cho mẫu câu 最中に"
       }
-    ]
+    ],
+    "jlpt": "N3"
   },
   {
-    "id": "g_nakereba_naranai",
-    "title": "〜なければならない (Phải làm gì)",
-    "explanationVi": "Biểu thị nghĩa vụ, bổn phận bắt buộc phải thực hiện một hành động.",
-    "jlpt": "N4",
+    "id": "g_n3_04_3",
+    "title": "〜てからでないと・〜てからでなければ (Phải sau khi làm A thì mới làm B)",
+    "explanationVi": "Diễn tả ý nếu chưa hoàn thành hành động A thì tuyệt đối không thể hoặc chưa thể thực hiện hành động B.",
     "examples": [
       {
-        "jp": "明日までに宿題を出さなければなりません。",
-        "vi": "Tôi phải nộp bài tập về nhà trước ngày mai."
-      },
-      {
-        "jp": "毎日漢字を練習しなければなりません。",
-        "vi": "Mỗi ngày tôi phải luyện tập chữ Hán."
+        "jp": "娘を渡してもらってからでないと、お金は渡さない！",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜てからでないと・〜てからでなければ"
       }
-    ]
+    ],
+    "jlpt": "N3"
   },
   {
-    "id": "g_you_ni_suru",
-    "title": "〜ようにする (Cố gắng làm / duy trì thói quen)",
-    "explanationVi": "Thể hiện sự nỗ lực, cố gắng hình thành hoặc duy trì một thói quen có lợi.",
-    "jlpt": "N3",
+    "id": "g_n3_05_4",
+    "title": "〜ところ (Đúng lúc, đúng thời điểm)",
+    "explanationVi": "Biểu thị các giai đoạn của một hành động: V-ru ところ (sắp sửa), V-teiru ところ (đang diễn ra), V-ta ところ (vừa mới xong).",
     "examples": [
       {
-        "jp": "健康のために、毎日野菜を食べるようにしています。",
-        "vi": "Để giữ gìn sức khỏe, tôi cố gắng ăn rau mỗi ngày."
+        "jp": "部長はお客さんと話をしているところに声をかけて、あとで注意されてしまった。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜ところ"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_06_5",
+    "title": "〜とおりに・〜とおりだ (Theo đúng như / Làm đúng theo)",
+    "explanationVi": "Diễn tả hành động được thực hiện chính xác theo chỉ dẫn, kế hoạch, hoặc hiện tượng xảy ra đúng như dự báo.",
+    "examples": [
+      {
+        "jp": "天気情報の通りに、今日はとても暑い。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜とおりに・〜とおりだ"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_07_6",
+    "title": "〜によって (Do / Bởi / Tùy theo / Bằng cách)",
+    "explanationVi": "Biểu thị nguyên nhân lý do, phương tiện cách thức, chủ thể của hành động bị động, hoặc sự khác biệt tùy theo từng đối tượng.",
+    "examples": [
+      {
+        "jp": "日本は地震により大きな被害を受けました。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜によって"
       },
       {
-        "jp": "寝る前にはスマホを見ないようにしています。",
-        "vi": "Trước khi ngủ, tôi cố gắng không xem điện thoại."
+        "jp": "アメリカ大陸はコロンブスによって発見されました",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜によって"
+      },
+      {
+        "jp": "日本は選挙によって首相を決める。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜によって"
+      },
+      {
+        "jp": "行くかどうかは、明日の天気によって決めるつもりだ。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜によって"
+      },
+      {
+        "jp": "人によって考え方が違う。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜によって"
       }
-    ]
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_08_7",
+    "title": "〜たびに (Cứ mỗi lần... lại...)",
+    "explanationVi": "Diễn tả việc mỗi khi có một sự việc A xảy ra thì sự việc B cũng luôn luôn diễn ra kèm theo.",
+    "examples": [
+      {
+        "jp": "父は出張のたびにお土産を買ってきてくれる。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜たびに"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_09_8",
+    "title": "〜ば〜ほど (Càng... càng...)",
+    "explanationVi": "Diễn tả sự tăng tiến tỷ lệ thuận: khi mức độ của vế trước tăng lên thì mức độ của vế sau cũng thay đổi theo tương ứng.",
+    "examples": [
+      {
+        "jp": "言葉を勉強すればするほどその国への理解も深まると言われている。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜ば〜ほど"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_10_9",
+    "title": "ついでに〜 (Nhân tiện / Tiện thể)",
+    "explanationVi": "Khi đang thực hiện một hành vi chính A, tiện thể thực hiện thêm một hành vi phụ B có cùng mục đích hoặc địa điểm.",
+    "examples": [
+      {
+        "jp": "買い物のついでに、前から一度行ってみたかったカフェに寄った。",
+        "vi": "Ví dụ minh họa cho mẫu câu ついでに〜"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_11_10",
+    "title": "ぐらい (Cỡ như / Ít nhất thì)",
+    "explanationVi": "Đưa ra mức độ tối thiểu, hoặc biểu thị sự xem nhẹ, hoặc yêu cầu tối thiểu.",
+    "examples": [
+      {
+        "jp": "日曜日ぐらい休ませてください",
+        "vi": "Ví dụ minh họa cho mẫu câu ぐらい"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_12_11",
+    "title": "くらい・ほど (Đến mức / Như là)",
+    "explanationVi": "Dùng để so sánh hoặc ví von mức độ nghiêm trọng, mức độ cao của một sự việc trạng thái.",
+    "examples": [
+      {
+        "jp": "口から火が出るくらい辛いです。",
+        "vi": "Ví dụ minh họa cho mẫu câu くらい・ほど"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_13_12",
+    "title": "〜くらい〜はない\n〜ほど〜はない (Không có ai/gì bằng... (So sánh nhất))",
+    "explanationVi": "Dùng để nhấn mạnh rằng không có đối tượng nào đạt mức độ cao như đối tượng được nói tới.",
+    "examples": [
+      {
+        "jp": "彼女ほどきれいな女の子がいない。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜くらい〜はない\n〜ほど〜はない"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_14_13",
+    "title": "くらいなら (Thà... còn hơn là...)",
+    "explanationVi": "So sánh hai sự việc tiêu cực, thà chấp nhận cái sau còn hơn phải làm cái trước.",
+    "examples": [
+      {
+        "jp": "あいつに助けてもらうくらいなら、死んだほうがました。",
+        "vi": "Ví dụ minh họa cho mẫu câu くらいなら"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_15_14",
+    "title": "〜にかぎる (Tốt nhất là nên...)",
+    "explanationVi": "Đưa ra phán đoán chủ quan của người nói rằng không có lựa chọn nào tuyệt vời hơn lựa chọn này.",
+    "examples": [
+      {
+        "jp": "やっぱり映画は映画館で見るに限る",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜にかぎる"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_16_15",
+    "title": "〜に対して (Đối với / Trái ngược với)",
+    "explanationVi": "Biểu thị đối tượng hướng tới của hành động, thái độ; hoặc dùng để so sánh đối lập giữa hai sự việc.",
+    "examples": [
+      {
+        "jp": "お店の人はお客さんに対して親切です。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜に対して"
+      },
+      {
+        "jp": "大阪は大雨なのに対して、京都は晴れている。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜に対して"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_17_16",
+    "title": "〜にとって (Đối với (lập trường, quan điểm))",
+    "explanationVi": "Đứng trên lập trường của một người hoặc đối tượng để đưa ra đánh giá, phán đoán.",
+    "examples": [
+      {
+        "jp": "このテストは学生にとって難しいですが、先生にとって簡単です。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜にとって"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_18_17",
+    "title": "〜反面 (Mặt khác / Trái lại)",
+    "explanationVi": "Diễn tả hai mặt tích cực và tiêu cực cùng tồn tại song song trong một vấn đề hay sự vật.",
+    "examples": [
+      {
+        "jp": "都会の生活は面白いことが多い反面、ストレスも多い",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜反面"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_19_18",
+    "title": "〜一方で (Một mặt thì... mặt khác thì...)",
+    "explanationVi": "Diễn tả hai phương diện hoặc hai hành động khác nhau cùng đồng thời diễn ra.",
+    "examples": [
+      {
+        "jp": "会議では自分の意見を言う一方で、他の人の話もよく聞いてください。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜一方で"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_20_19",
+    "title": "〜というより (Đúng hơn là...)",
+    "explanationVi": "Dùng để đính chính hoặc đưa ra nhận xét chính xác hơn so với nhận xét ban đầu.",
+    "examples": [
+      {
+        "jp": "みちこは歩くのが速い。歩くというより走るという感じだ。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜というより"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_21_20",
+    "title": "〜かわりに (Thay vì / Bù lại)",
+    "explanationVi": "Diễn tả việc làm hành động B thay cho hành động A, hoặc được đền bù thỏa đáng cho một sự việc khác.",
+    "examples": [
+      {
+        "jp": "車で来たので、ビールのかわりにジュースをください。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜かわりに"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_22_21",
+    "title": "〜ため (Vì (nguyên nhân) / Để (mục đích))",
+    "explanationVi": "Dùng trong văn viết hoặc trang trọng để chỉ nguyên nhân khách quan, hoặc chỉ mục đích cần đạt tới.",
+    "examples": [
+      {
+        "jp": "合格するために、一所懸命勉強しています。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜ため"
+      },
+      {
+        "jp": "大雨のため、試合は中止された。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜ため"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_23_22",
+    "title": "〜から・〜ことから (Do bởi / Xuất phát từ căn cứ...)",
+    "explanationVi": "Biểu thị nguồn gốc, căn cứ hoặc nguyên cớ dẫn đến một phán đoán hay tên gọi.",
+    "examples": [
+      {
+        "jp": "顔がよく似ていることから、二人は親子だとすぐに分かった。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜から・〜ことから"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_24_23",
+    "title": "〜おかげで (Nhờ có...)",
+    "explanationVi": "Biểu thị nguyên nhân dẫn đến một kết quả tốt đẹp, thể hiện lòng biết ơn.",
+    "examples": [
+      {
+        "jp": "薬を飲んだおかげで頭痛が治った。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜おかげで"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_25_24",
+    "title": "〜せいで (Tại vì... (kết quả xấu))",
+    "explanationVi": "Biểu thị nguyên nhân dẫn đến hậu quả tiêu cực, mang hàm ý trách móc hoặc phàn nàn.",
+    "examples": [
+      {
+        "jp": "薬を飲んだせいで眠くなってきた。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜せいで"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_26_25",
+    "title": "〜なら (Nếu như... thì)",
+    "explanationVi": "Tiếp nhận thông tin từ đối phương hoặc giả định một tình huống để đưa ra lời khuyên, đề xuất.",
+    "examples": [
+      {
+        "jp": "真相を知っているのなら、私に教えてほしい。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜なら"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_27_26",
+    "title": "〜さえ (Đến cả / Ngay cả...)",
+    "explanationVi": "Đưa ra một ví dụ cực đoan, điển hình nhất để ngụ ý những trường hợp khác là đương nhiên.",
+    "examples": [
+      {
+        "jp": "冷蔵庫には卵さえ入っていない。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜さえ"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_28_27",
+    "title": "〜さえ〜ば・〜さえ〜なら (Chỉ cần... là đủ)",
+    "explanationVi": "Nhấn mạnh điều kiện duy nhất cần thiết, chỉ cần thỏa mãn điều kiện này thì các điều kiện khác không quan trọng.",
+    "examples": [
+      {
+        "jp": "謝ってさえすれば、許してあげるよ。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜さえ〜ば・〜さえ〜なら"
+      },
+      {
+        "jp": "君さえいれば、何もいらないよ。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜さえ〜ば・〜さえ〜なら"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_29_28",
+    "title": "たとえ〜ても (Cho dù... đi chăng nữa)",
+    "explanationVi": "Giả định một tình huống cực đoan, khẳng định ý chí hoặc kết quả ở vế sau không hề bị lung lay.",
+    "examples": [
+      {
+        "jp": "例え、周りの人がどんなに反対されても、僕はプロの歌手になりたい。",
+        "vi": "Ví dụ minh họa cho mẫu câu たとえ〜ても"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_30_29",
+    "title": "〜ということだ・〜とのことだ (Nghe nói là / Có nghĩa là)",
+    "explanationVi": "Dùng để truyền đạt lại thông tin nghe được, hoặc giải thích định nghĩa ý nghĩa của một từ ngữ.",
+    "examples": [
+      {
+        "jp": "新聞によると、先日起きた事件の犯人が捕まったということだ。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜ということだ・〜とのことだ"
+      },
+      {
+        "jp": "「禁煙」と言うのはたばこを吸うなと言うことだ。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜ということだ・〜とのことだ"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_31_30",
+    "title": "〜と言われている (Người ta nói rằng...)",
+    "explanationVi": "Diễn tả lời đồn, nhận định chung của xã hội hoặc dư luận lưu truyền.",
+    "examples": [
+      {
+        "jp": "この泉の水を飲めば、若返ると言われている。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜と言われている"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_32_31",
+    "title": "〜とか (Nghe đâu là... / Nào là... nào là...)",
+    "explanationVi": "Liệt kê các thông tin chưa chắc chắn hoặc lời đồn nghe thoáng qua.",
+    "examples": [
+      {
+        "jp": "隣の娘さんは来月結婚式をあげるとか。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜とか"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_33_32",
+    "title": "って (Là / Rằng / Cái gọi là (Văn nói))",
+    "explanationVi": "Là dạng văn nói thân mật của という, は, と.",
+    "examples": [
+      {
+        "jp": "きららって日本語センターで日本語を勉強しています。",
+        "vi": "Ví dụ minh họa cho mẫu câu って"
+      },
+      {
+        "jp": "N2の文法って難しい。",
+        "vi": "Ví dụ minh họa cho mẫu câu って"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_34_33",
+    "title": "〜わけだ (Thảo nào / Đương nhiên là...)",
+    "explanationVi": "Diễn tả sự lý giải thấu suốt: dựa vào các căn cứ thì kết quả như thế là đương nhiên.",
+    "examples": [
+      {
+        "jp": "ここから東京駅まで1時半だ。じゃ、今から出れば9時に着くわけだ。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜わけだ"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_35_34",
+    "title": "〜わけがない (Làm sao mà... được / Không lý nào)",
+    "explanationVi": "Phủ định hoàn toàn khả năng xảy ra của một sự việc dựa trên lý lẽ chắc chắn.",
+    "examples": [
+      {
+        "jp": "こんなに高いところから落ちて、死なないわけがないだろう。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜わけがない"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_36_35",
+    "title": "〜わけではない・というわけではない・〜のではない (Không hẳn là / Không có nghĩa là)",
+    "explanationVi": "Phủ định một phần, làm rõ rằng tuy có điều kiện A nhưng kết luận B không nhất thiết đúng.",
+    "examples": [
+      {
+        "jp": "このレストランはいつも客が一杯いたが、だからと言って特別においしいわけではない。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜わけではない・というわけではない・〜のではない"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_37_36",
+    "title": "〜わけにはいかない (Không thể làm... (vì đạo đức, lý do xã hội))",
+    "explanationVi": "Không thể làm một hành động vì bị ràng buộc bởi đạo đức, pháp luật, lương tâm hoặc tình thế.",
+    "examples": [
+      {
+        "jp": "ちょっと熱があるが、今日は大事な会議があるので、仕事を休むわけにはいかない。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜わけにはいかない"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_38_37",
+    "title": "〜ないわけにはいかない (Không thể không làm / Đành phải làm)",
+    "explanationVi": "Buộc phải thực hiện hành động do tình thế hoặc trách nhiệm bắt buộc.",
+    "examples": [
+      {
+        "jp": "この町では自転車がないとやはり困る。買わないわけにはいかない。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜ないわけにはいかない"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_39_38",
+    "title": "〜とは限らない (Chưa chắc đã / Không nhất thiết là)",
+    "explanationVi": "Phủ định nhận định tuyệt đối, cảnh báo không phải lúc nào điều đó cũng đúng.",
+    "examples": [
+      {
+        "jp": "高いものが、いいものとは限らない。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜とは限らない"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_40_39",
+    "title": "〜ないことはない (Không phải là không...)",
+    "explanationVi": "Phủ định của phủ định để tạo nên lời khẳng định nhẹ nhàng, dè dặt.",
+    "examples": [
+      {
+        "jp": "これから駅まで歩かないことはないが、かなり時間がかかりますよ。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜ないことはない"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_40_40",
+    "title": "〜ことは〜が〜 (Không phải là không...)",
+    "explanationVi": "Phủ định của phủ định để tạo nên lời khẳng định nhẹ nhàng, dè dặt.",
+    "examples": [
+      {
+        "jp": "読んだことは読んだが、全然分からない。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜ことは〜が〜"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_41_41",
+    "title": "〜てもらいたい・〜ていただきたい・〜てほしい (Muốn ai đó làm gì cho mình)",
+    "explanationVi": "Diễn đạt nguyện vọng mong muốn người khác thực hiện một hành động vì lợi ích của mình.",
+    "examples": [
+      {
+        "jp": "この資料をちょっと見っていただきたいんですが、",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜てもらいたい・〜ていただきたい・〜てほしい"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_41_42",
+    "title": "〜させてもらいたい・〜させていただきたい・〜させてほしい (Muốn ai đó làm gì cho mình)",
+    "explanationVi": "Diễn đạt nguyện vọng mong muốn người khác thực hiện một hành động vì lợi ích của mình.",
+    "examples": [
+      {
+        "jp": "私にいかせて欲しいんです。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜させてもらいたい・〜させていただきたい・〜させてほしい"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_42_43",
+    "title": "〜といい・〜ばいい・〜たらいい (Mong là / Giá mà... / Phải làm...)",
+    "explanationVi": "Biểu thị lời ước nguyện, hy vọng; hoặc đưa ra mệnh lệnh, quy định bắt buộc phải tuân theo.",
+    "examples": [
+      {
+        "jp": "生まれていく子が男の子だったらいいのだが。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜といい・〜ばいい・〜たらいい"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_42_44",
+    "title": "〜こと (Mong là / Giá mà... / Phải làm...)",
+    "explanationVi": "Biểu thị lời ước nguyện, hy vọng; hoặc đưa ra mệnh lệnh, quy định bắt buộc phải tuân theo.",
+    "examples": [
+      {
+        "jp": "休む時、必ず学校に連絡すること。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜こと"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_43_45",
+    "title": "〜べきだ・〜べきではない (Nên làm / Phải làm (Đạo đức))",
+    "explanationVi": "Khuyên nhủ hoặc khẳng định nghĩa vụ đạo lý đương nhiên mà một người nên thực hiện.",
+    "examples": [
+      {
+        "jp": "電車の中では、若者はお年寄りに席を譲るべきです",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜べきだ・〜べきではない"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_43_46",
+    "title": "〜たらどうか (Nên làm / Phải làm (Đạo đức))",
+    "explanationVi": "Khuyên nhủ hoặc khẳng định nghĩa vụ đạo lý đương nhiên mà một người nên thực hiện.",
+    "examples": [
+      {
+        "jp": "体のことが心配なら、一度健康診断を受けたらどうですか。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜たらどうか"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_44_47",
+    "title": "〜ことにする・〜ことにしている (Quyết định làm / Cố gắng duy trì...)",
+    "explanationVi": "Biểu thị sự lựa chọn tự quyết của bản thân, hoặc nỗ lực hình thành thói quen tốt.",
+    "examples": [
+      {
+        "jp": "冷蔵庫が壊れたので、新しいのを買うことにした。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜ことにする・〜ことにしている"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_44_48",
+    "title": "〜ようにする・〜ようにしている (Quyết định làm / Cố gắng duy trì...)",
+    "explanationVi": "Biểu thị sự lựa chọn tự quyết của bản thân, hoặc nỗ lực hình thành thói quen tốt.",
+    "examples": [
+      {
+        "jp": "私はなるべく自分で料理を作って食べるようにしている。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜ようにする・〜ようにしている"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_45_49",
+    "title": "V（よう）とする (Định làm gì / Cứ ngỡ là...)",
+    "explanationVi": "Biểu thị ý định sắp sửa làm gì, hoặc một trạng thái chủ quan ngỡ rằng mình như thế.",
+    "examples": [
+      {
+        "jp": "昔の友達の名前を思い出そうとしたが、どうしても思い出せない。",
+        "vi": "Ví dụ minh họa cho mẫu câu V（よう）とする"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_45_50",
+    "title": "〜つもりだ (Định làm gì / Cứ ngỡ là...)",
+    "explanationVi": "Biểu thị ý định sắp sửa làm gì, hoặc một trạng thái chủ quan ngỡ rằng mình như thế.",
+    "examples": [
+      {
+        "jp": "私は今年77歳ですが、まだまだ若いつもりです。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜つもりだ"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_46_51",
+    "title": "〜からこそ (Chính vì... nên mới)",
+    "explanationVi": "Nhấn mạnh nguyên nhân duy nhất, chính vì lý do đó mà mới có hành động hoặc kết quả ở vế sau.",
+    "examples": [
+      {
+        "jp": "友達だからこそ、相手の悪いところは悪いと伝えなければならない。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜からこそ"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_47_52",
+    "title": "など・なんか・なんて (Những thứ như là... (khiêm tốn / xem nhẹ))",
+    "explanationVi": "Đưa ra ví dụ để nhấn mạnh cảm xúc ngạc nhiên, khiêm nhường hoặc đánh giá thấp.",
+    "examples": [
+      {
+        "jp": "りんごやバナナなどのフルーツが好きです。",
+        "vi": "Ví dụ minh họa cho mẫu câu など・なんか・なんて"
+      },
+      {
+        "jp": "彼女などに負けてしまった",
+        "vi": "Ví dụ minh họa cho mẫu câu など・なんか・なんて"
+      },
+      {
+        "jp": "私なんか上手じゃないよ〜",
+        "vi": "Ví dụ minh họa cho mẫu câu など・なんか・なんて"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_48_53",
+    "title": "〜について (Về (chủ đề, nội dung))",
+    "explanationVi": "Biểu thị đối tượng, đề tài được nghiên cứu, trao đổi, suy nghĩ.",
+    "examples": [
+      {
+        "jp": "兄は大学院で、アジアの経済について研究しています",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜について"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_49_54",
+    "title": "〜として (Với tư cách là / Như là)",
+    "explanationVi": "Đứng trên vị trí, danh nghĩa, tư cách hoặc chức năng của một người hay vật.",
+    "examples": [
+      {
+        "jp": "私はコーヒーカップを花瓶として使っています。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜として"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_49_55",
+    "title": "〜ことがある・〜こともある (Với tư cách là / Như là)",
+    "explanationVi": "Đứng trên vị trí, danh nghĩa, tư cách hoặc chức năng của một người hay vật.",
+    "examples": [
+      {
+        "jp": "N3に合格できて、うれしくてしょうがない。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜ことがある・〜こともある"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_50_56",
+    "title": "〜ことはない (Không cần thiết phải làm gì)",
+    "explanationVi": "Khuyên nhủ hoặc trấn an rằng không cần phải lo lắng hay thực hiện hành động đó.",
+    "examples": [
+      {
+        "jp": "面接の質問は簡単です。そんなに心配することはありません。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜ことはない"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_51_57",
+    "title": "〜よう (Hình như là / Giống như là)",
+    "explanationVi": "So sánh ví von tương tự, hoặc suy đoán dựa trên cảm giác trực giác.",
+    "examples": [
+      {
+        "jp": "今日は暖かくて、まるで春が来たかのようだ。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜よう"
+      },
+      {
+        "jp": "私たちはあなたが想像しているような関係ではありませんよ。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜よう"
+      },
+      {
+        "jp": "とうもろこしのような形をしている建物は、ダナン市役所のビルです。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜よう"
+      },
+      {
+        "jp": "インフルエンザのような他の人にうつる病気になったら、治るまで学校へ来てはいけない。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜よう"
+      },
+      {
+        "jp": "どうもかぜをひいたようだ。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜よう"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_52_58",
+    "title": "〜ように (Để có thể (Chỉ mục đích))",
+    "explanationVi": "Vế trước đi với động từ không có ý chí hoặc thể khả năng để chỉ mục đích cần hướng tới.",
+    "examples": [
+      {
+        "jp": "よく眠れるようにワインを少しのんだ。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜ように"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_53_59",
+    "title": "〜ようにいう・注意する・・・ (Nhắc nhở, bảo ai làm gì)",
+    "explanationVi": "Truyền đạt lại lời dặn dò, chỉ thị hoặc yêu cầu của người khác một cách gián tiếp.",
+    "examples": [
+      {
+        "jp": "先生に授業中にしゃべらないように注意された。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜ようにいう・注意する・・・"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_54_60",
+    "title": "〜ばかり (Toàn là / Chỉ toàn)",
+    "explanationVi": "Diễn tả số lượng quá nhiều của một sự vật hoặc hành động lặp đi lặp lại mang sắc thái tiêu cực.",
+    "examples": [
+      {
+        "jp": "最近雨ばかりで、洗濯物が乾かなくて困っています。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜ばかり"
+      },
+      {
+        "jp": "彼は寝てばかりいる。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜ばかり"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_55_61",
+    "title": "〜ばかりか・〜ばかりでなく (Không những... mà còn...)",
+    "explanationVi": "Khẳng định không chỉ dừng lại ở phạm vi trước mà còn mở rộng sang phạm vi lớn hơn.",
+    "examples": [
+      {
+        "jp": "山田さんは英語ばかりでなく、中国語も話せる。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜ばかりか・〜ばかりでなく"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_56_62",
+    "title": "〜ばかりだ (Vừa mới làm xong)",
+    "explanationVi": "Diễn tả hành động vừa mới xảy ra cách thời điểm nói một khoảng thời gian rất ngắn.",
+    "examples": [
+      {
+        "jp": "さっき着いたばかりだ。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜ばかりだ"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_57_63",
+    "title": "〜ばかりだ (Càng ngày càng (chiều hướng xấu))",
+    "explanationVi": "Diễn tả xu hướng biến đổi liên tục theo một chiều hướng (thường là bất lợi).",
+    "examples": [
+      {
+        "jp": "手術は終わってからも、父の病気は悪くなるばかりでした。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜ばかりだ"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_58_64",
+    "title": "っけ？ (...ấy nhỉ? (Xác nhận điều đã quên))",
+    "explanationVi": "Dùng ở cuối câu để tự hỏi hoặc hỏi người khác nhằm xác nhận lại điều mình không nhớ rõ.",
+    "examples": [
+      {
+        "jp": "家の鍵を掛けたっけ？",
+        "vi": "Ví dụ minh họa cho mẫu câu っけ？"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_59_65",
+    "title": "〜がる・〜たがる (Có vẻ / Biểu lộ mong muốn (Ngôi thứ ba))",
+    "explanationVi": "Diễn tả cảm xúc, mong muốn của người thứ ba qua cử chỉ, điệu bộ bên ngoài.",
+    "examples": [
+      {
+        "jp": "寒い日は猫も外へ出たがらない。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜がる・〜たがる"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_60_66",
+    "title": "〜てたまらない・〜てならない・〜てしょうがない (Rất / Vô cùng / Không chịu nổi)",
+    "explanationVi": "Diễn tả cảm xúc, cảm giác tự nhiên phát sinh đến mức bản thân không thể kiềm chế được.",
+    "examples": [
+      {
+        "jp": "エアコン使えないと暑くてたまらない。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜てたまらない・〜てならない・〜てしょうがない"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_61_67",
+    "title": "〜とたん (Ngay sau khi... thì bất ngờ...)",
+    "explanationVi": "Hành động vừa kết thúc thì ngay tức khắc xảy ra một sự việc bất ngờ ngoài dự kiến.",
+    "examples": [
+      {
+        "jp": "窓を開けたとたん、風が入ってきた。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜とたん"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_62_68",
+    "title": "〜から〜にかけて (Từ khoảng... đến khoảng...)",
+    "explanationVi": "Biểu thị khoảng không gian hoặc thời gian gần đúng, không xác định ranh giới tuyệt đối.",
+    "examples": [
+      {
+        "jp": "このブドウは8月から9月にかけて収穫されます。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜から〜にかけて"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_63_69",
+    "title": "〜（んだ）もの・もん (Vì... mà (Biện bạch, làm nũng))",
+    "explanationVi": "Dùng ở cuối câu để giải thích lý do, thường dùng trong văn nói thân mật phụ nữ và trẻ em.",
+    "examples": [
+      {
+        "jp": "今日の試験できなかった。勉強しなかったんだもん。仕方がない。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜（んだ）もの・もん"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_64_70",
+    "title": "〜に決まっている (Chắc chắn là / Nhất định là)",
+    "explanationVi": "Khẳng định phán đoán chủ quan chắc nịch của người nói, không thể có khả năng khác.",
+    "examples": [
+      {
+        "jp": "私の頭じゃどんなに頑張ってもハーバード大学には入れないに決まっているよ。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜に決まっている"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_65_71",
+    "title": "〜に違いない (Chắc chắn là (Suy đoán))",
+    "explanationVi": "Đưa ra suy đoán dựa trên căn cứ cụ thể, xác suất gần như 100% đúng.",
+    "examples": [
+      {
+        "jp": "黒い服の男がうちのドアを開けようとしていた。あの男は泥棒に違いいない。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜に違いない"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_66_72",
+    "title": "〜おそれがある (E rằng / Có nguy cơ là...)",
+    "explanationVi": "Dùng trong tin tức hoặc văn phong trang trọng cảnh báo nguy cơ xảy ra sự cố xấu.",
+    "examples": [
+      {
+        "jp": "大きい地震が起きたから、この建物が倒れる恐れがある。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜おそれがある"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_67_73",
+    "title": "〜にすぎない (Chẳng qua chỉ là...)",
+    "explanationVi": "Nhấn mạnh mức độ không có gì to tát, chỉ dừng lại ở giới hạn nhỏ bé đó.",
+    "examples": [
+      {
+        "jp": "彼はただ子供にすぎないから、一人で暮らすことができないよ。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜にすぎない"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_68_74",
+    "title": "〜ことか (Biết bao / Biết chừng nào (Cảm thán))",
+    "explanationVi": "Dùng với từ để hỏi (どんなに, どれほど) để bộc lộ cảm xúc sâu sắc.",
+    "examples": [
+      {
+        "jp": "合格できたら、どんなに嬉しいことか。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜ことか"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_69_75",
+    "title": "〜ものか (Tuyệt đối không / Làm sao mà... được)",
+    "explanationVi": "Phủ định mạnh mẽ, bác bỏ hoàn toàn một nhận định hoặc khả năng xảy ra.",
+    "examples": [
+      {
+        "jp": "こんなにたくさんの仕事、明日までに終わるものか。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜ものか"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_70_76",
+    "title": "〜としたら・〜とすれば (Giả sử như / Nếu như)",
+    "explanationVi": "Đặt ra một giả thiết, điều kiện giả định để suy xét kết quả kế tiếp.",
+    "examples": [
+      {
+        "jp": "その話が本当だとしたら、嬉しいです。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜としたら・〜とすれば"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_71_77",
+    "title": "〜を通じて・〜を通して (Thông qua / Trong suốt)",
+    "explanationVi": "Chỉ phương tiện, cầu nối gián tiếp, hoặc khoảng thời gian kéo dài suốt một kỳ.",
+    "examples": [
+      {
+        "jp": "１ヶ月を通して、暑い日が続く。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜を通じて・〜を通して"
+      },
+      {
+        "jp": "現在はインターネットを通して、すぐに世界中にニュースが広まる。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜を通じて・〜を通して"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_72_78",
+    "title": "〜しかない・〜ほか（は）ない (Chỉ còn cách là...)",
+    "explanationVi": "Không còn lựa chọn hoặc giải pháp nào khác ngoài cách này.",
+    "examples": [
+      {
+        "jp": "エレベーターが壊れているから、階段で行くしかない。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜しかない・〜ほか（は）ない"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_73_79",
+    "title": "〜をこめて (Với tất cả tấm lòng / Gửi gắm tình cảm)",
+    "explanationVi": "Thực hiện hành động bằng tất cả tâm huyết, tình yêu thương hoặc sự cầu chúc.",
+    "examples": [
+      {
+        "jp": "平和へのお願いを込めて、この歌を作りました。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜をこめて"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_74_80",
+    "title": "〜まま (Để nguyên trạng thái)",
+    "explanationVi": "Giữ nguyên trạng thái vốn có mà không thay đổi hoặc tác động thêm.",
+    "examples": [
+      {
+        "jp": "すぐに戻ってきますから、机の上はこのままにしておいてください。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜まま"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_75_81",
+    "title": "〜っぱなし (Cứ để nguyên như thế (Bỏ bê))",
+    "explanationVi": "Làm dở dang một hành động rồi cứ để mặc như thế, mang sắc thái phàn nàn.",
+    "examples": [
+      {
+        "jp": "水を出しっぱなしにしないでください。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜っぱなし"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_76_82",
+    "title": "〜きり (Chỉ... / Kể từ khi... thì bặt vô âm tín)",
+    "explanationVi": "Chỉ có bấy nhiêu; hoặc sau khi làm hành động đó thì không thấy trở lại nữa.",
+    "examples": [
+      {
+        "jp": "二人きりで話たいです。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜きり"
+      },
+      {
+        "jp": "ひろしさんは本屋に行ったきり、まだ戻ってこない。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜きり"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_77_83",
+    "title": "〜ふりをする (Giả vờ như là...)",
+    "explanationVi": "Cố tình tạo ra vẻ ngoài như thể bản thân biết hoặc có trạng thái đó dù thực tế không phải.",
+    "examples": [
+      {
+        "jp": "彼は政治についてよく知っているふりをするが、本当は知らないと思う。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜ふりをする"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_78_84",
+    "title": "〜くせに (Thế mà / Vậy mà (Mỉa mai, trách móc))",
+    "explanationVi": "Thực tế trái ngược hoàn toàn với điều đáng ra phải thế, bộc lộ sự bực bội.",
+    "examples": [
+      {
+        "jp": "山田って、本当は彼女が好きなくせに、いつも彼女に意地悪を言うんだよ。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜くせに"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_79_85",
+    "title": "〜はもちろん、〜も (...thì dĩ nhiên rồi, ngay cả... cũng)",
+    "explanationVi": "Điều trước là đương nhiên, nhưng đến cả điều sau mức độ thấp hơn cũng có.",
+    "examples": [
+      {
+        "jp": "父はゴルフが趣味で、週末はもちろん平日も仕事の後で練習しています。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜はもちろん、〜も"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_80_86",
+    "title": "〜はじめる (Bắt đầu làm gì)",
+    "explanationVi": "Diễn tả sự khởi đầu của một hành động hay sự biến đổi.",
+    "examples": [
+      {
+        "jp": "日本語を習い始めたのは半年前です。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜はじめる"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_81_87",
+    "title": "〜てはじめて (Kể từ sau khi... mới nhận ra...)",
+    "explanationVi": "Chỉ sau khi trải qua một sự việc thì mới bắt đầu nhận thức được tầm quan trọng của nó.",
+    "examples": [
+      {
+        "jp": "一人暮らしをして初めて、家族の大切さを分かってきた。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜てはじめて"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_82_88",
+    "title": "〜たて (Vừa mới xong (Tươi mới))",
+    "explanationVi": "Diễn tả trạng thái vừa mới hoàn thành, còn nóng hổi hoặc tươi mới.",
+    "examples": [
+      {
+        "jp": "焼きたてのパンは美味しいですね。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜たて"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_83_89",
+    "title": "〜をはじめ（として） (Trước tiên phải kể đến là...)",
+    "explanationVi": "Đưa ra một ví dụ tiêu biểu nhất, đứng đầu trong một nhóm các đối tượng.",
+    "examples": [
+      {
+        "jp": "今年は富士山をはじめ、各地の有名な山に登りましょう。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜をはじめ（として）"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_84_90",
+    "title": "〜かけ (Đang dở dang (Chưa xong))",
+    "explanationVi": "Diễn tả hành động đang thực hiện dở thì bị gián đoạn, chưa hoàn tất.",
+    "examples": [
+      {
+        "jp": "図書館で借りた本、まだ読みかけだったのに返却日になってしまった。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜かけ"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_85_91",
+    "title": "〜上がる・あげる (Hoàn tất xong xuôi)",
+    "explanationVi": "Diễn tả sự nỗ lực làm xong trọn vẹn một công việc đòi hỏi nhiều công sức.",
+    "examples": [
+      {
+        "jp": "やっとレポートを書き上げました。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜上がる・あげる"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_86_92",
+    "title": "〜だらけ (Đầy những / Toàn là (Bẩn thỉu, tiêu cực))",
+    "explanationVi": "Bề mặt bị bao phủ đầy những thứ khó chịu như rác, bụi bẩn, vết thương.",
+    "examples": [
+      {
+        "jp": "彼女の部屋はゴミだらけだ。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜だらけ"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_87_93",
+    "title": "〜きる・きれる (Làm hết sạch / Làm trọn vẹn)",
+    "explanationVi": "Thực hiện hành động đến cùng kiệt, hoặc không thể làm xuể.",
+    "examples": [
+      {
+        "jp": "こんなたくさんの荷物、寮の部屋に入りきらないよ。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜きる・きれる"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_88_94",
+    "title": "〜出す (Bất thình lình làm gì)",
+    "explanationVi": "Hành động hoặc hiện tượng bất ngờ bộc phát không đoán trước.",
+    "examples": [
+      {
+        "jp": "さっきまで笑っていた赤ちゃんが急に泣き出した。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜出す"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_89_95",
+    "title": "〜通す (Làm suốt đến cùng)",
+    "explanationVi": "Kiên trì duy trì một hành động hoặc trạng thái xuyên suốt đến cuối cùng.",
+    "examples": [
+      {
+        "jp": "彼は何を聞かれても、黙り通した。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜通す"
+      }
+    ],
+    "jlpt": "N3"
+  },
+  {
+    "id": "g_n3_90_96",
+    "title": "〜がち (Thường hay / Có xu hướng (Xấu))",
+    "explanationVi": "Diễn tả khuynh hướng hay xảy ra sự việc tiêu cực do thói quen hoặc đặc điểm tự nhiên.",
+    "examples": [
+      {
+        "jp": "最近忘れがちだ。",
+        "vi": "Ví dụ minh họa cho mẫu câu 〜がち"
+      }
+    ],
+    "jlpt": "N3"
   }
 ]
