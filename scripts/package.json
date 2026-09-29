@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "inspect:n3": "tsx src/inspect-user-data.ts"
+    "inspect:n3": "tsx src/inspect-user-data.ts",
+    "seed:firestore": "tsx src/upload-to-firestore.ts"
   },
   "dependencies": {
-    "@raku/core": "*"
+    "@raku/core": "*",
+    "firebase": "^11.3.1"
   },
   "devDependencies": {
     "tsx": "^4.19.3",

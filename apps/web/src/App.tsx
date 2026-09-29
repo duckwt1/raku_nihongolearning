@@ -10,7 +10,10 @@ import {
   Moon,
   Sun,
   Search,
-  User as UserIcon
+  User as UserIcon,
+  Database,
+  CloudUpload,
+  RefreshCw
 } from 'lucide-react';
 import {
   SEED_KANJI,
@@ -26,7 +29,12 @@ import {
   createInitialStudyStats
 } from '@raku/core';
 import { auth, signInAnonymously, onAuthStateChanged, type User } from './services/firebase';
-import { syncUserProfile, saveCardProgress } from './services/firestoreSync';
+import {
+  syncUserProfile,
+  saveCardProgress,
+  seedAllN3DataToFirestore,
+  pullDataFromFirestore
+} from './services/firestoreSync';
 import { DataLicensesModal } from './components/DataLicensesModal';
 import { FlashcardStudyView } from './components/FlashcardStudyView';
 import { ImportView } from './components/ImportView';
@@ -58,6 +66,18 @@ export function App() {
     id?: string;
     title: string;
   } | null>(null);
+
+  // Firebase Database Seeding and Sync state
+  const [isSeeding, setIsSeeding] = useState(false);
+  const [seedProgress, setSeedProgress] = useState<{
+    stage: string;
+    current: number;
+    total: number;
+  } | null>(null);
+  const [seedResult, setSeedResult] = useState<string | null>(null);
+
+  const [isPulling, setIsPulling] = useState(false);
+  const [pullResult, setPullResult] = useState<string | null>(null);
 
   // Folders & Decks state (with LocalStorage persistence)
   const [folders, setFolders] = useState<Folder[]>(() => {
@@ -313,6 +333,87 @@ export function App() {
     }
   };
 
+  const handleSeedAllN3 = async () => {
+    setIsSeeding(true);
+    setSeedResult(null);
+    try {
+      if (!user) {
+        await signInAnonymously(auth);
+      }
+      const res = await seedAllN3DataToFirestore((stage, current, total) => {
+        setSeedProgress({ stage, current, total });
+      });
+      setSeedResult(
+        `✓ Đã xuất thành công: ${res.kanjiCount} Kanji, ${res.wordsCount} Từ vựng, ${res.grammarCount} Ngữ pháp, ${res.sentencesCount} Câu ví dụ lên Cloud Firestore!`
+      );
+    } catch (err: any) {
+      setSeedResult(`❌ Lỗi xuất dữ liệu: ${err.message || err}`);
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
+  const handlePullFromFirestore = async () => {
+    if (!user) {
+      setPullResult('Bạn cần đăng nhập hoặc bấm Dùng thử ẩn danh trước khi đồng bộ.');
+      return;
+    }
+    setIsPulling(true);
+    setPullResult(null);
+    try {
+      const data = await pullDataFromFirestore(user.uid);
+      const cardCount = Object.keys(data.cards).length;
+
+      if (cardCount > 0) {
+        setAllCards((prevCards) => {
+          const updated = prevCards.map((c) => {
+            const remote = data.cards[c.id];
+            if (remote) {
+              return {
+                ...c,
+                fsrsCard: {
+                  ...c.fsrsCard,
+                  due: remote.due ? new Date(remote.due) : c.fsrsCard.due,
+                  stability: remote.stability ?? c.fsrsCard.stability,
+                  difficulty: remote.difficulty ?? c.fsrsCard.difficulty,
+                  state: remote.state ?? c.fsrsCard.state,
+                  reps: remote.reps ?? c.fsrsCard.reps
+                }
+              };
+            }
+            return c;
+          });
+          try {
+            localStorage.setItem('raku_cards', JSON.stringify(updated));
+          } catch {}
+          return updated;
+        });
+      }
+
+      if (data.folders) {
+        setFolders(data.folders);
+        try {
+          localStorage.setItem('raku_folders', JSON.stringify(data.folders));
+        } catch {}
+      }
+
+      if (data.decks) {
+        setDecks(data.decks);
+        try {
+          localStorage.setItem('raku_decks', JSON.stringify(data.decks));
+        } catch {}
+      }
+
+      setPullResult(
+        `✓ Đã đồng bộ thành công! Tìm thấy ${cardCount} thẻ đã ôn và ${data.decks?.length || 0} decks từ Firestore.`
+      );
+    } catch (err: any) {
+      setPullResult(`❌ Lỗi khi tải dữ liệu: ${err.message || err}`);
+    } finally {
+      setIsPulling(false);
+    }
+  };
+
   return (
     <div className={`min-h-full flex flex-col ${darkMode ? 'dark' : ''}`}>
       {/* Top Header */}
@@ -546,37 +647,135 @@ export function App() {
 
         {/* TAB 5: SETTINGS */}
         {activeTab === 'settings' && (
-          <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
-            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Cài đặt ứng dụng</h3>
-
-            <div className="space-y-3 text-xs text-slate-700 dark:text-slate-300">
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800">
+          <div className="space-y-4">
+            {/* Database & Firebase Sync Section */}
+            <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
+              <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-semibold">Nguồn dữ liệu &amp; Giấy phép bản quyền</div>
-                  <div className="text-[11px] text-slate-400">KANJIDIC2, JMdict, từ điển Hán-Việt</div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center space-x-2">
+                    <Database className="w-5 h-5 text-amber-500" />
+                    <span>Quản Lý Cơ Sở Dữ Liệu Firebase &amp; Đồng Bộ</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Xuất toàn bộ kho dữ liệu N3 lên Cloud Firestore và đồng bộ tiến độ học đa thiết bị
+                  </p>
                 </div>
-                <button
-                  onClick={() => setIsLicenseOpen(true)}
-                  className="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-semibold touch-target"
-                >
-                  Xem chi tiết
-                </button>
+
+                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300">
+                  {user ? (user.isAnonymous ? 'Khách ẩn danh' : 'Đã đăng nhập') : 'Chưa đăng nhập'}
+                </span>
               </div>
 
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800">
-                <div>
-                  <div className="font-semibold">Thuật toán FSRS</div>
-                  <div className="text-[11px] text-slate-400">Request retention: 0.9 (mặc định)</div>
-                </div>
-                <span className="font-bold text-sky-600 dark:text-sky-400">ts-fsrs v4</span>
-              </div>
+              {/* Action Buttons Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                {/* Seed button */}
+                <div className="p-4 rounded-2xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 space-y-2">
+                  <div className="flex items-center space-x-2 text-xs font-bold text-amber-800 dark:text-amber-300">
+                    <CloudUpload className="w-4 h-4" />
+                    <span>Xuất Toàn Bộ Dữ Liệu N3 Lên Firebase</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Đẩy toàn bộ 609 chữ Kanji, 880 từ vựng Mimikara, 97 cấu trúc ngữ pháp và 880 câu ví dụ vào các collection trên Firestore.
+                  </p>
+                  <button
+                    onClick={handleSeedAllN3}
+                    disabled={isSeeding}
+                    className="w-full py-2 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-xs transition flex items-center justify-center space-x-1.5 touch-target"
+                  >
+                    <CloudUpload className="w-3.5 h-3.5" />
+                    <span>{isSeeding ? 'Đang xuất dữ liệu lên Firebase...' : '⚡ Xuất N3 lên Firestore'}</span>
+                  </button>
 
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800">
-                <div>
-                  <div className="font-semibold">Đồng bộ Offline IndexedDB</div>
-                  <div className="text-[11px] text-slate-400">Hỗ trợ đa tab và tiếp tục ôn khi mất mạng</div>
+                  {isSeeding && seedProgress && (
+                    <div className="space-y-1 pt-1">
+                      <div className="flex justify-between text-[10px] text-amber-800 dark:text-amber-300 font-medium">
+                        <span>Đang nạp: {seedProgress.stage}</span>
+                        <span>{seedProgress.current} / {seedProgress.total}</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-amber-200 dark:bg-amber-900 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-amber-600 transition-all duration-200"
+                          style={{ width: `${(seedProgress.current / seedProgress.total) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {seedResult && (
+                    <div className={`p-2.5 rounded-xl text-xs font-medium ${
+                      seedResult.startsWith('✓')
+                        ? 'bg-emerald-100/80 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
+                        : 'bg-rose-100/80 dark:bg-rose-950 text-rose-800 dark:text-rose-300'
+                    }`}>
+                      {seedResult}
+                    </div>
+                  )}
                 </div>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400">Đang bật</span>
+
+                {/* Pull sync button */}
+                <div className="p-4 rounded-2xl bg-sky-50/60 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-900/60 space-y-2">
+                  <div className="flex items-center space-x-2 text-xs font-bold text-sky-800 dark:text-sky-300">
+                    <RefreshCw className="w-4 h-4" />
+                    <span>Tải &amp; Đồng Bộ Từ Firebase Về Máy</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Tải toàn bộ tiến độ ôn tập FSRS, lịch nhắc nhở và cấu trúc thư mục/deck đã lưu trên đám mây về thiết bị này.
+                  </p>
+                  <button
+                    onClick={handlePullFromFirestore}
+                    disabled={isPulling}
+                    className="w-full py-2 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-xs transition flex items-center justify-center space-x-1.5 touch-target"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isPulling ? 'animate-spin' : ''}`} />
+                    <span>{isPulling ? 'Đang đồng bộ từ Firestore...' : '🔄 Đồng bộ từ Firebase về'}</span>
+                  </button>
+
+                  {pullResult && (
+                    <div className={`p-2.5 rounded-xl text-xs font-medium ${
+                      pullResult.startsWith('✓')
+                        ? 'bg-emerald-100/80 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
+                        : 'bg-rose-100/80 dark:bg-rose-950 text-rose-800 dark:text-rose-300'
+                    }`}>
+                      {pullResult}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* General Settings Section */}
+            <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
+              <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Cài đặt ứng dụng</h3>
+
+              <div className="space-y-3 text-xs text-slate-700 dark:text-slate-300">
+                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800">
+                  <div>
+                    <div className="font-semibold">Nguồn dữ liệu &amp; Giấy phép bản quyền</div>
+                    <div className="text-[11px] text-slate-400">KANJIDIC2, JMdict, từ điển Hán-Việt, Mimikara N3</div>
+                  </div>
+                  <button
+                    onClick={() => setIsLicenseOpen(true)}
+                    className="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-semibold touch-target"
+                  >
+                    Xem chi tiết
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800">
+                  <div>
+                    <div className="font-semibold">Thuật toán ôn tập FSRS</div>
+                    <div className="text-[11px] text-slate-400">Request retention: 0.9 (tối ưu khả năng ghi nhớ 90%)</div>
+                  </div>
+                  <span className="font-bold text-sky-600 dark:text-sky-400">ts-fsrs v4</span>
+                </div>
+
+                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800">
+                  <div>
+                    <div className="font-semibold">Đồng bộ Offline IndexedDB</div>
+                    <div className="text-[11px] text-slate-400">Hỗ trợ đa tab và tiếp tục ôn khi mất mạng</div>
+                  </div>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400">Đang bật</span>
+                </div>
               </div>
             </div>
           </div>
