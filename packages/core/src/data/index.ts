@@ -1,11 +1,13 @@
 import seedKanji from './seed-kanji.json';
 import seedWords from './seed-words.json';
 import seedSentences from './seed-sentences.json';
-import type { Kanji, Word, Sentence } from '../models/schemas.js';
+import seedGrammar from './seed-grammar.json';
+import type { Kanji, Word, Sentence, Grammar } from '../models/schemas.js';
 
 export const SEED_KANJI = seedKanji as Kanji[];
 export const SEED_WORDS = seedWords as Word[];
 export const SEED_SENTENCES = seedSentences as Sentence[];
+export const SEED_GRAMMAR = seedGrammar as Grammar[];
 
 // Fast indexed lookups
 export const KANJI_BY_CHAR = new Map<string, Kanji>(SEED_KANJI.map((k) => [k.char, k]));

@@ -4,3 +4,6 @@ export * from './fsrs/scheduler.js';
 export * from './models/schemas.js';
 export * from './questions/validation.js';
 export * from './data/index.js';
+export * from './fsrs/studySession.js';
+export * from './import/parser.js';
+export * from './quiz/generators.js';

@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import worker from './index.js';
 
-describe('Worker API Routing', () => {
+describe('Worker API Routing & AI endpoints', () => {
   const fakeCtx = {} as ExecutionContext;
   const fakeEnv = {
-    FIREBASE_PROJECT_ID: 'test-project'
+    FIREBASE_PROJECT_ID: 'test-project',
+    GEMINI_API_KEY: 'test-fake-key'
   };
 
   it('responds with 200 on /api/health', async () => {
@@ -16,18 +17,23 @@ describe('Worker API Routing', () => {
     expect(body.status).toBe('ok');
   });
 
-  it('responds with 401 when calling /api/auth/me without token', async () => {
-    const req = new Request('http://localhost/api/auth/me');
+  it('rejects /api/ai/generate when no Authorization token is provided', async () => {
+    const req = new Request('http://localhost/api/ai/generate', {
+      method: 'POST',
+      body: JSON.stringify({ prompt: 'test' }),
+      headers: { 'Content-Type': 'application/json' }
+    });
     const res = await worker.fetch(req, fakeEnv, fakeCtx);
     expect(res.status).toBe(401);
-
-    const body = (await res.json()) as { error: string };
-    expect(body.error).toContain('Missing Bearer token');
   });
 
-  it('responds with 404 for unknown /api routes', async () => {
-    const req = new Request('http://localhost/api/unknown-endpoint');
+  it('rejects /api/ai/import-analyze when no Authorization token is provided', async () => {
+    const req = new Request('http://localhost/api/ai/import-analyze', {
+      method: 'POST',
+      body: JSON.stringify({ text: 'test' }),
+      headers: { 'Content-Type': 'application/json' }
+    });
     const res = await worker.fetch(req, fakeEnv, fakeCtx);
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(401);
   });
 });

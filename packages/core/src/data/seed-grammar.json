@@ -1,0 +1,82 @@
+[
+  {
+    "id": "g_te_kara",
+    "title": "〜てから (Sau khi làm V1 thì làm V2)",
+    "explanationVi": "Diễn tả hành động V2 được thực hiện ngay sau khi hành động V1 kết thúc.",
+    "jlpt": "N5",
+    "examples": [
+      {
+        "jp": "ご飯を食べてから、薬を飲みます。",
+        "vi": "Sau khi ăn cơm xong, tôi sẽ uống thuốc."
+      },
+      {
+        "jp": "手を洗ってから、料理を作ります。",
+        "vi": "Sau khi rửa tay, tôi sẽ nấu ăn."
+      }
+    ]
+  },
+  {
+    "id": "g_mae_ni",
+    "title": "〜まえに (Trước khi làm V)",
+    "explanationVi": "Diễn tả một hành động xảy ra trước một hành động khác. Động từ trước まえに luôn ở dạng từ điển (V-ru).",
+    "jlpt": "N5",
+    "examples": [
+      {
+        "jp": "寝るまえに、本を読みます。",
+        "vi": "Trước khi đi ngủ, tôi đọc sách."
+      },
+      {
+        "jp": "出かけるまえに、天気を調べました。",
+        "vi": "Trước khi ra ngoài, tôi đã tra cứu thời tiết."
+      }
+    ]
+  },
+  {
+    "id": "g_hou_ga_ii",
+    "title": "〜ほうがいい (Nên / Không nên làm gì)",
+    "explanationVi": "Dùng để đưa ra lời khuyên cho đối phương. Khuyên nên làm dùng V-ta + ほうがいい, khuyên không nên dùng V-nai + ほうがいい.",
+    "jlpt": "N4",
+    "examples": [
+      {
+        "jp": "病院へ行ったほうがいいですよ。",
+        "vi": "Bạn nên đi đến bệnh viện đi."
+      },
+      {
+        "jp": "夜遅くにお菓子を食べないほうがいいです。",
+        "vi": "Không nên ăn bánh kẹo vào ban đêm muộn."
+      }
+    ]
+  },
+  {
+    "id": "g_nakereba_naranai",
+    "title": "〜なければならない (Phải làm gì)",
+    "explanationVi": "Biểu thị nghĩa vụ, bổn phận bắt buộc phải thực hiện một hành động.",
+    "jlpt": "N4",
+    "examples": [
+      {
+        "jp": "明日までに宿題を出さなければなりません。",
+        "vi": "Tôi phải nộp bài tập về nhà trước ngày mai."
+      },
+      {
+        "jp": "毎日漢字を練習しなければなりません。",
+        "vi": "Mỗi ngày tôi phải luyện tập chữ Hán."
+      }
+    ]
+  },
+  {
+    "id": "g_you_ni_suru",
+    "title": "〜ようにする (Cố gắng làm / duy trì thói quen)",
+    "explanationVi": "Thể hiện sự nỗ lực, cố gắng hình thành hoặc duy trì một thói quen có lợi.",
+    "jlpt": "N3",
+    "examples": [
+      {
+        "jp": "健康のために、毎日野菜を食べるようにしています。",
+        "vi": "Để giữ gìn sức khỏe, tôi cố gắng ăn rau mỗi ngày."
+      },
+      {
+        "jp": "寝る前にはスマホを見ないようにしています。",
+        "vi": "Trước khi ngủ, tôi cố gắng không xem điện thoại."
+      }
+    ]
+  }
+]
