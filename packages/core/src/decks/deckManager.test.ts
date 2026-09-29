@@ -12,25 +12,23 @@ import {
 describe('Deck and Folder Manager', () => {
   it('has default folders and decks set up correctly', () => {
     expect(DEFAULT_FOLDERS.length).toBeGreaterThanOrEqual(2);
-    expect(DEFAULT_DECKS.length).toBeGreaterThanOrEqual(4);
+    expect(DEFAULT_DECKS.length).toBeGreaterThanOrEqual(3);
 
     const n3Folder = DEFAULT_FOLDERS.find((f) => f.id === 'folder_jlpt_n3');
     expect(n3Folder).toBeDefined();
 
     const n3Decks = DEFAULT_DECKS.filter((d) => d.folderId === 'folder_jlpt_n3');
-    expect(n3Decks.length).toBe(3); // Words, Kanji, Grammar
+    expect(n3Decks.length).toBe(2); // Words, Grammar
   });
 
-  it('builds default cards for words, kanji, and grammar', () => {
+  it('builds default cards for words and grammar', () => {
     const cards = buildDefaultCards();
-    expect(cards.length).toBeGreaterThan(1500); // 880 words + 609 kanji + 97 grammar
+    expect(cards.length).toBe(880 + 97); // 880 words + 97 grammar
 
     const wordCards = cards.filter((c) => c.deckId === 'deck_n3_words');
-    const kanjiCards = cards.filter((c) => c.deckId === 'deck_n3_kanji');
     const grammarCards = cards.filter((c) => c.deckId === 'deck_n3_grammar');
 
     expect(wordCards.length).toBe(880);
-    expect(kanjiCards.length).toBe(609);
     expect(grammarCards.length).toBe(97);
   });
 
@@ -55,8 +53,8 @@ describe('Deck and Folder Manager', () => {
     const cards = buildDefaultCards();
     const folderCounts = calculateFolderCounts(cards, DEFAULT_DECKS, 'folder_jlpt_n3');
 
-    expect(folderCounts.totalCards).toBe(880 + 609 + 97);
-    expect(folderCounts.newCount).toBe(880 + 609 + 97);
+    expect(folderCounts.totalCards).toBe(880 + 97);
+    expect(folderCounts.newCount).toBe(880 + 97);
   });
 
   it('records study activity and tracks daily time and reviewed count', () => {

@@ -6,7 +6,7 @@ import {
   isCardLearnedToday
 } from '../fsrs/studySession.js';
 import { createNewCard } from '../fsrs/scheduler.js';
-import { SEED_WORDS, SEED_KANJI, SEED_GRAMMAR } from '../data/index.js';
+import { SEED_WORDS, SEED_GRAMMAR } from '../data/index.js';
 
 export interface DeckCounts {
   newCount: number;
@@ -49,19 +49,6 @@ export const DEFAULT_DECKS: Deck[] = [
     createdAt: new Date().toISOString()
   },
   {
-    id: 'deck_n3_kanji',
-    folderId: 'folder_jlpt_n3',
-    name: 'N3 Chữ Hán (609 Kanji)',
-    description: '609 chữ Kanji N3 kèm 100% âm Hán Việt, Onyomi, Kunyomi',
-    color: '#059669',
-    cardType: 'kanji',
-    cardIds: [],
-    newCardsPerDay: 15,
-    maxReviewsPerDay: 40,
-    isDefault: true,
-    createdAt: new Date().toISOString()
-  },
-  {
     id: 'deck_n3_grammar',
     folderId: 'folder_jlpt_n3',
     name: 'N3 Ngữ Pháp Cốt Lõi (97 Cấu Trúc)',
@@ -90,7 +77,8 @@ export const DEFAULT_DECKS: Deck[] = [
 ];
 
 /**
- * Builds standard default StudyCards for N3 Words, Kanji, and Grammar.
+ * Builds standard default StudyCards for N3 Words and Grammar.
+ * (Kanji is used as interactive lookup/reference and network links rather than isolated flashcards)
  */
 export function buildDefaultCards(): StudyCard[] {
   const cards: StudyCard[] = [];
@@ -105,22 +93,6 @@ export function buildDefaultCards(): StudyCard[] {
       refId: w.id,
       word: w,
       deckId: 'deck_n3_words',
-      fsrsCard: createNewCard(),
-      isNew: true,
-      isDue: false
-    });
-  }
-
-  // 2. N3 Kanji
-  for (let idx = 0; idx < SEED_KANJI.length; idx++) {
-    const k = SEED_KANJI[idx];
-    if (!k) continue;
-    cards.push({
-      id: `c_kanji_${k.char}`,
-      type: 'kanji',
-      refId: k.char,
-      kanji: k,
-      deckId: 'deck_n3_kanji',
       fsrsCard: createNewCard(),
       isNew: true,
       isDue: false

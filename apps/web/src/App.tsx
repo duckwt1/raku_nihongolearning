@@ -122,7 +122,11 @@ export function App() {
   const [decks, setDecks] = useState<Deck[]>(() => {
     try {
       const saved = localStorage.getItem('raku_decks');
-      return saved ? JSON.parse(saved) : DEFAULT_DECKS;
+      if (saved) {
+        const parsed: Deck[] = JSON.parse(saved);
+        return parsed.filter((d) => d.id !== 'deck_n3_kanji');
+      }
+      return DEFAULT_DECKS;
     } catch {
       return DEFAULT_DECKS;
     }
@@ -139,32 +143,34 @@ export function App() {
     return createInitialStudyStats();
   });
 
-  // StudyCards state (Words, Kanji, Grammar initialized)
+  // StudyCards state (Words and Grammar initialized for active flashcard review)
   const [allCards, setAllCards] = useState<StudyCard[]>(() => {
     try {
       const saved = localStorage.getItem('raku_cards');
       if (saved) {
         const parsed: StudyCard[] = JSON.parse(saved);
-        return parsed.map((c) => {
-          const reps = c.fsrsCard?.reps ?? 0;
-          const hasReviewed = reps > 0 || Boolean(c.fsrsCard?.last_review);
-          const isActuallyNew =
-            !hasReviewed &&
-            (c.isNew ?? true) &&
-            (c.fsrsCard?.state === 0 || c.fsrsCard?.state === undefined);
-          const dueDate = c.fsrsCard?.due ? new Date(c.fsrsCard.due) : new Date();
+        return parsed
+          .filter((c) => c.type !== 'kanji' && c.deckId !== 'deck_n3_kanji')
+          .map((c) => {
+            const reps = c.fsrsCard?.reps ?? 0;
+            const hasReviewed = reps > 0 || Boolean(c.fsrsCard?.last_review);
+            const isActuallyNew =
+              !hasReviewed &&
+              (c.isNew ?? true) &&
+              (c.fsrsCard?.state === 0 || c.fsrsCard?.state === undefined);
+            const dueDate = c.fsrsCard?.due ? new Date(c.fsrsCard.due) : new Date();
 
-          return {
-            ...c,
-            isNew: isActuallyNew,
-            isDue: !isActuallyNew && dueDate.getTime() <= Date.now(),
-            fsrsCard: {
-              ...c.fsrsCard,
-              due: dueDate,
-              last_review: c.fsrsCard?.last_review ? new Date(c.fsrsCard.last_review) : undefined
-            }
-          };
-        });
+            return {
+              ...c,
+              isNew: isActuallyNew,
+              isDue: !isActuallyNew && dueDate.getTime() <= Date.now(),
+              fsrsCard: {
+                ...c.fsrsCard,
+                due: dueDate,
+                last_review: c.fsrsCard?.last_review ? new Date(c.fsrsCard.last_review) : undefined
+              }
+            };
+          });
       }
     } catch {}
     return buildDefaultCards();
