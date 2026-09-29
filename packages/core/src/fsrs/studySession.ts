@@ -33,14 +33,35 @@ export function buildReviewQueue(
   cards: StudyCard[],
   maxNewCards = 20,
   maxDueCards = 50,
-  now: Date = new Date()
+  now: Date = new Date(),
+  extraNewCards = 0
 ): ReviewSessionState {
   const dueCards: StudyCard[] = [];
   const newCards: StudyCard[] = [];
+  const todayStr = now.toISOString().slice(0, 10);
+
+  // Count how many cards in this set were already introduced today
+  let newLearnedToday = 0;
+  for (const card of cards) {
+    if (
+      card.fsrsCard.last_review &&
+      new Date(card.fsrsCard.last_review).toISOString().slice(0, 10) === todayStr &&
+      card.fsrsCard.reps === 1
+    ) {
+      newLearnedToday++;
+    }
+  }
+
+  const effectiveNewLimit = Math.max(0, maxNewCards - newLearnedToday) + extraNewCards;
 
   for (const card of cards) {
-    if (card.isNew) {
-      if (newCards.length < maxNewCards) {
+    const isActuallyNew =
+      Boolean(card.isNew) &&
+      (!card.fsrsCard.reps || card.fsrsCard.reps === 0) &&
+      !card.fsrsCard.last_review;
+
+    if (isActuallyNew) {
+      if (newCards.length < effectiveNewLimit) {
         newCards.push(card);
       }
     } else if (card.fsrsCard.due.getTime() <= now.getTime()) {

@@ -155,25 +155,46 @@ export function calculateDeckCounts(
   let learnCount = 0;
   let dueCount = 0;
   let totalCards = 0;
+  let newLearnedToday = 0;
+  const todayStr = getTodayDateString(now);
 
   for (const card of cards) {
     if (card.deckId !== deckId) continue;
     totalCards++;
 
-    if (card.fsrsCard.state === State.New || card.isNew) {
+    if (
+      card.fsrsCard.last_review &&
+      getTodayDateString(new Date(card.fsrsCard.last_review)) === todayStr &&
+      card.fsrsCard.reps === 1
+    ) {
+      newLearnedToday++;
+    }
+
+    const isActuallyNew =
+      Boolean(card.isNew) &&
+      (!card.fsrsCard.reps || card.fsrsCard.reps === 0) &&
+      !card.fsrsCard.last_review;
+
+    if (isActuallyNew) {
       newCount++;
     } else if (
       card.fsrsCard.state === State.Learning ||
       card.fsrsCard.state === State.Relearning
     ) {
-      learnCount++;
+      if (card.fsrsCard.due.getTime() <= now.getTime()) {
+        learnCount++;
+      }
     } else if (card.fsrsCard.due.getTime() <= now.getTime()) {
       dueCount++;
     }
   }
 
+  const remainingNew = deckLimit
+    ? Math.max(0, deckLimit.newCardsPerDay - newLearnedToday)
+    : newCount;
+
   return {
-    newCount: deckLimit ? Math.min(newCount, deckLimit.newCardsPerDay) : newCount,
+    newCount: deckLimit ? Math.min(newCount, remainingNew) : newCount,
     learnCount,
     dueCount: deckLimit ? Math.min(dueCount, deckLimit.maxReviewsPerDay) : dueCount,
     totalCards
@@ -201,13 +222,20 @@ export function calculateFolderCounts(
     if (!card.deckId || !childDeckIds.has(card.deckId)) continue;
     totalCards++;
 
-    if (card.fsrsCard.state === State.New || card.isNew) {
+    const isActuallyNew =
+      Boolean(card.isNew) &&
+      (!card.fsrsCard.reps || card.fsrsCard.reps === 0) &&
+      !card.fsrsCard.last_review;
+
+    if (isActuallyNew) {
       newCount++;
     } else if (
       card.fsrsCard.state === State.Learning ||
       card.fsrsCard.state === State.Relearning
     ) {
-      learnCount++;
+      if (card.fsrsCard.due.getTime() <= now.getTime()) {
+        learnCount++;
+      }
     } else if (card.fsrsCard.due.getTime() <= now.getTime()) {
       dueCount++;
     }

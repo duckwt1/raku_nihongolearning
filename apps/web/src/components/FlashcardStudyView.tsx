@@ -27,6 +27,7 @@ export function FlashcardStudyView({
   onRateCard
 }: FlashcardStudyViewProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [sessionCards, setSessionCards] = useState<StudyCard[]>(() => cards);
   const [inputReading, setInputReading] = useState('');
   const [isAnswerRevealed, setIsAnswerRevealed] = useState(false);
   const [gradeResult, setGradeResult] = useState<{ isCorrect: boolean } | null>(null);
@@ -34,8 +35,13 @@ export function FlashcardStudyView({
 
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const currentCard = cards[currentIndex];
-  const totalCards = cards.length;
+  useEffect(() => {
+    setSessionCards(cards);
+    setCurrentIndex(0);
+  }, [cards]);
+
+  const currentCard = sessionCards[currentIndex];
+  const totalCards = sessionCards.length;
 
   // Auto focus input when switching to a new card
   useEffect(() => {
@@ -93,22 +99,38 @@ export function FlashcardStudyView({
   // FSRS rating handler (Again, Hard, Good, Easy)
   const handleApplyRating = useCallback(
     (rating: Rating) => {
-      if (!currentCard) return;
+      const cardToRate = sessionCards[currentIndex];
+      if (!cardToRate) return;
 
-      // Advance card state via FSRS
-      applyGrade(currentCard.fsrsCard, rating as 1 | 2 | 3 | 4);
+      // 1. Advance card state via FSRS algorithm
+      const recordLog = applyGrade(cardToRate.fsrsCard, rating as 1 | 2 | 3 | 4);
+      const updatedCard: StudyCard = {
+        ...cardToRate,
+        fsrsCard: recordLog.card,
+        isNew: false,
+        isDue: recordLog.card.due.getTime() <= Date.now()
+      };
 
+      // 2. Notify parent to persist in allCards, LocalStorage, and Firestore
       if (onRateCard) {
-        onRateCard(currentCard, rating);
+        onRateCard(updatedCard, rating);
       }
 
-      if (currentIndex + 1 < totalCards) {
+      // 3. Relearn if Again (Rating 1) like Anki: re-append card to end of session
+      const isAgain = rating === Rating.Again;
+      if (isAgain) {
+        setSessionCards((prev) => [...prev, updatedCard]);
+      }
+
+      // 4. Advance to next card or complete
+      const nextTotal = isAgain ? sessionCards.length + 1 : sessionCards.length;
+      if (currentIndex + 1 < nextTotal) {
         setCurrentIndex((prev) => prev + 1);
       } else {
         onComplete();
       }
     },
-    [currentCard, currentIndex, totalCards, onComplete, onRateCard]
+    [sessionCards, currentIndex, onComplete, onRateCard]
   );
 
   // Keyboard navigation & shortcuts (1-4 for ratings, Enter for submit)

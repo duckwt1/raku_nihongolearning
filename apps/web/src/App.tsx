@@ -141,18 +141,33 @@ export function App() {
       const saved = localStorage.getItem('raku_cards');
       if (saved) {
         const parsed: StudyCard[] = JSON.parse(saved);
-        return parsed.map((c) => ({
-          ...c,
-          fsrsCard: {
-            ...c.fsrsCard,
-            due: new Date(c.fsrsCard.due),
-            last_review: c.fsrsCard.last_review ? new Date(c.fsrsCard.last_review) : undefined
-          }
-        }));
+        return parsed.map((c) => {
+          const reps = c.fsrsCard?.reps ?? 0;
+          const hasReviewed = reps > 0 || Boolean(c.fsrsCard?.last_review);
+          const isActuallyNew =
+            !hasReviewed &&
+            (c.isNew ?? true) &&
+            (c.fsrsCard?.state === 0 || c.fsrsCard?.state === undefined);
+          const dueDate = c.fsrsCard?.due ? new Date(c.fsrsCard.due) : new Date();
+
+          return {
+            ...c,
+            isNew: isActuallyNew,
+            isDue: !isActuallyNew && dueDate.getTime() <= Date.now(),
+            fsrsCard: {
+              ...c.fsrsCard,
+              due: dueDate,
+              last_review: c.fsrsCard?.last_review ? new Date(c.fsrsCard.last_review) : undefined
+            }
+          };
+        });
       }
     } catch {}
     return buildDefaultCards();
   });
+
+  // Extra new cards quota for custom study ("Học thêm từ mới")
+  const [extraNewCards, setExtraNewCards] = useState<number>(0);
 
   // Kanji Explorer search
   const [kanjiSearch, setKanjiSearch] = useState('');
@@ -268,14 +283,35 @@ export function App() {
     let due = 0;
     let nw = 0;
     const now = new Date();
+    const todayStr = now.toISOString().slice(0, 10);
+    let learnedToday = 0;
+
     for (const card of allCards) {
-      if (card.fsrsCard.state === 0 || card.isNew) {
+      if (
+        card.fsrsCard.last_review &&
+        new Date(card.fsrsCard.last_review).toISOString().slice(0, 10) === todayStr &&
+        card.fsrsCard.reps === 1
+      ) {
+        learnedToday++;
+      }
+
+      const isActuallyNew =
+        (card.isNew || card.fsrsCard.state === 0) &&
+        (!card.fsrsCard.reps || card.fsrsCard.reps === 0) &&
+        !card.fsrsCard.last_review;
+
+      if (isActuallyNew) {
         nw++;
       } else if (card.fsrsCard.due.getTime() <= now.getTime()) {
         due++;
       }
     }
-    return { totalDueToday: due, totalNewToday: nw };
+
+    const remainingDailyNew = Math.max(0, 20 - learnedToday);
+    return {
+      totalDueToday: due,
+      totalNewToday: Math.min(nw, remainingDailyNew)
+    };
   }, [allCards]);
 
   // Target cards for active study session
@@ -304,11 +340,12 @@ export function App() {
     const newLimit = deck ? deck.newCardsPerDay : 20;
     const dueLimit = deck ? deck.maxReviewsPerDay : 50;
 
-    return buildReviewQueue(targetCards, newLimit, dueLimit).queue;
-  }, [targetCards, activeStudyTarget, decks]);
+    return buildReviewQueue(targetCards, newLimit, dueLimit, new Date(), extraNewCards).queue;
+  }, [targetCards, activeStudyTarget, decks, extraNewCards]);
 
   // Handle deck & folder actions
   const handleSelectDeckToStudy = (deck: Deck) => {
+    setExtraNewCards(0);
     setActiveStudyTarget({
       type: 'deck',
       id: deck.id,
@@ -318,6 +355,7 @@ export function App() {
   };
 
   const handleSelectFolderToStudy = (folder: Folder) => {
+    setExtraNewCards(0);
     setActiveStudyTarget({
       type: 'folder',
       id: folder.id,
@@ -724,20 +762,28 @@ export function App() {
                 </div>
 
                 {activeReviewQueue.length === 0 ? (
-                  <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
-                    <div className="text-3xl">🎉</div>
+                  <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+                    <div className="text-4xl">🎉</div>
                     <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
                       Tuyệt vời! Bạn đã hoàn thành tất cả thẻ cần học hôm nay!
                     </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                      Không còn thẻ nào đến hạn trong bộ thẻ này. Thuật toán FSRS sẽ tự động tính toán lịch nhắc nhở tối ưu tiếp theo cho bạn.
+                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
+                      Thuật toán FSRS đã lên lịch tối ưu cho các thẻ bạn vừa ôn. Các thẻ này sẽ được tạm ẩn và chỉ xuất hiện lại khi đến hạn ôn tập tiếp theo.
                     </p>
-                    <button
-                      onClick={() => setIsStudying(false)}
-                      className="px-5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-xl shadow-xs touch-target"
-                    >
-                      Trở về danh sách Deck
-                    </button>
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                      <button
+                        onClick={() => setIsStudying(false)}
+                        className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl shadow-xs touch-target"
+                      >
+                        Trở về danh sách Deck
+                      </button>
+                      <button
+                        onClick={() => setExtraNewCards((prev) => prev + 20)}
+                        className="w-full sm:w-auto px-5 py-2.5 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white text-xs font-semibold rounded-xl shadow-xs transition flex items-center justify-center space-x-1.5 touch-target"
+                      >
+                        <span>➕ Học thêm 20 từ mới tiếp theo</span>
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <FlashcardStudyView

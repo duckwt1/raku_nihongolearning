@@ -44,4 +44,73 @@ describe('buildReviewQueue', () => {
     expect(session.queue[0]?.word?.surface).toBe('due_1');
     expect(session.queue[1]?.word?.surface).toBe('new_1');
   });
+
+  it('filters out cards already studied and scheduled for future, selecting the next unlearned cards', () => {
+    const now = new Date('2026-05-01T12:00:00Z');
+    const tomorrow = new Date('2026-05-02T12:00:00Z');
+
+    // Card 1: already learned and scheduled for tomorrow
+    const studiedCard1: StudyCard = {
+      id: 'c1',
+      type: 'word',
+      refId: 'w1',
+      word: { ...dummyWord, id: 'w1', surface: 'studied_1' },
+      fsrsCard: {
+        ...createNewCard(now),
+        due: tomorrow,
+        reps: 1,
+        last_review: now
+      },
+      isNew: false,
+      isDue: false
+    };
+
+    // Card 2: next unlearned card
+    const unlearnedCard2: StudyCard = {
+      id: 'c2',
+      type: 'word',
+      refId: 'w2',
+      word: { ...dummyWord, id: 'w2', surface: 'unlearned_2' },
+      fsrsCard: createNewCard(now),
+      isNew: true,
+      isDue: false
+    };
+
+    // When building queue with extraNewCards = 1 (to bypass daily quota for studied card)
+    const session = buildReviewQueue([studiedCard1, unlearnedCard2], 1, 50, now, 1);
+    expect(session.queue.length).toBe(1);
+    // The studied card must NOT be in queue; only the next unlearned card should be chosen!
+    expect(session.queue[0]?.word?.surface).toBe('unlearned_2');
+  });
+
+  it('re-queues studied card only when its due date arrives', () => {
+    const past = new Date('2026-05-01T12:00:00Z');
+    const futureDue = new Date('2026-05-03T12:00:00Z');
+    const laterTime = new Date('2026-05-04T12:00:00Z');
+
+    const card: StudyCard = {
+      id: 'c1',
+      type: 'word',
+      refId: 'w1',
+      word: { ...dummyWord, id: 'w1', surface: 'word_due_later' },
+      fsrsCard: {
+        ...createNewCard(past),
+        due: futureDue,
+        reps: 1,
+        last_review: past
+      },
+      isNew: false,
+      isDue: false
+    };
+
+    // On May 2: not due yet
+    const may2 = new Date('2026-05-02T12:00:00Z');
+    const sessionMay2 = buildReviewQueue([card], 10, 50, may2);
+    expect(sessionMay2.queue.length).toBe(0);
+
+    // On May 4: now due for review!
+    const sessionMay4 = buildReviewQueue([card], 10, 50, laterTime);
+    expect(sessionMay4.queue.length).toBe(1);
+    expect(sessionMay4.queue[0]?.word?.surface).toBe('word_due_later');
+  });
 });
