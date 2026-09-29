@@ -12,21 +12,21 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == uid;
     }
 
-    // Shared dictionaries: Read & write for authenticated users (supports seeding and lookups)
+    // Shared dictionaries: Cho phép đọc & ghi để nạp kho dữ liệu N3
     match /kanji/{char} {
-      allow read, write: if isAuthenticated();
+      allow read, write: if true;
     }
 
     match /words/{wordId} {
-      allow read, write: if isAuthenticated();
+      allow read, write: if true;
     }
 
     match /sentences/{sentenceId} {
-      allow read, write: if isAuthenticated();
+      allow read, write: if true;
     }
 
     match /grammar/{grammarId} {
-      allow read, write: if isAuthenticated();
+      allow read, write: if true;
     }
 
     // User-specific data partition
