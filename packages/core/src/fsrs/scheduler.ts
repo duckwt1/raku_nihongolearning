@@ -47,12 +47,8 @@ export function formatInterval(due: Date, now: Date = new Date()): string {
   }
 
   const minutes = Math.round(diffMs / (60 * 1000));
-  if (minutes < 1) return '<1m';
-  if (minutes < 60) {
-    if (minutes <= 1) return '<1m';
-    if (minutes <= 10) return '<10m';
-    return `${minutes}m`;
-  }
+  if (minutes <= 1) return '<1m';
+  if (minutes < 60) return `${minutes}m`;
 
   const hours = Math.round(minutes / 60);
   if (hours < 24) return `${hours}h`;

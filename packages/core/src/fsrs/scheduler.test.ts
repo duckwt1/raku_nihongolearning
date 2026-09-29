@@ -17,7 +17,8 @@ describe('formatInterval', () => {
 
   it('formats learning intervals (1m to 10m)', () => {
     expect(formatInterval(new Date(now.getTime() + 60 * 1000), now)).toBe('<1m');
-    expect(formatInterval(new Date(now.getTime() + 10 * 60 * 1000), now)).toBe('<10m');
+    expect(formatInterval(new Date(now.getTime() + 5 * 60 * 1000), now)).toBe('5m');
+    expect(formatInterval(new Date(now.getTime() + 10 * 60 * 1000), now)).toBe('10m');
   });
 
   it('formats days, weeks, months', () => {
