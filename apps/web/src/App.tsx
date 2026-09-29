@@ -616,17 +616,16 @@ export function App() {
         } catch {}
       }
 
-      const finalStats = stats || data.stats;
-      if (finalStats) {
-        setStudyStats(finalStats);
+      if (stats) {
+        setStudyStats(stats);
         try {
-          localStorage.setItem('raku_study_stats', JSON.stringify(finalStats));
+          localStorage.setItem('raku_study_stats', JSON.stringify(stats));
         } catch {}
       }
 
-      const todayDone = finalStats?.todayStats?.reviewedCount || 0;
+      const todayDone = stats?.todayStats?.reviewedCount || 0;
       setPullResult(
-        `✓ Đã đồng bộ thành công! Đã nạp ${logsCount} lượt reviewLogs, khôi phục trạng thái FSRS cho ${cardCount || logsCount} thẻ, cập nhật tiến độ hôm nay (${todayDone} thẻ đã ôn tập, chuỗi ${finalStats?.streakDays || 0} ngày) và đồng bộ ${data.decks?.length || 0} decks từ Firestore.`
+        `✓ Đã đồng bộ thành công! Đã nạp ${logsCount} lượt reviewLogs, khôi phục trạng thái FSRS cho ${cardCount || logsCount} thẻ, cập nhật tiến độ hôm nay (${todayDone} thẻ đã ôn tập, chuỗi ${stats?.streakDays || 0} ngày) và đồng bộ ${data.decks?.length || 0} decks từ Firestore.`
       );
     } catch (err: any) {
       setPullResult(`❌ Lỗi khi tải dữ liệu: ${err.message || err}`);

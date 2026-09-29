@@ -1,7 +1,6 @@
 import {
   doc,
   setDoc,
-  getDoc,
   collection,
   addDoc,
   getDocs,
@@ -36,9 +35,7 @@ export async function syncUserProfile(user: User): Promise<void> {
         uid: user.uid,
         email: user.email || null,
         displayName: user.displayName || null,
-        isAnonymous: user.isAnonymous,
-        lastActiveAt: serverTimestamp(),
-        createdAt: serverTimestamp()
+        isAnonymous: user.isAnonymous
       },
       { merge: true }
     );
@@ -364,19 +361,7 @@ export async function loadAndApplyFirestoreReviewLogs(
       });
     });
 
-    // 1. Tải thông tin stats lưu trên /users/{userId} nếu có
-    let serverStats: UserStudyStats | undefined;
-    try {
-      const userDocRef = doc(db, 'users', userId);
-      const userDocSnap = await getDoc(userDocRef);
-      if (userDocSnap.exists() && userDocSnap.data()?.stats) {
-        serverStats = userDocSnap.data()?.stats as UserStudyStats;
-      }
-    } catch (err) {
-      console.warn('Không thể đọc stats từ user doc:', err);
-    }
-
-    // 2. Tính toán lại thống kê học tập hôm nay từ nhật ký reviewLogs (Source of Truth)
+    // Tính toán lại thống kê học tập hôm nay trực tiếp từ nhật ký reviewLogs (Source of Truth)
     const now = new Date();
     const todayStr = getTodayDateString(now);
 
@@ -410,14 +395,13 @@ export async function loadAndApplyFirestoreReviewLogs(
     const todayCorrectCount = todayLogs.filter((l) => l.rating > 1).length;
 
     let studySeconds = 0;
-    if (serverStats?.todayStats?.date === todayStr && serverStats.todayStats.studySeconds > 0) {
-      studySeconds = serverStats.todayStats.studySeconds;
+    if (existingStats?.todayStats?.date === todayStr && existingStats.todayStats.studySeconds > 0) {
+      studySeconds = existingStats.todayStats.studySeconds;
     } else if (todayReviewedCount > 0) {
       studySeconds = todayReviewedCount * 15; // Ước tính 15s mỗi lượt lật thẻ
     }
 
     const finalReviewedCount = Math.max(
-      serverStats?.todayStats?.date === todayStr ? serverStats.todayStats.reviewedCount || 0 : 0,
       todayReviewedCount,
       existingStats?.todayStats?.date === todayStr ? existingStats.todayStats.reviewedCount : 0
     );
@@ -427,18 +411,15 @@ export async function loadAndApplyFirestoreReviewLogs(
     ).size;
 
     const reconstructedStats: UserStudyStats = {
-      streakDays: Math.max(serverStats?.streakDays || 0, calculatedStreak, finalReviewedCount > 0 ? 1 : 0),
-      lastStudiedDate: uniqueDates[uniqueDates.length - 1] || serverStats?.lastStudiedDate || todayStr,
-      totalCardsLearned: Math.max(serverStats?.totalCardsLearned || 0, uniqueLearnedCards),
+      streakDays: Math.max(calculatedStreak, finalReviewedCount > 0 ? 1 : 0),
+      lastStudiedDate: uniqueDates[uniqueDates.length - 1] || todayStr,
+      totalCardsLearned: Math.max(existingStats?.totalCardsLearned || 0, uniqueLearnedCards),
       todayStats: {
         date: todayStr,
-        studySeconds: Math.max(
-          studySeconds,
-          existingStats?.todayStats?.date === todayStr ? existingStats.todayStats.studySeconds : 0
-        ),
+        studySeconds,
         reviewedCount: finalReviewedCount,
-        againCount: Math.max(serverStats?.todayStats?.againCount || 0, todayAgainCount),
-        correctCount: Math.max(serverStats?.todayStats?.correctCount || 0, todayCorrectCount)
+        againCount: Math.max(existingStats?.todayStats?.againCount || 0, todayAgainCount),
+        correctCount: Math.max(existingStats?.todayStats?.correctCount || 0, todayCorrectCount)
       }
     };
 
@@ -446,7 +427,7 @@ export async function loadAndApplyFirestoreReviewLogs(
       return {
         updatedCards: currentCards,
         logsCount: 0,
-        stats: serverStats || reconstructedStats
+        stats: reconstructedStats
       };
     }
 
@@ -468,21 +449,11 @@ export async function pullDataFromFirestore(userId: string): Promise<{
   cards: Record<string, any>;
   folders?: Folder[];
   decks?: Deck[];
-  stats?: UserStudyStats;
   reviewLogsCount: number;
 }> {
   const cardsMap: Record<string, any> = {};
 
   try {
-    // 0. Tải thông tin user stats
-    let userStats: UserStudyStats | undefined;
-    try {
-      const userSnap = await getDoc(doc(db, 'users', userId));
-      if (userSnap.exists() && userSnap.data()?.stats) {
-        userStats = userSnap.data()?.stats as UserStudyStats;
-      }
-    } catch {}
-
     // 1. Tải danh sách thẻ ôn tập
     const cardsSnapshot = await getDocs(collection(db, 'users', userId, 'cards'));
     cardsSnapshot.forEach((d) => {
@@ -510,7 +481,6 @@ export async function pullDataFromFirestore(userId: string): Promise<{
       cards: cardsMap,
       folders: folders.length > 0 ? folders : undefined,
       decks: decks.length > 0 ? decks : undefined,
-      stats: userStats,
       reviewLogsCount: logsSnapshot.size
     };
   } catch (err) {
@@ -561,8 +531,7 @@ export async function syncUserStudyStats(
           lastStudiedDate: stats.lastStudiedDate,
           totalCardsLearned: stats.totalCardsLearned,
           todayStats: stats.todayStats
-        },
-        lastActiveAt: serverTimestamp()
+        }
       },
       { merge: true }
     );
