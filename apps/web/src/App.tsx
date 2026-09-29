@@ -261,11 +261,12 @@ export function App() {
             }
           } catch {}
 
-          // Automatically load and apply Firestore reviewLogs to reconstruct FSRS state
+          // Automatically load and apply Firestore reviewLogs to reconstruct FSRS state & studyStats
           try {
-            const { updatedCards, logsCount } = await loadAndApplyFirestoreReviewLogs(
+            const { updatedCards, logsCount, stats } = await loadAndApplyFirestoreReviewLogs(
               currentUser.uid,
-              allCards
+              allCards,
+              studyStats
             );
             if (logsCount > 0) {
               setAllCards(updatedCards);
@@ -275,6 +276,12 @@ export function App() {
               console.log(
                 `✓ Đã khôi phục thành công trạng thái FSRS từ ${logsCount} lượt reviewLogs trên Firestore.`
               );
+            }
+            if (stats) {
+              setStudyStats(stats);
+              try {
+                localStorage.setItem('raku_study_stats', JSON.stringify(stats));
+              } catch {}
             }
           } catch (err) {
             console.warn('Không thể nạp reviewLogs khi đăng nhập:', err);
@@ -409,6 +416,19 @@ export function App() {
     const dueLimit = deck ? deck.maxReviewsPerDay : 50;
     const queue = buildReviewQueue(targetCards, newLimit, dueLimit, new Date(), nextExtra).queue;
     setStudySessionCards(queue);
+  };
+
+  const handleQuickStudyMoreNew = () => {
+    setExtraNewCards(20);
+    const target: StudyTarget = {
+      type: 'all',
+      id: 'all',
+      title: 'Toàn bộ thẻ (Học thêm từ mới)'
+    };
+    setActiveStudyTarget(target);
+    const queue = buildReviewQueue(allCards, 20, 50, new Date(), 20).queue;
+    setStudySessionCards(queue);
+    setIsStudying(true);
   };
 
   const handleCreateFolder = (name: string, description?: string, color?: string) => {
@@ -566,9 +586,10 @@ export function App() {
     setPullResult(null);
     try {
       // 1. Tải và tái hiện toàn bộ tiến độ FSRS từ reviewLogs trên Firestore
-      const { updatedCards, logsCount } = await loadAndApplyFirestoreReviewLogs(
+      const { updatedCards, logsCount, stats } = await loadAndApplyFirestoreReviewLogs(
         user.uid,
-        allCards
+        allCards,
+        studyStats
       );
       if (logsCount > 0) {
         setAllCards(updatedCards);
@@ -577,7 +598,7 @@ export function App() {
         } catch {}
       }
 
-      // 2. Tải decks, folders và thẻ cards
+      // 2. Tải decks, folders, thẻ cards và stats từ Firestore
       const data = await pullDataFromFirestore(user.uid);
       const cardCount = Object.keys(data.cards).length;
 
@@ -595,8 +616,17 @@ export function App() {
         } catch {}
       }
 
+      const finalStats = stats || data.stats;
+      if (finalStats) {
+        setStudyStats(finalStats);
+        try {
+          localStorage.setItem('raku_study_stats', JSON.stringify(finalStats));
+        } catch {}
+      }
+
+      const todayDone = finalStats?.todayStats?.reviewedCount || 0;
       setPullResult(
-        `✓ Đã đồng bộ thành công! Đã nạp ${logsCount} lượt reviewLogs, tái lập chính xác thuật toán FSRS cho ${cardCount} thẻ và cập nhật ${data.decks?.length || 0} decks từ Firestore.`
+        `✓ Đã đồng bộ thành công! Đã nạp ${logsCount} lượt reviewLogs, khôi phục trạng thái FSRS cho ${cardCount || logsCount} thẻ, cập nhật tiến độ hôm nay (${todayDone} thẻ đã ôn tập, chuỗi ${finalStats?.streakDays || 0} ngày) và đồng bộ ${data.decks?.length || 0} decks từ Firestore.`
       );
     } catch (err: any) {
       setPullResult(`❌ Lỗi khi tải dữ liệu: ${err.message || err}`);
@@ -765,6 +795,7 @@ export function App() {
                       handleSelectDeckToStudy(firstDeck);
                     }
                   }}
+                  onStudyMoreNew={handleQuickStudyMoreNew}
                 />
 
                 {/* 2. Hierarchical Decks & Folders View (Anki style) */}

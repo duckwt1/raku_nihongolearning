@@ -6,13 +6,15 @@ interface TodayStatsBarProps {
   totalDueToday: number;
   totalNewToday: number;
   onQuickStudy?: () => void;
+  onStudyMoreNew?: () => void;
 }
 
 export function TodayStatsBar({
   stats,
   totalDueToday,
   totalNewToday,
-  onQuickStudy
+  onQuickStudy,
+  onStudyMoreNew
 }: TodayStatsBarProps) {
   const { studySeconds, reviewedCount } = stats.todayStats;
   const minutes = Math.floor(studySeconds / 60);
@@ -20,6 +22,8 @@ export function TodayStatsBar({
 
   const formattedTime =
     minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds} giây`;
+
+  const isDailyGoalFinished = reviewedCount > 0 && totalDueToday === 0 && totalNewToday === 0;
 
   return (
     <div className="bg-gradient-to-r from-sky-500/10 via-indigo-500/10 to-purple-500/10 dark:from-sky-950/40 dark:via-indigo-950/40 dark:to-purple-950/40 border border-sky-200 dark:border-sky-900/60 rounded-3xl p-4 sm:p-5 shadow-sm space-y-4">
@@ -33,6 +37,11 @@ export function TodayStatsBar({
           <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
             Tiến độ hôm nay
           </span>
+          {isDailyGoalFinished && (
+            <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-100/80 dark:bg-emerald-950/80 px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-800">
+              🎉 Hoàn thành mục tiêu!
+            </span>
+          )}
         </div>
 
         {/* Streak badge and Quick study button */}
@@ -48,6 +57,16 @@ export function TodayStatsBar({
               className="px-3.5 py-1 rounded-full bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-xs transition touch-target flex items-center space-x-1"
             >
               <span>Học ngay</span>
+            </button>
+          )}
+
+          {onStudyMoreNew && isDailyGoalFinished && (
+            <button
+              onClick={onStudyMoreNew}
+              className="px-3.5 py-1 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition touch-target flex items-center space-x-1"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Học thêm từ mới (+20)</span>
             </button>
           )}
         </div>
@@ -96,6 +115,9 @@ export function TodayStatsBar({
             </div>
             <div className="text-sm sm:text-base font-extrabold text-indigo-600 dark:text-indigo-400">
               {totalDueToday} <span className="text-xs font-normal text-slate-400">thẻ</span>
+              {totalDueToday === 0 && reviewedCount > 0 && (
+                <span className="block text-[10px] font-normal text-emerald-500">Đã ôn xong</span>
+              )}
             </div>
           </div>
         </div>
@@ -111,6 +133,9 @@ export function TodayStatsBar({
             </div>
             <div className="text-sm sm:text-base font-extrabold text-amber-600 dark:text-amber-400">
               {totalNewToday} <span className="text-xs font-normal text-slate-400">thẻ</span>
+              {totalNewToday === 0 && reviewedCount > 0 && (
+                <span className="block text-[10px] font-normal text-amber-500">Đạt chỉ tiêu ngày</span>
+              )}
             </div>
           </div>
         </div>
