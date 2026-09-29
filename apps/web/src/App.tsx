@@ -21,6 +21,7 @@ import {
   createNewCard
 } from '@raku/core';
 import { auth, signInAnonymously, onAuthStateChanged, type User } from './services/firebase';
+import { syncUserProfile, saveCardProgress } from './services/firestoreSync';
 import { DataLicensesModal } from './components/DataLicensesModal';
 import { FlashcardStudyView } from './components/FlashcardStudyView';
 import { ImportView } from './components/ImportView';
@@ -57,6 +58,9 @@ export function App() {
 
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+      if (currentUser) {
+        syncUserProfile(currentUser);
+      }
     });
 
     return () => {
@@ -289,6 +293,11 @@ export function App() {
                   cards={activeReviewQueue}
                   onComplete={() => setIsStudying(false)}
                   onSelectKanji={(char) => setSelectedKanjiChar(char)}
+                  onRateCard={(card, rating) => {
+                    if (user) {
+                      saveCardProgress(user.uid, card, rating);
+                    }
+                  }}
                 />
               </div>
             )}

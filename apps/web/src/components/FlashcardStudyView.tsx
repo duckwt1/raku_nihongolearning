@@ -17,12 +17,14 @@ interface FlashcardStudyViewProps {
   cards: StudyCard[];
   onComplete: () => void;
   onSelectKanji?: (char: string) => void;
+  onRateCard?: (card: StudyCard, rating: number) => void;
 }
 
 export function FlashcardStudyView({
   cards,
   onComplete,
-  onSelectKanji
+  onSelectKanji,
+  onRateCard
 }: FlashcardStudyViewProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [inputReading, setInputReading] = useState('');
@@ -79,13 +81,17 @@ export function FlashcardStudyView({
       // Advance card state via FSRS
       applyGrade(currentCard.fsrsCard, rating as 1 | 2 | 3 | 4);
 
+      if (onRateCard) {
+        onRateCard(currentCard, rating);
+      }
+
       if (currentIndex + 1 < totalCards) {
         setCurrentIndex((prev) => prev + 1);
       } else {
         onComplete();
       }
     },
-    [currentCard, currentIndex, totalCards, onComplete]
+    [currentCard, currentIndex, totalCards, onComplete, onRateCard]
   );
 
   // Keyboard navigation & shortcuts (1-4 for ratings, Enter for submit)
