@@ -1,0 +1,78 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    // Shared dictionaries: Read-only for authenticated users, client write denied
+    match /kanji/{char} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /words/{wordId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /sentences/{sentenceId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /grammar/{grammarId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // User-specific data partition
+    match /users/{uid} {
+      // User profile / settings
+      allow read, write: if isOwner(uid);
+
+      // FSRS flashcards
+      match /cards/{cardId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      // Review logs: Append-only! No updates or deletes allowed
+      match /reviewLogs/{logId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid);
+        allow update, delete: if false;
+      }
+
+      // Kanji mastery progress
+      match /kanjiProgress/{char} {
+        allow read, write: if isOwner(uid);
+      }
+
+      // Custom imported words
+      match /customWords/{wordId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      // Import batch history
+      match /imports/{importId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      // Custom decks and questions
+      match /decks/{deckId} {
+        allow read, write: if isOwner(uid);
+
+        match /questions/{qid} {
+          allow read, write: if isOwner(uid);
+        }
+      }
+    }
+  }
+}

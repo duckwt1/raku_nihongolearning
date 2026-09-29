@@ -1,0 +1,17 @@
+{
+  "name": "@raku/scripts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "inspect:n3": "tsx src/inspect-user-data.ts"
+  },
+  "dependencies": {
+    "@raku/core": "*"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  }
+}

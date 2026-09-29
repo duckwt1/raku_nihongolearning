@@ -1,0 +1,20 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "words",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "kanji", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "jlpt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "cards",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "due", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

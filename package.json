@@ -1,0 +1,31 @@
+{
+  "name": "raku-nihongo-learning",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Nền tảng tự học tiếng Nhật liên kết Kanji - Từ vựng - Ngữ pháp kèm AI",
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "worker",
+    "scripts",
+    "firebase"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=@raku/web",
+    "dev:worker": "npm run dev --workspace=@raku/worker",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "emulators": "firebase emulators:start --config firebase/firebase.json"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.7",
+    "firebase-tools": "^13.31.1",
+    "wrangler": "^3.111.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
