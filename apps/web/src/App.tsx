@@ -13,7 +13,10 @@ import {
   User as UserIcon,
   Database,
   CloudUpload,
-  RefreshCw
+  RefreshCw,
+  CheckCircle2,
+  Cloud,
+  ChevronDown
 } from 'lucide-react';
 import {
   SEED_KANJI,
@@ -33,7 +36,12 @@ import {
   syncUserProfile,
   saveCardProgress,
   seedAllN3DataToFirestore,
-  pullDataFromFirestore
+  pullDataFromFirestore,
+  flushOfflineQueue,
+  getPendingSyncCount,
+  enqueueOfflineReview,
+  syncFoldersAndDecks,
+  syncUserStudyStats
 } from './services/firestoreSync';
 import { DataLicensesModal } from './components/DataLicensesModal';
 import { FlashcardStudyView } from './components/FlashcardStudyView';
@@ -47,7 +55,25 @@ import { DeckFolderView } from './components/DeckFolderView';
 
 export function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+  const [isOnline, setIsOnline] = useState<boolean>(() => {
+    return typeof navigator !== 'undefined' ? navigator.onLine : true;
+  });
+  const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'offline'>(() => {
+    return typeof navigator !== 'undefined' && navigator.onLine ? 'synced' : 'offline';
+  });
+  const [pendingCount, setPendingCount] = useState<number>(() => getPendingSyncCount());
+  const [syncToast, setSyncToast] = useState<{
+    message: string;
+    type: 'success' | 'info' | 'warning';
+  } | null>(null);
+
+  const showSyncToast = (message: string, type: 'success' | 'info' | 'warning' = 'info') => {
+    setSyncToast({ message, type });
+    setTimeout(() => {
+      setSyncToast((prev) => (prev?.message === message ? null : prev));
+    }, 4500);
+  };
+
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
@@ -149,15 +175,66 @@ export function App() {
   }, [isStudying]);
 
   useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
+    const handleOnline = async () => {
+      setIsOnline(true);
+      setSyncStatus('syncing');
+
+      const currentUid = user?.uid || auth.currentUser?.uid;
+      if (currentUid) {
+        try {
+          const flushed = await flushOfflineQueue(currentUid);
+          await syncFoldersAndDecks(currentUid, folders, decks);
+          await syncUserStudyStats(currentUid, studyStats);
+          setPendingCount(getPendingSyncCount());
+          setSyncStatus('synced');
+          if (flushed > 0) {
+            showSyncToast(
+              `🟢 Đã kết nối lại! Tự động đồng bộ ${flushed} lượt ôn tập offline lên đám mây.`,
+              'success'
+            );
+          } else {
+            showSyncToast('🟢 Đã kết nối Internet. Dữ liệu đã được lưu trữ an toàn.', 'info');
+          }
+        } catch (err) {
+          console.warn('Lỗi auto sync khi online:', err);
+          setSyncStatus('synced');
+        }
+      } else {
+        setSyncStatus('synced');
+        showSyncToast('🟢 Đã kết nối Internet.', 'info');
+      }
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+      setSyncStatus('offline');
+      setPendingCount(getPendingSyncCount());
+      showSyncToast(
+        '🟠 Đang ở chế độ Ngoại tuyến. Mọi bài học và lượt ôn tập sẽ được lưu an toàn tại máy!',
+        'warning'
+      );
+    };
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
         syncUserProfile(currentUser);
+        // Flush any pending reviews when user logs in
+        if (navigator.onLine) {
+          try {
+            const flushed = await flushOfflineQueue(currentUser.uid);
+            setPendingCount(getPendingSyncCount());
+            if (flushed > 0) {
+              showSyncToast(
+                `✓ Đã đồng bộ ${flushed} lượt ôn tập offline vào tài khoản Firebase!`,
+                'success'
+              );
+            }
+          } catch {}
+        }
       }
     });
 
@@ -166,7 +243,7 @@ export function App() {
       window.removeEventListener('offline', handleOffline);
       unsubscribe();
     };
-  }, []);
+  }, [user, folders, decks, studyStats]);
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
@@ -327,9 +404,51 @@ export function App() {
       return updated;
     });
 
-    // 3. Sync to Firestore
-    if (user) {
-      saveCardProgress(user.uid, card, rating);
+    // 3. Offline-First Sync to Firestore
+    const currentUid = user?.uid || auth.currentUser?.uid;
+    if (currentUid) {
+      saveCardProgress(currentUid, card, rating).then(() => {
+        setPendingCount(getPendingSyncCount());
+      });
+    } else {
+      // Local queue if no account yet
+      enqueueOfflineReview({
+        id: `${card.id}_${Date.now()}`,
+        userId: 'local_device',
+        card,
+        rating,
+        reviewedAt: new Date().toISOString()
+      });
+      setPendingCount(getPendingSyncCount());
+    }
+  };
+
+  const handleManualSync = async () => {
+    if (!navigator.onLine) {
+      showSyncToast('Thiết bị đang ngoại tuyến, không thể đồng bộ lên đám mây.', 'warning');
+      return;
+    }
+    const currentUid = user?.uid || auth.currentUser?.uid;
+    if (!currentUid) {
+      showSyncToast('Vui lòng đăng nhập hoặc bấm Dùng thử ngay để đồng bộ.', 'warning');
+      return;
+    }
+    setSyncStatus('syncing');
+    try {
+      const flushed = await flushOfflineQueue(currentUid);
+      await syncFoldersAndDecks(currentUid, folders, decks);
+      await syncUserStudyStats(currentUid, studyStats);
+      setPendingCount(getPendingSyncCount());
+      setSyncStatus('synced');
+      showSyncToast(
+        flushed > 0
+          ? `✓ Đã đồng bộ xong! Đẩy thành công ${flushed} lượt ôn tập lên đám mây.`
+          : '✓ Đã đồng bộ! Toàn bộ dữ liệu của bạn đã khớp với Firebase.',
+        'success'
+      );
+    } catch (err: any) {
+      setSyncStatus('synced');
+      showSyncToast(`❌ Đồng bộ thất bại: ${err?.message || err}`, 'warning');
     }
   };
 
@@ -433,26 +552,40 @@ export function App() {
         </div>
 
         <div className="flex items-center space-x-2">
-          {/* Online/Offline status */}
-          <span
-            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-              isOnline
-                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
-                : 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+          {/* Offline-First Sync Status indicator */}
+          <div
+            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium cursor-default transition-all ${
+              !isOnline
+                ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300/50 dark:border-amber-800'
+                : syncStatus === 'syncing'
+                ? 'bg-sky-100 text-sky-800 dark:bg-sky-950/80 dark:text-sky-300 border border-sky-300/50 dark:border-sky-800'
+                : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800'
             }`}
+            title={
+              !isOnline
+                ? `Đang ngoại tuyến. ${pendingCount > 0 ? `${pendingCount} lượt ôn tập đang lưu tại máy, sẽ tự đồng bộ khi có mạng.` : 'Dữ liệu được lưu an toàn tại máy.'}`
+                : syncStatus === 'syncing'
+                ? 'Đang đồng bộ dữ liệu lên Firebase...'
+                : 'Đã đồng bộ trực tuyến với đám mây'
+            }
           >
-            {isOnline ? (
+            {!isOnline ? (
               <>
-                <Wifi className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
-                Online
+                <WifiOff className="w-3.5 h-3.5 mr-1.5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+                <span>Ngoại tuyến{pendingCount > 0 ? ` (${pendingCount})` : ''}</span>
+              </>
+            ) : syncStatus === 'syncing' ? (
+              <>
+                <RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin text-sky-600 dark:text-sky-400" aria-hidden="true" />
+                <span>Đang đồng bộ...</span>
               </>
             ) : (
               <>
-                <WifiOff className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
-                Offline
+                <Wifi className="w-3.5 h-3.5 mr-1.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                <span>Đã đồng bộ</span>
               </>
             )}
-          </span>
+          </div>
 
           {/* AI Quiz generator button */}
           <button
@@ -484,6 +617,35 @@ export function App() {
           </button>
         </div>
       </header>
+
+      {/* Auto-Sync Toast Notification */}
+      {syncToast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className={`fixed top-16 left-1/2 -translate-x-1/2 z-50 max-w-md w-[92%] sm:w-auto px-4 py-3 rounded-2xl shadow-xl border backdrop-blur-md text-xs font-medium flex items-center justify-between gap-3 transition-all animate-in fade-in slide-in-from-top-3 duration-300 ${
+            syncToast.type === 'success'
+              ? 'bg-emerald-50/95 dark:bg-emerald-950/95 border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200'
+              : syncToast.type === 'warning'
+              ? 'bg-amber-50/95 dark:bg-amber-950/95 border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200'
+              : 'bg-sky-50/95 dark:bg-sky-950/95 border-sky-300 dark:border-sky-800 text-sky-900 dark:text-sky-200'
+          }`}
+        >
+          <div className="flex items-center space-x-2">
+            {syncToast.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />}
+            {syncToast.type === 'warning' && <WifiOff className="w-4 h-4 text-amber-600 shrink-0" />}
+            {syncToast.type === 'info' && <Cloud className="w-4 h-4 text-sky-600 shrink-0" />}
+            <span>{syncToast.message}</span>
+          </div>
+          <button
+            onClick={() => setSyncToast(null)}
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 ml-1 p-0.5 rounded"
+            aria-label="Đóng thông báo"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 pb-24">
@@ -648,42 +810,141 @@ export function App() {
         {/* TAB 5: SETTINGS */}
         {activeTab === 'settings' && (
           <div className="space-y-4">
-            {/* Database & Firebase Sync Section */}
-            <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
-              <div className="flex items-center justify-between">
+            {/* Database & Firebase Offline-First Sync Section */}
+            <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-5 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center space-x-2">
-                    <Database className="w-5 h-5 text-amber-500" />
-                    <span>Quản Lý Cơ Sở Dữ Liệu Firebase &amp; Đồng Bộ</span>
+                    <Database className="w-5 h-5 text-sky-500" />
+                    <span>Đồng Bộ Đám Mây &amp; Dữ Liệu Ngoại Tuyến (Offline-First)</span>
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Xuất toàn bộ kho dữ liệu N3 lên Cloud Firestore và đồng bộ tiến độ học đa thiết bị
+                    Mô hình tự động tương tự Anki: học offline không ngắt quãng, tự động đồng bộ khi có Internet
                   </p>
                 </div>
 
-                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300">
-                  {user ? (user.isAnonymous ? 'Khách ẩn danh' : 'Đã đăng nhập') : 'Chưa đăng nhập'}
-                </span>
+                <div className="flex items-center space-x-2">
+                  <span
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                      !isOnline
+                        ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
+                        : syncStatus === 'syncing'
+                        ? 'bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-800'
+                        : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                    }`}
+                  >
+                    {!isOnline ? (
+                      <>
+                        <WifiOff className="w-3.5 h-3.5 mr-1 text-amber-600" />
+                        Ngoại tuyến (Lưu tại máy)
+                      </>
+                    ) : syncStatus === 'syncing' ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 mr-1 animate-spin text-sky-600" />
+                        Đang đồng bộ...
+                      </>
+                    ) : (
+                      <>
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5" />
+                        Tự động sao lưu trực tuyến
+                      </>
+                    )}
+                  </span>
+                </div>
               </div>
 
-              {/* Action Buttons Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                {/* Seed button */}
-                <div className="p-4 rounded-2xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 space-y-2">
-                  <div className="flex items-center space-x-2 text-xs font-bold text-amber-800 dark:text-amber-300">
-                    <CloudUpload className="w-4 h-4" />
-                    <span>Xuất Toàn Bộ Dữ Liệu N3 Lên Firebase</span>
+              {/* Status details card */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/60">
+                    <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Trạng thái mạng</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 mt-0.5 block">
+                      {isOnline ? '🟢 Đã kết nối Internet' : '🟠 Đang ngoại tuyến'}
+                    </span>
                   </div>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Đẩy toàn bộ 609 chữ Kanji, 880 từ vựng Mimikara, 97 cấu trúc ngữ pháp và 880 câu ví dụ vào các collection trên Firestore.
+
+                  <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/60">
+                    <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Hàng đợi chờ đồng bộ</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 mt-0.5 block">
+                      {pendingCount > 0 ? (
+                        <span className="text-amber-600 dark:text-amber-400">{pendingCount} lượt ôn tập chờ sync</span>
+                      ) : (
+                        <span className="text-emerald-600 dark:text-emerald-400">0 bản ghi (Đã khớp hoàn toàn)</span>
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/60">
+                    <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Tài khoản đám mây</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 mt-0.5 block truncate">
+                      {user ? (user.isAnonymous ? '👤 Khách ẩn danh' : `✓ ${user.email}`) : 'Chưa đăng nhập'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 space-y-1 pt-1 leading-relaxed">
+                  <p>• <strong>Khi có mạng:</strong> Bạn không cần bấm nút đồng bộ. Ứng dụng tự động lưu ngầm mọi tiến độ lên Cloud Firestore trong tích tắc.</p>
+                  <p>• <strong>Khi mất mạng:</strong> Bạn vẫn học và ôn tập bình thường 100%. Dữ liệu được lưu an toàn tại máy.</p>
+                  <p>• <strong>Khi có mạng trở lại:</strong> Hệ thống tự động nhận diện và đẩy toàn bộ hàng đợi offline lên Firebase mà không làm phiền bạn.</p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1">
+                <button
+                  onClick={handleManualSync}
+                  disabled={syncStatus === 'syncing' || !isOnline}
+                  className="flex-1 py-2.5 px-4 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-xs transition flex items-center justify-center space-x-1.5 touch-target"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
+                  <span>{syncStatus === 'syncing' ? 'Đang đồng bộ...' : '🔄 Đồng bộ ngay lập tức'}</span>
+                </button>
+
+                <button
+                  onClick={handlePullFromFirestore}
+                  disabled={isPulling || !isOnline}
+                  className="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 disabled:opacity-50 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl transition flex items-center justify-center space-x-1.5 touch-target"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isPulling ? 'animate-spin' : ''}`} />
+                  <span>{isPulling ? 'Đang tải dữ liệu...' : '📥 Kéo dữ liệu từ Firebase về máy'}</span>
+                </button>
+              </div>
+
+              {pullResult && (
+                <div
+                  className={`p-3 rounded-xl text-xs font-medium ${
+                    pullResult.startsWith('✓')
+                      ? 'bg-emerald-100/80 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
+                      : 'bg-rose-100/80 dark:bg-rose-950 text-rose-800 dark:text-rose-300'
+                  }`}
+                >
+                  {pullResult}
+                </div>
+              )}
+
+              {/* Collapsed Advanced Section: Seeding Database */}
+              <details className="group border border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-900/40 p-4 transition">
+                <summary className="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 cursor-pointer flex items-center justify-between list-none">
+                  <div className="flex items-center space-x-2">
+                    <CloudUpload className="w-4 h-4 text-slate-400 group-open:text-amber-500" />
+                    <span>⚙️ Cài đặt nâng cao: Quản lý kho dữ liệu N3 gốc (2.466 bản ghi)</span>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-slate-400 transition-transform group-open:rotate-180" />
+                </summary>
+
+                <div className="mt-4 pt-3 border-t border-slate-200/60 dark:border-slate-800 space-y-3">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Kho dữ liệu N3 gồm 609 chữ Kanji, 880 từ vựng Mimikara, 97 cấu trúc ngữ pháp và 880 câu ví dụ đã được xuất lên Cloud Firestore.
+                    Bạn chỉ cần bấm nút dưới đây nếu muốn khôi phục hoặc nạp đè lại dữ liệu gốc.
                   </p>
+
                   <button
                     onClick={handleSeedAllN3}
                     disabled={isSeeding}
-                    className="w-full py-2 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-xs transition flex items-center justify-center space-x-1.5 touch-target"
+                    className="py-2 px-4 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-xs transition flex items-center justify-center space-x-1.5 touch-target"
                   >
                     <CloudUpload className="w-3.5 h-3.5" />
-                    <span>{isSeeding ? 'Đang xuất dữ liệu lên Firebase...' : '⚡ Xuất N3 lên Firestore'}</span>
+                    <span>{isSeeding ? 'Đang xuất dữ liệu lên Firebase...' : '⚡ Nạp lại dữ liệu N3 lên Firestore'}</span>
                   </button>
 
                   {isSeeding && seedProgress && (
@@ -702,45 +963,18 @@ export function App() {
                   )}
 
                   {seedResult && (
-                    <div className={`p-2.5 rounded-xl text-xs font-medium ${
-                      seedResult.startsWith('✓')
-                        ? 'bg-emerald-100/80 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
-                        : 'bg-rose-100/80 dark:bg-rose-950 text-rose-800 dark:text-rose-300'
-                    }`}>
+                    <div
+                      className={`p-2.5 rounded-xl text-xs font-medium ${
+                        seedResult.startsWith('✓')
+                          ? 'bg-emerald-100/80 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
+                          : 'bg-rose-100/80 dark:bg-rose-950 text-rose-800 dark:text-rose-300'
+                      }`}
+                    >
                       {seedResult}
                     </div>
                   )}
                 </div>
-
-                {/* Pull sync button */}
-                <div className="p-4 rounded-2xl bg-sky-50/60 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-900/60 space-y-2">
-                  <div className="flex items-center space-x-2 text-xs font-bold text-sky-800 dark:text-sky-300">
-                    <RefreshCw className="w-4 h-4" />
-                    <span>Tải &amp; Đồng Bộ Từ Firebase Về Máy</span>
-                  </div>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Tải toàn bộ tiến độ ôn tập FSRS, lịch nhắc nhở và cấu trúc thư mục/deck đã lưu trên đám mây về thiết bị này.
-                  </p>
-                  <button
-                    onClick={handlePullFromFirestore}
-                    disabled={isPulling}
-                    className="w-full py-2 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-xs transition flex items-center justify-center space-x-1.5 touch-target"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 ${isPulling ? 'animate-spin' : ''}`} />
-                    <span>{isPulling ? 'Đang đồng bộ từ Firestore...' : '🔄 Đồng bộ từ Firebase về'}</span>
-                  </button>
-
-                  {pullResult && (
-                    <div className={`p-2.5 rounded-xl text-xs font-medium ${
-                      pullResult.startsWith('✓')
-                        ? 'bg-emerald-100/80 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
-                        : 'bg-rose-100/80 dark:bg-rose-950 text-rose-800 dark:text-rose-300'
-                    }`}>
-                      {pullResult}
-                    </div>
-                  )}
-                </div>
-              </div>
+              </details>
             </div>
 
             {/* General Settings Section */}

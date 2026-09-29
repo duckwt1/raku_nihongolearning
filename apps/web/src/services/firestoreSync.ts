@@ -12,6 +12,7 @@ import {
   type StudyCard,
   type Folder,
   type Deck,
+  type UserStudyStats,
   SEED_KANJI,
   SEED_WORDS,
   SEED_GRAMMAR,
@@ -46,14 +47,148 @@ export async function syncUserProfile(user: User): Promise<void> {
   }
 }
 
+export interface OfflineReviewItem {
+  id: string;
+  userId: string;
+  card: StudyCard;
+  rating: number;
+  reviewedAt: string;
+}
+
+const OFFLINE_QUEUE_KEY = 'raku_offline_reviews_queue';
+
 /**
- * Lưu tiến độ thẻ ôn tập FSRS và ghi nhật ký ôn tập vào Firestore
+ * Lấy danh sách các lượt ôn tập đang chờ đồng bộ từ LocalStorage
+ */
+export function getOfflineReviewQueue(): OfflineReviewItem[] {
+  try {
+    const raw = localStorage.getItem(OFFLINE_QUEUE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Lấy số lượng bản ghi đang chờ đồng bộ lên Firestore
+ */
+export function getPendingSyncCount(): number {
+  return getOfflineReviewQueue().length;
+}
+
+/**
+ * Đưa 1 lượt ôn tập vào hàng đợi ngoại tuyến
+ */
+export function enqueueOfflineReview(item: OfflineReviewItem): void {
+  try {
+    const queue = getOfflineReviewQueue();
+    queue.push(item);
+    localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+  } catch (err) {
+    console.error('Không thể lưu hàng đợi offline:', err);
+  }
+}
+
+/**
+ * Xóa sạch hàng đợi ngoại tuyến khi đã đẩy thành công
+ */
+export function clearOfflineReviewQueue(): void {
+  try {
+    localStorage.removeItem(OFFLINE_QUEUE_KEY);
+  } catch {}
+}
+
+/**
+ * Đẩy toàn bộ hàng đợi ngoại tuyến lên Firestore (khi có mạng trở lại)
+ */
+export async function flushOfflineQueue(userId: string): Promise<number> {
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    return 0;
+  }
+  const queue = getOfflineReviewQueue();
+  if (queue.length === 0) return 0;
+
+  console.log(`[Offline Sync] Đang đẩy ${queue.length} lượt ôn tập ngoại tuyến lên Firestore...`);
+
+  let syncedCount = 0;
+  const remainingQueue: OfflineReviewItem[] = [];
+
+  for (const item of queue) {
+    try {
+      const targetUid = item.userId || userId;
+      // 1. Cập nhật thẻ
+      const cardRef = doc(db, 'users', targetUid, 'cards', item.card.id);
+      await setDoc(
+        cardRef,
+        {
+          id: item.card.id,
+          refId: item.card.refId,
+          type: item.card.type,
+          due: item.card.fsrsCard.due ? new Date(item.card.fsrsCard.due).toISOString() : null,
+          stability: item.card.fsrsCard.stability,
+          difficulty: item.card.fsrsCard.difficulty,
+          elapsed_days: item.card.fsrsCard.elapsed_days,
+          scheduled_days: item.card.fsrsCard.scheduled_days,
+          reps: item.card.fsrsCard.reps,
+          lapses: item.card.fsrsCard.lapses,
+          state: item.card.fsrsCard.state,
+          last_review: item.card.fsrsCard.last_review
+            ? new Date(item.card.fsrsCard.last_review).toISOString()
+            : null,
+          updatedAt: serverTimestamp()
+        },
+        { merge: true }
+      );
+
+      // 2. Ghi nhật ký ôn tập
+      const logsCol = collection(db, 'users', targetUid, 'reviewLogs');
+      await addDoc(logsCol, {
+        cardId: item.card.id,
+        rating: item.rating,
+        state: item.card.fsrsCard.state,
+        reviewedAt: item.reviewedAt || new Date().toISOString()
+      });
+
+      syncedCount++;
+    } catch (err) {
+      console.warn('Lỗi khi đẩy 1 mục trong hàng đợi offline:', err);
+      remainingQueue.push(item);
+    }
+  }
+
+  if (remainingQueue.length === 0) {
+    clearOfflineReviewQueue();
+  } else {
+    try {
+      localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(remainingQueue));
+    } catch {}
+  }
+
+  console.log(`✓ [Offline Sync] Đã đồng bộ xong ${syncedCount} lượt ôn tập lên Firestore.`);
+  return syncedCount;
+}
+
+/**
+ * Lưu tiến độ thẻ ôn tập FSRS và ghi nhật ký ôn tập vào Firestore.
+ * Nếu đang ngoại tuyến hoặc kết nối mạng lỗi, tự động lưu vào hàng đợi offline.
  */
 export async function saveCardProgress(
   userId: string,
   card: StudyCard,
   rating: number
-): Promise<void> {
+): Promise<{ success: boolean; queued: boolean }> {
+  // Nếu máy đang Offline, đưa ngay vào hàng đợi cục bộ
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    enqueueOfflineReview({
+      id: `${card.id}_${Date.now()}`,
+      userId,
+      card,
+      rating,
+      reviewedAt: new Date().toISOString()
+    });
+    return { success: true, queued: true };
+  }
+
   try {
     // 1. Cập nhật trạng thái thẻ FSRS tại /users/{uid}/cards/{cardId}
     const cardRef = doc(db, 'users', userId, 'cards', card.id);
@@ -88,9 +223,17 @@ export async function saveCardProgress(
       reviewedAt: serverTimestamp()
     });
 
-    console.log(`✓ Đã lưu lịch sử ôn tập FSRS thẻ ${card.id} lên Firestore`);
+    return { success: true, queued: false };
   } catch (err) {
-    console.warn('Lưu tiến độ FSRS lên Firestore thất bại:', err);
+    console.warn('Lưu tiến độ FSRS lên Firestore thất bại, tự động lưu vào hàng đợi offline:', err);
+    enqueueOfflineReview({
+      id: `${card.id}_${Date.now()}`,
+      userId,
+      card,
+      rating,
+      reviewedAt: new Date().toISOString()
+    });
+    return { success: false, queued: true };
   }
 }
 
@@ -240,5 +383,32 @@ export async function syncFoldersAndDecks(
     console.log('✓ Đã đồng bộ cấu trúc Thư mục và Deck lên Firestore');
   } catch (err) {
     console.warn('Không thể đồng bộ Thư mục & Deck lên Firestore:', err);
+  }
+}
+
+/**
+ * Đồng bộ chỉ số học tập hôm nay (streak, thời gian học) lên Firestore
+ */
+export async function syncUserStudyStats(
+  userId: string,
+  stats: UserStudyStats
+): Promise<void> {
+  try {
+    const userRef = doc(db, 'users', userId);
+    await setDoc(
+      userRef,
+      {
+        stats: {
+          streakDays: stats.streakDays,
+          lastStudiedDate: stats.lastStudiedDate,
+          totalCardsLearned: stats.totalCardsLearned,
+          todayStats: stats.todayStats
+        },
+        lastActiveAt: serverTimestamp()
+      },
+      { merge: true }
+    );
+  } catch (err) {
+    console.warn('Lỗi khi đồng bộ chỉ số học tập lên Firestore:', err);
   }
 }

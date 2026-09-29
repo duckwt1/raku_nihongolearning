@@ -12,21 +12,25 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == uid;
     }
 
-    // Shared dictionaries: Cho phép đọc & ghi để nạp kho dữ liệu N3
+    // Shared dictionaries: Đã nạp xong toàn bộ N3, chuyển sang chế độ CHỈ ĐỌC để bảo vệ dữ liệu
     match /kanji/{char} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if false;
     }
 
     match /words/{wordId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if false;
     }
 
     match /sentences/{sentenceId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if false;
     }
 
     match /grammar/{grammarId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if false;
     }
 
     // User-specific data partition
@@ -58,6 +62,11 @@ service cloud.firestore {
 
       // Import batch history
       match /imports/{importId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      // Folders and Decks
+      match /folders/{folderId} {
         allow read, write: if isOwner(uid);
       }
 
