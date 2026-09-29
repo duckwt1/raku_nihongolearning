@@ -14,6 +14,31 @@ export interface StudyCard {
   isNew: boolean;
   isDue: boolean;
   deckId?: string;
+  firstLearnedAt?: string;
+}
+
+/**
+ * Returns today's date in local YYYY-MM-DD format.
+ */
+export function getTodayDateString(d = new Date()): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Checks if a card was introduced or learned today.
+ */
+export function isCardLearnedToday(card: StudyCard, todayStr: string): boolean {
+  if (card.firstLearnedAt) {
+    return getTodayDateString(new Date(card.firstLearnedAt)) === todayStr;
+  }
+  return Boolean(
+    card.fsrsCard.last_review &&
+    getTodayDateString(new Date(card.fsrsCard.last_review)) === todayStr &&
+    card.fsrsCard.reps === 1
+  );
 }
 
 export interface ReviewSessionState {
@@ -38,16 +63,12 @@ export function buildReviewQueue(
 ): ReviewSessionState {
   const dueCards: StudyCard[] = [];
   const newCards: StudyCard[] = [];
-  const todayStr = now.toISOString().slice(0, 10);
+  const todayStr = getTodayDateString(now);
 
   // Count how many cards in this set were already introduced today
   let newLearnedToday = 0;
   for (const card of cards) {
-    if (
-      card.fsrsCard.last_review &&
-      new Date(card.fsrsCard.last_review).toISOString().slice(0, 10) === todayStr &&
-      card.fsrsCard.reps === 1
-    ) {
+    if (isCardLearnedToday(card, todayStr)) {
       newLearnedToday++;
     }
   }
@@ -154,7 +175,8 @@ export function applyReviewLogsToCards(
       ...c,
       fsrsCard: fsrs,
       isNew: false,
-      isDue
+      isDue,
+      firstLearnedAt: c.firstLearnedAt || firstLog.reviewedAt.toISOString()
     };
   });
 }

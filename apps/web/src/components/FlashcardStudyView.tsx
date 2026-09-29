@@ -108,7 +108,8 @@ export function FlashcardStudyView({
         ...cardToRate,
         fsrsCard: recordLog.card,
         isNew: false,
-        isDue: recordLog.card.due.getTime() <= Date.now()
+        isDue: recordLog.card.due.getTime() <= Date.now(),
+        firstLearnedAt: cardToRate.firstLearnedAt || new Date().toISOString()
       };
 
       // 2. Notify parent to persist in allCards, LocalStorage, and Firestore

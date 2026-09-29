@@ -137,6 +137,7 @@ export async function flushOfflineQueue(userId: string): Promise<number> {
           last_review: item.card.fsrsCard.last_review
             ? new Date(item.card.fsrsCard.last_review).toISOString()
             : null,
+          firstLearnedAt: item.card.firstLearnedAt || null,
           updatedAt: serverTimestamp()
         },
         { merge: true }
@@ -211,6 +212,7 @@ export async function saveCardProgress(
         last_review: card.fsrsCard.last_review
           ? new Date(card.fsrsCard.last_review).toISOString()
           : null,
+        firstLearnedAt: card.firstLearnedAt || null,
         updatedAt: serverTimestamp()
       },
       { merge: true }

@@ -1,6 +1,10 @@
 import { State } from 'ts-fsrs';
 import type { Deck, Folder, UserStudyStats } from '../models/schemas.js';
-import type { StudyCard } from '../fsrs/studySession.js';
+import {
+  type StudyCard,
+  getTodayDateString,
+  isCardLearnedToday
+} from '../fsrs/studySession.js';
 import { createNewCard } from '../fsrs/scheduler.js';
 import { SEED_WORDS, SEED_KANJI, SEED_GRAMMAR } from '../data/index.js';
 
@@ -162,11 +166,7 @@ export function calculateDeckCounts(
     if (card.deckId !== deckId) continue;
     totalCards++;
 
-    if (
-      card.fsrsCard.last_review &&
-      getTodayDateString(new Date(card.fsrsCard.last_review)) === todayStr &&
-      card.fsrsCard.reps === 1
-    ) {
+    if (isCardLearnedToday(card, todayStr)) {
       newLearnedToday++;
     }
 
@@ -244,15 +244,7 @@ export function calculateFolderCounts(
   return { newCount, learnCount, dueCount, totalCards };
 }
 
-/**
- * Returns today's date in local YYYY-MM-DD format.
- */
-export function getTodayDateString(d = new Date()): string {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
+export { getTodayDateString, isCardLearnedToday };
 
 /**
  * Creates initial user study stats

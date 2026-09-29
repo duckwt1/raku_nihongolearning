@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   BookOpen,
   Layers,
@@ -29,7 +29,9 @@ import {
   DEFAULT_DECKS,
   buildDefaultCards,
   recordStudyActivity,
-  createInitialStudyStats
+  createInitialStudyStats,
+  getTodayDateString,
+  isCardLearnedToday
 } from '@raku/core';
 import { auth, signInAnonymously, onAuthStateChanged, type User } from './services/firebase';
 import {
@@ -87,12 +89,13 @@ export function App() {
   const [selectedKanjiChar, setSelectedKanjiChar] = useState<string | null>(null);
 
   // Active study session state
-  const [isStudying, setIsStudying] = useState(false);
-  const [activeStudyTarget, setActiveStudyTarget] = useState<{
+  interface StudyTarget {
     type: 'deck' | 'folder' | 'all';
     id?: string;
     title: string;
-  } | null>(null);
+  }
+  const [isStudying, setIsStudying] = useState(false);
+  const [activeStudyTarget, setActiveStudyTarget] = useState<StudyTarget | null>(null);
 
   // Firebase Database Seeding and Sync state
   const [isSeeding, setIsSeeding] = useState(false);
@@ -169,6 +172,7 @@ export function App() {
 
   // Extra new cards quota for custom study ("Học thêm từ mới")
   const [extraNewCards, setExtraNewCards] = useState<number>(0);
+  const [studySessionCards, setStudySessionCards] = useState<StudyCard[]>([]);
 
   // Kanji Explorer search
   const [kanjiSearch, setKanjiSearch] = useState('');
@@ -303,15 +307,11 @@ export function App() {
     let due = 0;
     let nw = 0;
     const now = new Date();
-    const todayStr = now.toISOString().slice(0, 10);
+    const todayStr = getTodayDateString(now);
     let learnedToday = 0;
 
     for (const card of allCards) {
-      if (
-        card.fsrsCard.last_review &&
-        new Date(card.fsrsCard.last_review).toISOString().slice(0, 10) === todayStr &&
-        card.fsrsCard.reps === 1
-      ) {
+      if (isCardLearnedToday(card, todayStr)) {
         learnedToday++;
       }
 
@@ -334,54 +334,75 @@ export function App() {
     };
   }, [allCards]);
 
-  // Target cards for active study session
-  const targetCards = useMemo(() => {
-    if (!activeStudyTarget || activeStudyTarget.type === 'all') {
+  const getCardsForTarget = useCallback(
+    (target: StudyTarget | null) => {
+      if (!target || target.type === 'all') {
+        return allCards;
+      }
+      if (target.type === 'deck') {
+        return allCards.filter((c) => c.deckId === target.id);
+      }
+      if (target.type === 'folder') {
+        const childDeckIds = new Set(
+          decks.filter((d) => d.folderId === target.id).map((d) => d.id)
+        );
+        return allCards.filter((c) => c.deckId && childDeckIds.has(c.deckId));
+      }
       return allCards;
-    }
-    if (activeStudyTarget.type === 'deck') {
-      return allCards.filter((c) => c.deckId === activeStudyTarget.id);
-    }
-    if (activeStudyTarget.type === 'folder') {
-      const childDeckIds = new Set(
-        decks.filter((d) => d.folderId === activeStudyTarget.id).map((d) => d.id)
-      );
-      return allCards.filter((c) => c.deckId && childDeckIds.has(c.deckId));
-    }
-    return allCards;
-  }, [allCards, activeStudyTarget, decks]);
-
-  const activeReviewQueue = useMemo(() => {
-    const deck =
-      activeStudyTarget?.type === 'deck'
-        ? decks.find((d) => d.id === activeStudyTarget.id)
-        : undefined;
-
-    const newLimit = deck ? deck.newCardsPerDay : 20;
-    const dueLimit = deck ? deck.maxReviewsPerDay : 50;
-
-    return buildReviewQueue(targetCards, newLimit, dueLimit, new Date(), extraNewCards).queue;
-  }, [targetCards, activeStudyTarget, decks, extraNewCards]);
+    },
+    [allCards, decks]
+  );
 
   // Handle deck & folder actions
   const handleSelectDeckToStudy = (deck: Deck) => {
     setExtraNewCards(0);
-    setActiveStudyTarget({
+    const target: StudyTarget = {
       type: 'deck',
       id: deck.id,
       title: deck.name
-    });
+    };
+    setActiveStudyTarget(target);
+    const targetCards = allCards.filter((c) => c.deckId === deck.id);
+    const queue = buildReviewQueue(
+      targetCards,
+      deck.newCardsPerDay,
+      deck.maxReviewsPerDay,
+      new Date(),
+      0
+    ).queue;
+    setStudySessionCards(queue);
     setIsStudying(true);
   };
 
   const handleSelectFolderToStudy = (folder: Folder) => {
     setExtraNewCards(0);
-    setActiveStudyTarget({
+    const target: StudyTarget = {
       type: 'folder',
       id: folder.id,
       title: folder.name
-    });
+    };
+    setActiveStudyTarget(target);
+    const childDeckIds = new Set(
+      decks.filter((d) => d.folderId === folder.id).map((d) => d.id)
+    );
+    const targetCards = allCards.filter((c) => c.deckId && childDeckIds.has(c.deckId));
+    const queue = buildReviewQueue(targetCards, 20, 50, new Date(), 0).queue;
+    setStudySessionCards(queue);
     setIsStudying(true);
+  };
+
+  const handleLoadMoreNewCards = () => {
+    const nextExtra = extraNewCards + 20;
+    setExtraNewCards(nextExtra);
+    const targetCards = getCardsForTarget(activeStudyTarget);
+    const deck =
+      activeStudyTarget?.type === 'deck'
+        ? decks.find((d) => d.id === activeStudyTarget.id)
+        : undefined;
+    const newLimit = deck ? deck.newCardsPerDay : 20;
+    const dueLimit = deck ? deck.maxReviewsPerDay : 50;
+    const queue = buildReviewQueue(targetCards, newLimit, dueLimit, new Date(), nextExtra).queue;
+    setStudySessionCards(queue);
   };
 
   const handleCreateFolder = (name: string, description?: string, color?: string) => {
@@ -757,7 +778,10 @@ export function App() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
                   <button
-                    onClick={() => setIsStudying(false)}
+                    onClick={() => {
+                      setStudySessionCards([]);
+                      setIsStudying(false);
+                    }}
                     className="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center space-x-1"
                   >
                     <span>← Dừng phiên ôn tập</span>
@@ -768,7 +792,7 @@ export function App() {
                   </span>
                 </div>
 
-                {activeReviewQueue.length === 0 ? (
+                {studySessionCards.length === 0 ? (
                   <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
                     <div className="text-4xl">🎉</div>
                     <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
@@ -779,13 +803,16 @@ export function App() {
                     </p>
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                       <button
-                        onClick={() => setIsStudying(false)}
+                        onClick={() => {
+                          setStudySessionCards([]);
+                          setIsStudying(false);
+                        }}
                         className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl shadow-xs touch-target"
                       >
                         Trở về danh sách Deck
                       </button>
                       <button
-                        onClick={() => setExtraNewCards((prev) => prev + 20)}
+                        onClick={handleLoadMoreNewCards}
                         className="w-full sm:w-auto px-5 py-2.5 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white text-xs font-semibold rounded-xl shadow-xs transition flex items-center justify-center space-x-1.5 touch-target"
                       >
                         <span>➕ Học thêm 20 từ mới tiếp theo</span>
@@ -794,8 +821,11 @@ export function App() {
                   </div>
                 ) : (
                   <FlashcardStudyView
-                    cards={activeReviewQueue}
-                    onComplete={() => setIsStudying(false)}
+                    cards={studySessionCards}
+                    onComplete={() => {
+                      setStudySessionCards([]);
+                      setIsStudying(false);
+                    }}
                     onSelectKanji={(char) => setSelectedKanjiChar(char)}
                     onRateCard={handleRateCard}
                   />
@@ -1101,6 +1131,7 @@ export function App() {
         <div className="max-w-md mx-auto flex items-center justify-around">
           <button
             onClick={() => {
+              setStudySessionCards([]);
               setIsStudying(false);
               setActiveTab('study');
             }}
@@ -1116,6 +1147,7 @@ export function App() {
 
           <button
             onClick={() => {
+              setStudySessionCards([]);
               setIsStudying(false);
               setActiveTab('kanji');
             }}
@@ -1131,6 +1163,7 @@ export function App() {
 
           <button
             onClick={() => {
+              setStudySessionCards([]);
               setIsStudying(false);
               setActiveTab('grammar');
             }}
@@ -1146,6 +1179,7 @@ export function App() {
 
           <button
             onClick={() => {
+              setStudySessionCards([]);
               setIsStudying(false);
               setActiveTab('import');
             }}
@@ -1161,6 +1195,7 @@ export function App() {
 
           <button
             onClick={() => {
+              setStudySessionCards([]);
               setIsStudying(false);
               setActiveTab('settings');
             }}
