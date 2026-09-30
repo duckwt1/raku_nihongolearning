@@ -255,6 +255,21 @@ export function clearOfflineReviewQueue(userId?: string | null): void {
   } catch {}
 }
 
+/** Remove only review events acknowledged by the server; preserve events added while syncing. */
+export function removeOfflineReviewItems(userId: string, itemIds: string[]): void {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined' || itemIds.length === 0) return;
+  const key = getUserStorageKey('offline_queue', userId);
+  const acknowledged = new Set(itemIds);
+  try {
+    const latest = getOfflineReviewQueue(userId);
+    const remaining = latest.filter((item) => !acknowledged.has(item.id));
+    if (remaining.length === 0) localStorage.removeItem(key);
+    else localStorage.setItem(key, JSON.stringify(remaining));
+  } catch (err) {
+    console.warn('Không thể cập nhật hàng đợi sync:', err);
+  }
+}
+
 /**
  * Xóa toàn bộ dữ liệu của một user khỏi trình duyệt (khi đăng xuất chọn dọn dẹp)
  */

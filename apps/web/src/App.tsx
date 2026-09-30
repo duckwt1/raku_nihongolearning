@@ -410,7 +410,7 @@ export function App() {
 
     // 3. Local-First: Luôn lưu vào hàng đợi cục bộ trên máy của user
     enqueueOfflineReview({
-      id: `${card.id}_${Date.now()}`,
+      id: `${currentUid || 'guest'}_${card.id}_${Date.now()}_${Math.random().toString(36).slice(2)}`,
       userId: currentUid || 'guest',
       card,
       rating,
@@ -505,7 +505,14 @@ export function App() {
     setSyncStatus('syncing');
 
     // Kiểm tra xem trên Cloud Firestore có dữ liệu không
-    const cloudStatus = await checkCloudDataStatus(currentUid);
+    let cloudStatus;
+    try {
+      cloudStatus = await checkCloudDataStatus(currentUid);
+    } catch (err: any) {
+      setSyncStatus('synced');
+      showSyncToast(`Không thể kiểm tra dữ liệu cloud: ${err?.message || err}`, 'warning');
+      return;
+    }
     const localLearned = allCards.filter(
       (c) => (c.fsrsCard?.reps ?? 0) > 0 || Boolean(c.fsrsCard?.last_review) || !c.isNew
     ).length;
@@ -534,9 +541,21 @@ export function App() {
         // 1. Đẩy offline queue trước
         const flushed = await flushOfflineQueue(currentUid);
 
-        // 2. Sau đó sync folders, decks và stats theo thứ tự để tránh nghẽn WebChannel
+        // 2. Pull the complete review history so reviews from other devices are applied too.
+        const remoteProgress = await loadAndApplyFirestoreReviewLogs(currentUid, allCards, studyStats);
+        if (remoteProgress.logsCount > 0) {
+          setAllCards(remoteProgress.updatedCards);
+          saveUserCards(currentUid, remoteProgress.updatedCards);
+        }
+        const mergedStats = remoteProgress.stats || studyStats;
+        if (remoteProgress.stats) {
+          setStudyStats(mergedStats);
+          saveUserStudyStats(currentUid, mergedStats);
+        }
+
+        // 3. Sync folders, decks and the merged stats sequentially to avoid WebChannel congestion.
         await syncFoldersAndDecks(currentUid, folders, decks);
-        await syncUserStudyStats(currentUid, studyStats);
+        await syncUserStudyStats(currentUid, mergedStats);
 
         return flushed;
       };
@@ -567,6 +586,12 @@ export function App() {
     }
   };
 
+  // Retry the same sync path after reconnect and when a signed-in device has queued reviews.
+  useEffect(() => {
+    if (!isOnline || !user?.uid || pendingCount === 0 || syncStatus === 'syncing') return;
+    void handleManualSync();
+  }, [isOnline, user?.uid, pendingCount]);
+
   const handleSeedAllN3 = async () => {
     setIsSeeding(true);
     setSeedResult(null);
@@ -595,7 +620,13 @@ export function App() {
     const currentUid = user.uid;
 
     // Kiểm tra xem trên Cloud Firestore có dữ liệu không
-    const cloudStatus = await checkCloudDataStatus(currentUid);
+    let cloudStatus;
+    try {
+      cloudStatus = await checkCloudDataStatus(currentUid);
+    } catch (err: any) {
+      setPullResult(`Không thể kiểm tra dữ liệu cloud: ${err?.message || err}`);
+      return;
+    }
     const localLearned = allCards.filter(
       (c) => (c.fsrsCard?.reps ?? 0) > 0 || Boolean(c.fsrsCard?.last_review) || !c.isNew
     ).length;
@@ -614,14 +645,36 @@ export function App() {
         allCards,
         studyStats
       );
-      if (logsCount > 0) {
-        setAllCards(updatedCards);
-        saveUserCards(currentUid, updatedCards);
-      }
-
       // 2. Tải decks, folders, thẻ cards và stats từ Firestore
       const data = await pullDataFromFirestore(currentUid);
       const cardCount = Object.keys(data.cards).length;
+
+      // The card snapshot is the latest FSRS state; replayed logs remain the fallback
+      // for older accounts that have review logs but no card snapshot.
+      const cardsWithCloudProgress = (logsCount > 0 ? updatedCards : allCards).map((card) => {
+        const cloud = data.cards[card.id];
+        if (!cloud) return card;
+        const due = cloud.due ? new Date(cloud.due) : card.fsrsCard.due;
+        const lastReview = cloud.last_review ? new Date(cloud.last_review) : undefined;
+        const fsrsCard = {
+          ...card.fsrsCard,
+          due,
+          stability: Number(cloud.stability ?? card.fsrsCard.stability),
+          difficulty: Number(cloud.difficulty ?? card.fsrsCard.difficulty),
+          elapsed_days: Number(cloud.elapsed_days ?? card.fsrsCard.elapsed_days),
+          scheduled_days: Number(cloud.scheduled_days ?? card.fsrsCard.scheduled_days),
+          reps: Number(cloud.reps ?? card.fsrsCard.reps),
+          lapses: Number(cloud.lapses ?? card.fsrsCard.lapses),
+          state: Number(cloud.state ?? card.fsrsCard.state),
+          last_review: lastReview
+        };
+        const isNew = fsrsCard.reps === 0 && !lastReview && fsrsCard.state === 0;
+        return { ...card, fsrsCard, isNew, isDue: !isNew && due.getTime() <= Date.now() };
+      });
+      if (cardCount > 0 || logsCount > 0) {
+        setAllCards(cardsWithCloudProgress);
+        saveUserCards(currentUid, cardsWithCloudProgress);
+      }
 
       if (data.folders) {
         setFolders(data.folders);
