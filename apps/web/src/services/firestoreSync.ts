@@ -144,6 +144,7 @@ export async function flushOfflineQueue(userId: string): Promise<number> {
       for (const item of chunk) {
         // Luôn sử dụng userId của tài khoản đã đăng nhập, KHÔNG dùng 'local_device'
         const targetUid = userId;
+        const fsrs = item.card?.fsrsCard;
 
         // 1. Cập nhật thẻ
         const cardRef = doc(db, 'users', targetUid, 'cards', item.card.id);
@@ -151,16 +152,16 @@ export async function flushOfflineQueue(userId: string): Promise<number> {
           id: item.card.id,
           refId: item.card.refId,
           type: item.card.type,
-          due: item.card.fsrsCard.due ? new Date(item.card.fsrsCard.due).toISOString() : null,
-          stability: item.card.fsrsCard.stability,
-          difficulty: item.card.fsrsCard.difficulty,
-          elapsed_days: item.card.fsrsCard.elapsed_days,
-          scheduled_days: item.card.fsrsCard.scheduled_days,
-          reps: item.card.fsrsCard.reps,
-          lapses: item.card.fsrsCard.lapses,
-          state: item.card.fsrsCard.state,
-          last_review: item.card.fsrsCard.last_review
-            ? new Date(item.card.fsrsCard.last_review).toISOString()
+          due: fsrs?.due ? new Date(fsrs.due).toISOString() : null,
+          stability: fsrs?.stability ?? 0,
+          difficulty: fsrs?.difficulty ?? 0,
+          elapsed_days: fsrs?.elapsed_days ?? 0,
+          scheduled_days: fsrs?.scheduled_days ?? 0,
+          reps: fsrs?.reps ?? 0,
+          lapses: fsrs?.lapses ?? 0,
+          state: fsrs?.state ?? 0,
+          last_review: fsrs?.last_review
+            ? new Date(fsrs.last_review).toISOString()
             : null,
           firstLearnedAt: item.card.firstLearnedAt || null,
           updatedAt: serverTimestamp()
@@ -172,22 +173,36 @@ export async function flushOfflineQueue(userId: string): Promise<number> {
         const logData = sanitizeFirestoreData({
           cardId: item.card.id,
           rating: item.rating,
-          state: item.card.fsrsCard.state,
+          state: fsrs?.state ?? 0,
           reviewedAt: item.reviewedAt || new Date().toISOString()
         });
         batch.set(logRef, logData);
       }
 
-      await batch.commit();
+      // Giới hạn thời gian mỗi batch commit tối đa 8s
+      const commitTimeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Hết thời gian chờ phản hồi ghi batch (8s)')), 8000)
+      );
+      await Promise.race([batch.commit(), commitTimeout]);
       syncedCount += chunk.length;
     }
 
-    // Đã đẩy thành công toàn bộ hàng đợi
-    clearOfflineReviewQueue();
+    if (syncedCount >= queue.length) {
+      clearOfflineReviewQueue();
+    } else if (syncedCount > 0) {
+      try {
+        localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue.slice(syncedCount)));
+      } catch {}
+    }
     console.log(`✓ [Offline Sync] Đã đồng bộ xong ${syncedCount} lượt ôn tập lên Firestore.`);
     return syncedCount;
   } catch (err) {
     console.warn('Lỗi khi đẩy hàng đợi offline bằng batch:', err);
+    if (syncedCount > 0) {
+      try {
+        localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue.slice(syncedCount)));
+      } catch {}
+    }
     return syncedCount;
   }
 }
@@ -530,7 +545,10 @@ export async function syncFoldersAndDecks(
       const ref = doc(db, 'users', userId, 'decks', d.id);
       batch.set(ref, sanitizeFirestoreData(d), { merge: true });
     }
-    await batch.commit();
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Timeout sync folders/decks')), 6000)
+    );
+    await Promise.race([batch.commit(), timeoutPromise]);
     console.log('✓ Đã đồng bộ cấu trúc Thư mục và Deck lên Firestore');
   } catch (err) {
     console.warn('Không thể đồng bộ Thư mục & Deck lên Firestore:', err);
@@ -547,7 +565,7 @@ export async function syncUserStudyStats(
   if (!userId || userId === 'local_device') return;
   try {
     const userRef = doc(db, 'users', userId);
-    await setDoc(
+    const setPromise = setDoc(
       userRef,
       sanitizeFirestoreData({
         stats: {
@@ -559,6 +577,10 @@ export async function syncUserStudyStats(
       }),
       { merge: true }
     );
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Timeout sync study stats')), 6000)
+    );
+    await Promise.race([setPromise, timeoutPromise]);
   } catch (err) {
     console.warn('Lỗi khi đồng bộ chỉ số học tập lên Firestore:', err);
   }

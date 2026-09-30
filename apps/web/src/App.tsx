@@ -36,7 +36,6 @@ import {
 import { auth, signInAnonymously, onAuthStateChanged, type User } from './services/firebase';
 import {
   syncUserProfile,
-  saveCardProgress,
   seedAllN3DataToFirestore,
   pullDataFromFirestore,
   flushOfflineQueue,
@@ -200,42 +199,12 @@ export function App() {
     return () => clearInterval(timer);
   }, [isStudying]);
 
+  // Network status listener (Local-first: no auto-sync on reconnect)
   useEffect(() => {
-    const handleOnline = async () => {
+    const handleOnline = () => {
       setIsOnline(true);
-      setSyncStatus('syncing');
-
-      const currentUid = user?.uid || auth.currentUser?.uid;
-      if (currentUid) {
-        try {
-          const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('Timeout auto-sync')), 10000)
-          );
-          const doAutoSync = async () => {
-            const flushed = await flushOfflineQueue(currentUid);
-            await syncFoldersAndDecks(currentUid, folders, decks);
-            await syncUserStudyStats(currentUid, studyStats);
-            return flushed;
-          };
-          const flushed = await Promise.race([doAutoSync(), timeoutPromise]);
-          if (flushed > 0) {
-            showSyncToast(
-              `🟢 Đã kết nối lại! Tự động đồng bộ ${flushed} lượt ôn tập offline lên đám mây.`,
-              'success'
-            );
-          } else {
-            showSyncToast('🟢 Đã kết nối Internet. Dữ liệu đã được lưu trữ an toàn.', 'info');
-          }
-        } catch (err) {
-          console.warn('Lỗi auto sync khi online:', err);
-        } finally {
-          setPendingCount(getPendingSyncCount());
-          setSyncStatus('synced');
-        }
-      } else {
-        setSyncStatus('synced');
-        showSyncToast('🟢 Đã kết nối Internet.', 'info');
-      }
+      setSyncStatus('synced');
+      showSyncToast('🟢 Đã kết nối Internet.', 'info');
     };
 
     const handleOffline = () => {
@@ -251,58 +220,25 @@ export function App() {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Auth listener (runs once on mount, no infinite loop or automatic background sync)
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
         syncUserProfile(currentUser);
-        // Flush any pending reviews when user logs in
-        if (navigator.onLine) {
-          try {
-            const flushed = await flushOfflineQueue(currentUser.uid);
-            setPendingCount(getPendingSyncCount());
-            if (flushed > 0) {
-              showSyncToast(
-                `✓ Đã đồng bộ ${flushed} lượt ôn tập offline vào tài khoản Firebase!`,
-                'success'
-              );
-            }
-          } catch {}
-
-          // Automatically load and apply Firestore reviewLogs to reconstruct FSRS state & studyStats
-          try {
-            const { updatedCards, logsCount, stats } = await loadAndApplyFirestoreReviewLogs(
-              currentUser.uid,
-              allCards,
-              studyStats
-            );
-            if (logsCount > 0) {
-              setAllCards(updatedCards);
-              try {
-                localStorage.setItem('raku_cards', JSON.stringify(updatedCards));
-              } catch {}
-              console.log(
-                `✓ Đã khôi phục thành công trạng thái FSRS từ ${logsCount} lượt reviewLogs trên Firestore.`
-              );
-            }
-            if (stats) {
-              setStudyStats(stats);
-              try {
-                localStorage.setItem('raku_study_stats', JSON.stringify(stats));
-              } catch {}
-            }
-          } catch (err) {
-            console.warn('Không thể nạp reviewLogs khi đăng nhập:', err);
-          }
-        }
       }
     });
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
       unsubscribe();
     };
-  }, [user, folders, decks, studyStats]);
+  }, []);
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
@@ -516,23 +452,16 @@ export function App() {
       return updated;
     });
 
-    // 3. Offline-First Sync to Firestore
-    const currentUid = user?.uid || auth.currentUser?.uid;
-    if (currentUid) {
-      saveCardProgress(currentUid, card, rating).then(() => {
-        setPendingCount(getPendingSyncCount());
-      });
-    } else {
-      // Local queue if no account yet
-      enqueueOfflineReview({
-        id: `${card.id}_${Date.now()}`,
-        userId: 'local_device',
-        card,
-        rating,
-        reviewedAt: new Date().toISOString()
-      });
-      setPendingCount(getPendingSyncCount());
-    }
+    // 3. Local-First: Luôn lưu vào hàng đợi cục bộ trên máy, KHÔNG gửi request mạng lúc học để lật thẻ tức thì
+    const currentUid = user?.uid || auth.currentUser?.uid || 'local_device';
+    enqueueOfflineReview({
+      id: `${card.id}_${Date.now()}`,
+      userId: currentUid,
+      card,
+      rating,
+      reviewedAt: new Date().toISOString()
+    });
+    setPendingCount(getPendingSyncCount());
   };
 
   const handleManualSync = async () => {
@@ -543,22 +472,27 @@ export function App() {
     const currentUid = user?.uid || auth.currentUser?.uid;
     if (!currentUid) {
       showSyncToast('Vui lòng đăng nhập hoặc bấm Dùng thử ngay để đồng bộ.', 'warning');
+      setIsAuthModalOpen(true);
       return;
     }
     setSyncStatus('syncing');
+    showSyncToast('☁️ Đang đồng bộ dữ liệu lên đám mây...', 'info');
+
     try {
-      // Giới hạn thời gian tối đa 12s tránh việc loading xoay vô tận nếu mạng chập chờn
+      // Giới hạn thời gian tối đa 15s tránh việc loading xoay vô tận nếu mạng chập chờn
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(
-          () => reject(new Error('Hết thời gian chờ kết nối máy chủ (12s). Vui lòng thử lại.')),
-          12000
+          () => reject(new Error('Hết thời gian chờ kết nối máy chủ (15s). Vui lòng thử lại.')),
+          15000
         )
       );
 
       const doSync = async () => {
-        const flushed = await flushOfflineQueue(currentUid);
-        await syncFoldersAndDecks(currentUid, folders, decks);
-        await syncUserStudyStats(currentUid, studyStats);
+        const [flushed] = await Promise.all([
+          flushOfflineQueue(currentUid),
+          syncFoldersAndDecks(currentUid, folders, decks),
+          syncUserStudyStats(currentUid, studyStats)
+        ]);
         return flushed;
       };
 
@@ -681,14 +615,18 @@ export function App() {
                 ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300/50 dark:border-amber-800'
                 : syncStatus === 'syncing'
                 ? 'bg-sky-100 text-sky-800 dark:bg-sky-950/80 dark:text-sky-300 border border-sky-300/50 dark:border-sky-800'
+                : pendingCount > 0
+                ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-200/50 dark:border-amber-800'
                 : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800'
             }`}
             title={
               !isOnline
-                ? `Đang ngoại tuyến. ${pendingCount > 0 ? `${pendingCount} lượt ôn tập đang lưu tại máy, sẽ tự đồng bộ khi có mạng.` : 'Dữ liệu được lưu an toàn tại máy.'}`
+                ? `Đang ngoại tuyến. ${pendingCount > 0 ? `${pendingCount} lượt ôn tập đang lưu tại máy.` : 'Dữ liệu được lưu an toàn tại máy.'}`
                 : syncStatus === 'syncing'
                 ? 'Đang đồng bộ dữ liệu lên Firebase...'
-                : 'Đã đồng bộ trực tuyến với đám mây'
+                : pendingCount > 0
+                ? `${pendingCount} lượt ôn tập đã lưu tại máy, sẵn sàng sao lưu lên đám mây khi bạn bấm Đồng bộ.`
+                : 'Đã sao lưu an toàn'
             }
           >
             {!isOnline ? (
@@ -701,10 +639,15 @@ export function App() {
                 <RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin text-sky-600 dark:text-sky-400" aria-hidden="true" />
                 <span>Đang đồng bộ...</span>
               </>
+            ) : pendingCount > 0 ? (
+              <>
+                <Cloud className="w-3.5 h-3.5 mr-1.5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+                <span>Lưu máy ({pendingCount})</span>
+              </>
             ) : (
               <>
                 <Wifi className="w-3.5 h-3.5 mr-1.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
-                <span>Đã đồng bộ</span>
+                <span>Đã sao lưu</span>
               </>
             )}
           </div>
@@ -970,6 +913,8 @@ export function App() {
                         ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
                         : syncStatus === 'syncing'
                         ? 'bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-800'
+                        : pendingCount > 0
+                        ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
                         : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
                     }`}
                   >
@@ -983,10 +928,15 @@ export function App() {
                         <RefreshCw className="w-3.5 h-3.5 mr-1 animate-spin text-sky-600" />
                         Đang đồng bộ...
                       </>
+                    ) : pendingCount > 0 ? (
+                      <>
+                        <Cloud className="w-3.5 h-3.5 mr-1 text-amber-600" />
+                        {pendingCount} lượt ôn tập lưu tại máy
+                      </>
                     ) : (
                       <>
                         <span className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5" />
-                        Tự động sao lưu trực tuyến
+                        Đã khớp với đám mây
                       </>
                     )}
                   </span>
@@ -1023,9 +973,9 @@ export function App() {
                 </div>
 
                 <div className="text-[11px] text-slate-500 dark:text-slate-400 space-y-1 pt-1 leading-relaxed">
-                  <p>• <strong>Khi có mạng:</strong> Bạn không cần bấm nút đồng bộ. Ứng dụng tự động lưu ngầm mọi tiến độ lên Cloud Firestore trong tích tắc.</p>
-                  <p>• <strong>Khi mất mạng:</strong> Bạn vẫn học và ôn tập bình thường 100%. Dữ liệu được lưu an toàn tại máy.</p>
-                  <p>• <strong>Khi có mạng trở lại:</strong> Hệ thống tự động nhận diện và đẩy toàn bộ hàng đợi offline lên Firebase mà không làm phiền bạn.</p>
+                  <p>• <strong>Ưu tiên lưu trên máy (Local-First):</strong> Mọi tiến độ học, từ vựng và chỉ số được lưu tức thì vào thiết bị của bạn, giúp lật thẻ 100% mượt mà, không phụ thuộc vào mạng.</p>
+                  <p>• <strong>Chủ động đồng bộ:</strong> Bấm nút <strong>"🔄 Đồng bộ ngay lập tức"</strong> bất cứ khi nào bạn muốn sao lưu dữ liệu lên Cloud Firestore.</p>
+                  <p>• <strong>Khôi phục dữ liệu:</strong> Khi chuyển sang thiết bị mới, bấm <strong>"📥 Kéo dữ liệu từ Firebase về máy"</strong> để tải lại toàn bộ tiến độ.</p>
                 </div>
               </div>
 
