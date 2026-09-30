@@ -3,6 +3,8 @@ import {
   setDoc,
   collection,
   getDocs,
+  limit,
+  query,
   writeBatch,
   serverTimestamp,
   waitForPendingWrites
@@ -76,24 +78,16 @@ import {
  */
 export async function checkCloudDataStatus(userId: string): Promise<{
   hasCloudData: boolean;
-  reviewLogsCount: number;
-  cardsCount: number;
 }> {
   if (!userId || userId === 'local_device') {
-    return { hasCloudData: false, reviewLogsCount: 0, cardsCount: 0 };
+    return { hasCloudData: false };
   }
   try {
     const [logsSnap, cardsSnap] = await Promise.all([
-      getDocs(collection(db, 'users', userId, 'reviewLogs')),
-      getDocs(collection(db, 'users', userId, 'cards'))
+      getDocs(query(collection(db, 'users', userId, 'reviewLogs'), limit(1))),
+      getDocs(query(collection(db, 'users', userId, 'cards'), limit(1)))
     ]);
-    const reviewLogsCount = logsSnap.size;
-    const cardsCount = cardsSnap.size;
-    return {
-      hasCloudData: reviewLogsCount > 0 || cardsCount > 0,
-      reviewLogsCount,
-      cardsCount
-    };
+    return { hasCloudData: !logsSnap.empty || !cardsSnap.empty };
   } catch (err) {
     console.warn('Lỗi khi kiểm tra dữ liệu trên Cloud:', err);
     throw err;
@@ -432,7 +426,6 @@ export async function pullDataFromFirestore(userId: string): Promise<{
   cards: Record<string, any>;
   folders?: Folder[];
   decks?: Deck[];
-  reviewLogsCount: number;
 }> {
   const cardsMap: Record<string, any> = {};
 
@@ -457,14 +450,10 @@ export async function pullDataFromFirestore(userId: string): Promise<{
       decks.push(d.data() as Deck);
     });
 
-    // 4. Đếm số lượng reviewLogs
-    const logsSnapshot = await getDocs(collection(db, 'users', userId, 'reviewLogs'));
-
     return {
       cards: cardsMap,
       folders: folders.length > 0 ? folders : undefined,
-      decks: decks.length > 0 ? decks : undefined,
-      reviewLogsCount: logsSnapshot.size
+      decks: decks.length > 0 ? decks : undefined
     };
   } catch (err) {
     console.warn('Lỗi khi tải dữ liệu từ Firestore:', err);

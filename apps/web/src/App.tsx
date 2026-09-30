@@ -77,6 +77,7 @@ export function App() {
     return typeof navigator !== 'undefined' && navigator.onLine ? 'synced' : 'offline';
   });
   const [pendingCount, setPendingCount] = useState<number>(() => getPendingSyncCount());
+  const [autoSyncReason, setAutoSyncReason] = useState<'auth' | 'reconnect' | null>(null);
   const [isConflictModalOpen, setIsConflictModalOpen] = useState(false);
   const [syncToast, setSyncToast] = useState<{
     message: string;
@@ -159,6 +160,7 @@ export function App() {
     const handleOnline = () => {
       setIsOnline(true);
       setSyncStatus('synced');
+      setAutoSyncReason('reconnect');
       showSyncToast('🟢 Đã kết nối Internet.', 'info');
     };
 
@@ -195,6 +197,7 @@ export function App() {
       setFolders(uFolders);
       setDecks(uDecks);
       setPendingCount(getPendingSyncCount(uid));
+      setAutoSyncReason(currentUser ? 'auth' : null);
 
       if (currentUser) {
         syncUserProfile(currentUser);
@@ -586,11 +589,17 @@ export function App() {
     }
   };
 
-  // Retry the same sync path after reconnect and when a signed-in device has queued reviews.
+  // Flush only an existing queue on sign-in or reconnect. New reviews stay batched locally
+  // until the user syncs, avoiding a full-cloud scan after every reviewed card.
   useEffect(() => {
-    if (!isOnline || !user?.uid || pendingCount === 0 || syncStatus === 'syncing') return;
+    if (!autoSyncReason || !isOnline || !user?.uid || syncStatus === 'syncing') return;
+    if (pendingCount === 0) {
+      setAutoSyncReason(null);
+      return;
+    }
+    setAutoSyncReason(null);
     void handleManualSync();
-  }, [isOnline, user?.uid, pendingCount]);
+  }, [autoSyncReason, isOnline, user?.uid, pendingCount, syncStatus]);
 
   const handleSeedAllN3 = async () => {
     setIsSeeding(true);
