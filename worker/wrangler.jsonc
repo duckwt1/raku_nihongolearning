@@ -11,5 +11,5 @@
   "vars": {
     "FIREBASE_PROJECT_ID": "raku-nihongo-learning"
   },
-  "workers_dev": true
+  "workers_dev": false
 }
