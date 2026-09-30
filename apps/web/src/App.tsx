@@ -208,11 +208,16 @@ export function App() {
       const currentUid = user?.uid || auth.currentUser?.uid;
       if (currentUid) {
         try {
-          const flushed = await flushOfflineQueue(currentUid);
-          await syncFoldersAndDecks(currentUid, folders, decks);
-          await syncUserStudyStats(currentUid, studyStats);
-          setPendingCount(getPendingSyncCount());
-          setSyncStatus('synced');
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Timeout auto-sync')), 10000)
+          );
+          const doAutoSync = async () => {
+            const flushed = await flushOfflineQueue(currentUid);
+            await syncFoldersAndDecks(currentUid, folders, decks);
+            await syncUserStudyStats(currentUid, studyStats);
+            return flushed;
+          };
+          const flushed = await Promise.race([doAutoSync(), timeoutPromise]);
           if (flushed > 0) {
             showSyncToast(
               `🟢 Đã kết nối lại! Tự động đồng bộ ${flushed} lượt ôn tập offline lên đám mây.`,
@@ -223,6 +228,8 @@ export function App() {
           }
         } catch (err) {
           console.warn('Lỗi auto sync khi online:', err);
+        } finally {
+          setPendingCount(getPendingSyncCount());
           setSyncStatus('synced');
         }
       } else {
@@ -540,11 +547,22 @@ export function App() {
     }
     setSyncStatus('syncing');
     try {
-      const flushed = await flushOfflineQueue(currentUid);
-      await syncFoldersAndDecks(currentUid, folders, decks);
-      await syncUserStudyStats(currentUid, studyStats);
-      setPendingCount(getPendingSyncCount());
-      setSyncStatus('synced');
+      // Giới hạn thời gian tối đa 12s tránh việc loading xoay vô tận nếu mạng chập chờn
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject(new Error('Hết thời gian chờ kết nối máy chủ (12s). Vui lòng thử lại.')),
+          12000
+        )
+      );
+
+      const doSync = async () => {
+        const flushed = await flushOfflineQueue(currentUid);
+        await syncFoldersAndDecks(currentUid, folders, decks);
+        await syncUserStudyStats(currentUid, studyStats);
+        return flushed;
+      };
+
+      const flushed = await Promise.race([doSync(), timeoutPromise]);
       showSyncToast(
         flushed > 0
           ? `✓ Đã đồng bộ xong! Đẩy thành công ${flushed} lượt ôn tập lên đám mây.`
@@ -552,8 +570,11 @@ export function App() {
         'success'
       );
     } catch (err: any) {
-      setSyncStatus('synced');
+      console.warn('Lỗi khi bấm đồng bộ Firestore:', err);
       showSyncToast(`❌ Đồng bộ thất bại: ${err?.message || err}`, 'warning');
+    } finally {
+      setPendingCount(getPendingSyncCount());
+      setSyncStatus('synced');
     }
   };
 

@@ -100,28 +100,54 @@ export function clearOfflineReviewQueue(): void {
 }
 
 /**
+ * Lọc bỏ mọi giá trị undefined trước khi đẩy lên Firestore để tránh lỗi 'Unsupported field value: undefined'
+ */
+export function sanitizeFirestoreData<T extends Record<string, any>>(obj: T): T {
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      if (value !== null && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+        result[key] = sanitizeFirestoreData(value);
+      } else {
+        result[key] = value;
+      }
+    }
+  }
+  return result as T;
+}
+
+/**
  * Đẩy toàn bộ hàng đợi ngoại tuyến lên Firestore (khi có mạng trở lại)
+ * Dùng writeBatch để đẩy hàng loạt cực nhanh (< 0.5s) thay vì chạy vòng lặp tuần tự từng bản ghi
  */
 export async function flushOfflineQueue(userId: string): Promise<number> {
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
     return 0;
   }
+  if (!userId || userId === 'local_device') {
+    return 0;
+  }
+
   const queue = getOfflineReviewQueue();
   if (queue.length === 0) return 0;
 
-  console.log(`[Offline Sync] Đang đẩy ${queue.length} lượt ôn tập ngoại tuyến lên Firestore...`);
+  console.log(`[Offline Sync] Đang đẩy ${queue.length} lượt ôn tập ngoại tuyến lên Firestore cho uid ${userId}...`);
 
   let syncedCount = 0;
-  const remainingQueue: OfflineReviewItem[] = [];
+  const CHUNK_SIZE = 200;
 
-  for (const item of queue) {
-    try {
-      const targetUid = item.userId || userId;
-      // 1. Cập nhật thẻ
-      const cardRef = doc(db, 'users', targetUid, 'cards', item.card.id);
-      await setDoc(
-        cardRef,
-        {
+  try {
+    for (let i = 0; i < queue.length; i += CHUNK_SIZE) {
+      const chunk = queue.slice(i, i + CHUNK_SIZE);
+      const batch = writeBatch(db);
+
+      for (const item of chunk) {
+        // Luôn sử dụng userId của tài khoản đã đăng nhập, KHÔNG dùng 'local_device'
+        const targetUid = userId;
+
+        // 1. Cập nhật thẻ
+        const cardRef = doc(db, 'users', targetUid, 'cards', item.card.id);
+        const cardData = sanitizeFirestoreData({
           id: item.card.id,
           refId: item.card.refId,
           type: item.card.type,
@@ -138,36 +164,32 @@ export async function flushOfflineQueue(userId: string): Promise<number> {
             : null,
           firstLearnedAt: item.card.firstLearnedAt || null,
           updatedAt: serverTimestamp()
-        },
-        { merge: true }
-      );
+        });
+        batch.set(cardRef, cardData, { merge: true });
 
-      // 2. Ghi nhật ký ôn tập
-      const logsCol = collection(db, 'users', targetUid, 'reviewLogs');
-      await addDoc(logsCol, {
-        cardId: item.card.id,
-        rating: item.rating,
-        state: item.card.fsrsCard.state,
-        reviewedAt: item.reviewedAt || new Date().toISOString()
-      });
+        // 2. Ghi nhật ký ôn tập (tạo docRef mới với auto ID mà không tốn round-trip)
+        const logRef = doc(collection(db, 'users', targetUid, 'reviewLogs'));
+        const logData = sanitizeFirestoreData({
+          cardId: item.card.id,
+          rating: item.rating,
+          state: item.card.fsrsCard.state,
+          reviewedAt: item.reviewedAt || new Date().toISOString()
+        });
+        batch.set(logRef, logData);
+      }
 
-      syncedCount++;
-    } catch (err) {
-      console.warn('Lỗi khi đẩy 1 mục trong hàng đợi offline:', err);
-      remainingQueue.push(item);
+      await batch.commit();
+      syncedCount += chunk.length;
     }
-  }
 
-  if (remainingQueue.length === 0) {
+    // Đã đẩy thành công toàn bộ hàng đợi
     clearOfflineReviewQueue();
-  } else {
-    try {
-      localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(remainingQueue));
-    } catch {}
+    console.log(`✓ [Offline Sync] Đã đồng bộ xong ${syncedCount} lượt ôn tập lên Firestore.`);
+    return syncedCount;
+  } catch (err) {
+    console.warn('Lỗi khi đẩy hàng đợi offline bằng batch:', err);
+    return syncedCount;
   }
-
-  console.log(`✓ [Offline Sync] Đã đồng bộ xong ${syncedCount} lượt ôn tập lên Firestore.`);
-  return syncedCount;
 }
 
 /**
@@ -196,7 +218,7 @@ export async function saveCardProgress(
     const cardRef = doc(db, 'users', userId, 'cards', card.id);
     await setDoc(
       cardRef,
-      {
+      sanitizeFirestoreData({
         id: card.id,
         refId: card.refId,
         type: card.type,
@@ -213,18 +235,18 @@ export async function saveCardProgress(
           : null,
         firstLearnedAt: card.firstLearnedAt || null,
         updatedAt: serverTimestamp()
-      },
+      }),
       { merge: true }
     );
 
     // 2. Ghi thêm vào nhật ký /users/{uid}/reviewLogs/{logId} (Luật Firestore: append-only)
     const logsCol = collection(db, 'users', userId, 'reviewLogs');
-    await addDoc(logsCol, {
+    await addDoc(logsCol, sanitizeFirestoreData({
       cardId: card.id,
       rating,
       state: card.fsrsCard.state,
       reviewedAt: serverTimestamp()
-    });
+    }));
 
     return { success: true, queued: false };
   } catch (err) {
@@ -497,15 +519,16 @@ export async function syncFoldersAndDecks(
   folders: Folder[],
   decks: Deck[]
 ): Promise<void> {
+  if (!userId || userId === 'local_device') return;
   try {
     const batch = writeBatch(db);
     for (const f of folders) {
       const ref = doc(db, 'users', userId, 'folders', f.id);
-      batch.set(ref, f, { merge: true });
+      batch.set(ref, sanitizeFirestoreData(f), { merge: true });
     }
     for (const d of decks) {
       const ref = doc(db, 'users', userId, 'decks', d.id);
-      batch.set(ref, d, { merge: true });
+      batch.set(ref, sanitizeFirestoreData(d), { merge: true });
     }
     await batch.commit();
     console.log('✓ Đã đồng bộ cấu trúc Thư mục và Deck lên Firestore');
@@ -521,18 +544,19 @@ export async function syncUserStudyStats(
   userId: string,
   stats: UserStudyStats
 ): Promise<void> {
+  if (!userId || userId === 'local_device') return;
   try {
     const userRef = doc(db, 'users', userId);
     await setDoc(
       userRef,
-      {
+      sanitizeFirestoreData({
         stats: {
           streakDays: stats.streakDays,
           lastStudiedDate: stats.lastStudiedDate,
           totalCardsLearned: stats.totalCardsLearned,
           todayStats: stats.todayStats
         }
-      },
+      }),
       { merge: true }
     );
   } catch (err) {
