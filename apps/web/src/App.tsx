@@ -479,30 +479,44 @@ export function App() {
     showSyncToast('☁️ Đang đồng bộ dữ liệu lên đám mây...', 'info');
 
     try {
-      // Giới hạn thời gian tối đa 15s tránh việc loading xoay vô tận nếu mạng chập chờn
+      // Giới hạn thời gian tối đa 25s (tăng lên vì có thêm waitForPendingWrites)
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(
-          () => reject(new Error('Hết thời gian chờ kết nối máy chủ (15s). Vui lòng thử lại.')),
-          15000
+          () => reject(new Error('Hết thời gian chờ kết nối máy chủ (25s). Vui lòng thử lại.')),
+          25000
         )
       );
 
       const doSync = async () => {
-        const [flushed] = await Promise.all([
-          flushOfflineQueue(currentUid),
+        // 1. Đẩy offline queue trước (đã bao gồm waitForPendingWrites bên trong)
+        const flushed = await flushOfflineQueue(currentUid);
+
+        // 2. Sau đó sync folders, decks, stats song song
+        await Promise.all([
           syncFoldersAndDecks(currentUid, folders, decks),
           syncUserStudyStats(currentUid, studyStats)
         ]);
+
         return flushed;
       };
 
       const flushed = await Promise.race([doSync(), timeoutPromise]);
-      showSyncToast(
-        flushed > 0
-          ? `✓ Đã đồng bộ xong! Đẩy thành công ${flushed} lượt ôn tập lên đám mây.`
-          : '✓ Đã đồng bộ! Toàn bộ dữ liệu của bạn đã khớp với Firebase.',
-        'success'
-      );
+      const remaining = getPendingSyncCount();
+      setPendingCount(remaining);
+
+      if (remaining > 0) {
+        showSyncToast(
+          `⚠️ Đã đẩy ${flushed} lượt ôn tập, nhưng còn ${remaining} bản ghi chưa đồng bộ xong. Vui lòng thử lại.`,
+          'warning'
+        );
+      } else {
+        showSyncToast(
+          flushed > 0
+            ? `✓ Đã đồng bộ xong! Đẩy thành công ${flushed} lượt ôn tập lên đám mây.`
+            : '✓ Đã đồng bộ! Toàn bộ dữ liệu của bạn đã khớp với Firebase.',
+          'success'
+        );
+      }
     } catch (err: any) {
       console.warn('Lỗi khi bấm đồng bộ Firestore:', err);
       showSyncToast(`❌ Đồng bộ thất bại: ${err?.message || err}`, 'warning');

@@ -5,7 +5,8 @@ import {
   addDoc,
   getDocs,
   writeBatch,
-  serverTimestamp
+  serverTimestamp,
+  waitForPendingWrites
 } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 import {
@@ -188,6 +189,19 @@ export async function flushOfflineQueue(userId: string): Promise<number> {
     }
 
     if (syncedCount >= queue.length) {
+      // Chờ Firestore SDK thực sự gửi data lên server (không chỉ ghi vào cache local)
+      try {
+        await Promise.race([
+          waitForPendingWrites(db),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Timeout chờ Firestore ghi lên server (10s)')), 10000)
+          )
+        ]);
+      } catch (waitErr) {
+        console.warn('[Offline Sync] Chờ ghi lên server timeout, data vẫn nằm trong cache:', waitErr);
+        // Không xóa queue nếu chưa chắc đã lên server
+        return syncedCount;
+      }
       clearOfflineReviewQueue();
     } else if (syncedCount > 0) {
       try {
@@ -549,6 +563,13 @@ export async function syncFoldersAndDecks(
       setTimeout(() => reject(new Error('Timeout sync folders/decks')), 6000)
     );
     await Promise.race([batch.commit(), timeoutPromise]);
+    // Chờ SDK thực sự gửi lên server
+    await Promise.race([
+      waitForPendingWrites(db),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout chờ ghi folders/decks lên server')), 8000)
+      )
+    ]);
     console.log('✓ Đã đồng bộ cấu trúc Thư mục và Deck lên Firestore');
   } catch (err) {
     console.warn('Không thể đồng bộ Thư mục & Deck lên Firestore:', err);
@@ -581,6 +602,13 @@ export async function syncUserStudyStats(
       setTimeout(() => reject(new Error('Timeout sync study stats')), 6000)
     );
     await Promise.race([setPromise, timeoutPromise]);
+    // Chờ SDK thực sự ghi lên server
+    await Promise.race([
+      waitForPendingWrites(db),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout chờ ghi stats lên server')), 8000)
+      )
+    ]);
   } catch (err) {
     console.warn('Lỗi khi đồng bộ chỉ số học tập lên Firestore:', err);
   }

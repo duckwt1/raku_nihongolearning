@@ -18,11 +18,11 @@ import {
 // Client Firebase config - public values, secured by Firestore Rules & Worker
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'fake-api-key-for-emulator',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'raku-nihongo-learning.firebaseapp.com',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'raku-nihongo-learning',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'raku-nihongo-learning.appspot.com',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '123456789',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:123456789:web:abcdef'
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'raku-nihongolearning.firebaseapp.com',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'raku-nihongolearning',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'raku-nihongolearning.firebasestorage.app',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '47955753075',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:47955753075:web:bdbc212dc49d7238b3d206'
 };
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
