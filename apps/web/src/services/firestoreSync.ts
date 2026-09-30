@@ -49,77 +49,109 @@ export async function syncUserProfile(user: User): Promise<void> {
   }
 }
 
-export interface OfflineReviewItem {
-  id: string;
-  userId: string;
-  card: StudyCard;
-  rating: number;
-  reviewedAt: string;
-}
-
-const OFFLINE_QUEUE_KEY = 'raku_offline_reviews_queue';
+export type { OfflineReviewItem } from './userStorage';
+export {
+  getOfflineReviewQueue,
+  getPendingSyncCount,
+  enqueueOfflineReview,
+  clearOfflineReviewQueue,
+  clearUserDataFromBrowser,
+  loadUserCards,
+  saveUserCards,
+  loadUserStudyStats,
+  saveUserStudyStats,
+  loadUserFolders,
+  saveUserFolders,
+  loadUserDecks,
+  saveUserDecks
+} from './userStorage';
+import {
+  getOfflineReviewQueue,
+  clearOfflineReviewQueue,
+  enqueueOfflineReview,
+  getUserStorageKey
+} from './userStorage';
 
 /**
- * Lấy danh sách các lượt ôn tập đang chờ đồng bộ từ LocalStorage
+ * Kiểm tra xem trên Cloud Firestore của user này có dữ liệu hay không
  */
-export function getOfflineReviewQueue(): OfflineReviewItem[] {
-  try {
-    const raw = localStorage.getItem(OFFLINE_QUEUE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
+export async function checkCloudDataStatus(userId: string): Promise<{
+  hasCloudData: boolean;
+  reviewLogsCount: number;
+  cardsCount: number;
+}> {
+  if (!userId || userId === 'local_device') {
+    return { hasCloudData: false, reviewLogsCount: 0, cardsCount: 0 };
   }
-}
-
-/**
- * Lấy số lượng bản ghi đang chờ đồng bộ lên Firestore
- */
-export function getPendingSyncCount(): number {
-  return getOfflineReviewQueue().length;
-}
-
-/**
- * Đưa 1 lượt ôn tập vào hàng đợi ngoại tuyến
- */
-export function enqueueOfflineReview(item: OfflineReviewItem): void {
   try {
-    const queue = getOfflineReviewQueue();
-    queue.push(item);
-    localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+    const [logsSnap, cardsSnap] = await Promise.all([
+      getDocs(collection(db, 'users', userId, 'reviewLogs')),
+      getDocs(collection(db, 'users', userId, 'cards'))
+    ]);
+    const reviewLogsCount = logsSnap.size;
+    const cardsCount = cardsSnap.size;
+    return {
+      hasCloudData: reviewLogsCount > 0 || cardsCount > 0,
+      reviewLogsCount,
+      cardsCount
+    };
   } catch (err) {
-    console.error('Không thể lưu hàng đợi offline:', err);
+    console.warn('Lỗi khi kiểm tra dữ liệu trên Cloud:', err);
+    return { hasCloudData: true, reviewLogsCount: 0, cardsCount: 0 };
   }
 }
 
 /**
- * Xóa sạch hàng đợi ngoại tuyến khi đã đẩy thành công
- */
-export function clearOfflineReviewQueue(): void {
-  try {
-    localStorage.removeItem(OFFLINE_QUEUE_KEY);
-  } catch {}
-}
-
-/**
- * Lọc bỏ mọi giá trị undefined trước khi đẩy lên Firestore để tránh lỗi 'Unsupported field value: undefined'
+ * Lọc bỏ mọi giá trị undefined, NaN, Infinity trước khi đẩy lên Firestore
+ * để tránh lỗi 'Unsupported field value: undefined/NaN'
  */
 export function sanitizeFirestoreData<T extends Record<string, any>>(obj: T): T {
   const result: Record<string, any> = {};
   for (const [key, value] of Object.entries(obj)) {
-    if (value !== undefined) {
-      if (value !== null && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
-        result[key] = sanitizeFirestoreData(value);
-      } else {
+    if (value === undefined) continue;
+    if (typeof value === 'number' && !Number.isFinite(value)) {
+      // NaN, Infinity, -Infinity → thay bằng 0 để Firestore không reject
+      result[key] = 0;
+    } else if (value !== null && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+      // Kiểm tra nếu là FieldValue (serverTimestamp) thì giữ nguyên, không đệ quy
+      if (typeof value.isEqual === 'function' || value._methodName) {
         result[key] = value;
+      } else {
+        result[key] = sanitizeFirestoreData(value);
       }
+    } else {
+      result[key] = value;
     }
   }
   return result as T;
 }
 
 /**
+ * Chuyển một giá trị số về số hợp lệ, trả về fallback nếu NaN/Infinity/undefined/null
+ */
+function safeNumber(val: any, fallback = 0): number {
+  if (val === null || val === undefined) return fallback;
+  const n = Number(val);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+/**
+ * Chuyển giá trị ngày thành chuỗi ISO hợp lệ, trả về null nếu không parse được
+ */
+function safeISOString(val: any): string | null {
+  if (!val) return null;
+  try {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return null;
+    return d.toISOString();
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Đẩy toàn bộ hàng đợi ngoại tuyến lên Firestore (khi có mạng trở lại)
- * Dùng writeBatch để đẩy hàng loạt cực nhanh (< 0.5s) thay vì chạy vòng lặp tuần tự từng bản ghi
+ * Dùng writeBatch để đẩy hàng loạt cực nhanh (<0.5s) thay vì chạy vòng lặp tuần tự từng bản ghi
  */
 export async function flushOfflineQueue(userId: string): Promise<number> {
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
@@ -135,86 +167,103 @@ export async function flushOfflineQueue(userId: string): Promise<number> {
   console.log(`[Offline Sync] Đang đẩy ${queue.length} lượt ôn tập ngoại tuyến lên Firestore cho uid ${userId}...`);
 
   let syncedCount = 0;
+  let skippedCount = 0;
   const CHUNK_SIZE = 200;
 
   try {
     for (let i = 0; i < queue.length; i += CHUNK_SIZE) {
       const chunk = queue.slice(i, i + CHUNK_SIZE);
       const batch = writeBatch(db);
+      let batchItemCount = 0;
 
       for (const item of chunk) {
-        // Luôn sử dụng userId của tài khoản đã đăng nhập, KHÔNG dùng 'local_device'
-        const targetUid = userId;
-        const fsrs = item.card?.fsrsCard;
+        try {
+          // Validate: card phải tồn tại và có id hợp lệ
+          const cardId = item.card?.id;
+          if (!cardId || typeof cardId !== 'string' || cardId.trim() === '') {
+            console.warn('[Offline Sync] Bỏ qua item không có card.id hợp lệ:', item.id);
+            skippedCount++;
+            continue;
+          }
 
-        // 1. Cập nhật thẻ
-        const cardRef = doc(db, 'users', targetUid, 'cards', item.card.id);
-        const cardData = sanitizeFirestoreData({
-          id: item.card.id,
-          refId: item.card.refId,
-          type: item.card.type,
-          due: fsrs?.due ? new Date(fsrs.due).toISOString() : null,
-          stability: fsrs?.stability ?? 0,
-          difficulty: fsrs?.difficulty ?? 0,
-          elapsed_days: fsrs?.elapsed_days ?? 0,
-          scheduled_days: fsrs?.scheduled_days ?? 0,
-          reps: fsrs?.reps ?? 0,
-          lapses: fsrs?.lapses ?? 0,
-          state: fsrs?.state ?? 0,
-          last_review: fsrs?.last_review
-            ? new Date(fsrs.last_review).toISOString()
-            : null,
-          firstLearnedAt: item.card.firstLearnedAt || null,
-          updatedAt: serverTimestamp()
-        });
-        batch.set(cardRef, cardData, { merge: true });
+          const targetUid = userId;
+          const fsrs = item.card?.fsrsCard;
 
-        // 2. Ghi nhật ký ôn tập (tạo docRef mới với auto ID mà không tốn round-trip)
-        const logRef = doc(collection(db, 'users', targetUid, 'reviewLogs'));
-        const logData = sanitizeFirestoreData({
-          cardId: item.card.id,
-          rating: item.rating,
-          state: fsrs?.state ?? 0,
-          reviewedAt: item.reviewedAt || new Date().toISOString()
-        });
-        batch.set(logRef, logData);
+          // 1. Cập nhật thẻ - dùng safeNumber/safeISOString để tránh NaN/Invalid Date
+          const cardRef = doc(db, 'users', targetUid, 'cards', cardId);
+          const cardData = sanitizeFirestoreData({
+            id: cardId,
+            refId: item.card.refId || cardId,
+            type: item.card.type || 'word',
+            due: safeISOString(fsrs?.due),
+            stability: safeNumber(fsrs?.stability),
+            difficulty: safeNumber(fsrs?.difficulty),
+            elapsed_days: safeNumber(fsrs?.elapsed_days),
+            scheduled_days: safeNumber(fsrs?.scheduled_days),
+            reps: safeNumber(fsrs?.reps),
+            lapses: safeNumber(fsrs?.lapses),
+            state: safeNumber(fsrs?.state),
+            last_review: safeISOString(fsrs?.last_review),
+            firstLearnedAt: item.card.firstLearnedAt || null,
+            updatedAt: serverTimestamp()
+          });
+          batch.set(cardRef, cardData, { merge: true });
+
+          // 2. Ghi nhật ký ôn tập
+          const logRef = doc(collection(db, 'users', targetUid, 'reviewLogs'));
+          const logData = sanitizeFirestoreData({
+            cardId: cardId,
+            rating: safeNumber(item.rating, 3),
+            state: safeNumber(fsrs?.state),
+            reviewedAt: item.reviewedAt || new Date().toISOString()
+          });
+          batch.set(logRef, logData);
+          batchItemCount++;
+        } catch (itemErr) {
+          console.warn(`[Offline Sync] Lỗi khi xử lý item ${item.id}, bỏ qua:`, itemErr);
+          skippedCount++;
+        }
       }
 
-      // Giới hạn thời gian mỗi batch commit tối đa 8s
-      const commitTimeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Hết thời gian chờ phản hồi ghi batch (8s)')), 8000)
-      );
-      await Promise.race([batch.commit(), commitTimeout]);
+      if (batchItemCount > 0) {
+        // Giới hạn thời gian mỗi batch commit tối đa 8s
+        const commitTimeout = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Hết thời gian chờ phản hồi ghi batch (8s)')), 8000)
+        );
+        await Promise.race([batch.commit(), commitTimeout]);
+      }
       syncedCount += chunk.length;
     }
 
-    if (syncedCount >= queue.length) {
-      // Chờ Firestore SDK thực sự gửi data lên server (không chỉ ghi vào cache local)
-      try {
-        await Promise.race([
-          waitForPendingWrites(db),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('Timeout chờ Firestore ghi lên server (10s)')), 10000)
-          )
-        ]);
-      } catch (waitErr) {
-        console.warn('[Offline Sync] Chờ ghi lên server timeout, data vẫn nằm trong cache:', waitErr);
-        // Không xóa queue nếu chưa chắc đã lên server
-        return syncedCount;
-      }
-      clearOfflineReviewQueue();
-    } else if (syncedCount > 0) {
-      try {
-        localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue.slice(syncedCount)));
-      } catch {}
+    // Chờ Firestore SDK thực sự gửi data lên server (không chỉ ghi vào cache local)
+    try {
+      await Promise.race([
+        waitForPendingWrites(db),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout chờ Firestore ghi lên server (12s)')), 12000)
+        )
+      ]);
+      console.log('✓ [Offline Sync] waitForPendingWrites hoàn tất - data đã lên server.');
+    } catch (waitErr) {
+      // Timeout waitForPendingWrites: data ĐÃ nằm trong Firestore cache (IndexedDB)
+      // và SDK sẽ tự retry gửi lên server khi có thể.
+      // Vẫn xóa queue vì data đã an toàn trong cache.
+      console.warn('[Offline Sync] waitForPendingWrites timeout, data đã trong cache SDK, sẽ tự sync sau:', waitErr);
+    }
+
+    // Xóa queue sau khi đã commit thành công vào Firestore (cache hoặc server)
+    clearOfflineReviewQueue();
+
+    if (skippedCount > 0) {
+      console.warn(`[Offline Sync] Đã bỏ qua ${skippedCount} bản ghi lỗi.`);
     }
     console.log(`✓ [Offline Sync] Đã đồng bộ xong ${syncedCount} lượt ôn tập lên Firestore.`);
     return syncedCount;
   } catch (err) {
-    console.warn('Lỗi khi đẩy hàng đợi offline bằng batch:', err);
+    console.error('❌ [Offline Sync] Lỗi khi đẩy hàng đợi offline bằng batch:', err);
     if (syncedCount > 0) {
       try {
-        localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue.slice(syncedCount)));
+        localStorage.setItem(getUserStorageKey('offline_queue', userId), JSON.stringify(queue.slice(syncedCount)));
       } catch {}
     }
     return syncedCount;
@@ -251,17 +300,15 @@ export async function saveCardProgress(
         id: card.id,
         refId: card.refId,
         type: card.type,
-        due: card.fsrsCard.due ? new Date(card.fsrsCard.due).toISOString() : null,
-        stability: card.fsrsCard.stability,
-        difficulty: card.fsrsCard.difficulty,
-        elapsed_days: card.fsrsCard.elapsed_days,
-        scheduled_days: card.fsrsCard.scheduled_days,
-        reps: card.fsrsCard.reps,
-        lapses: card.fsrsCard.lapses,
-        state: card.fsrsCard.state,
-        last_review: card.fsrsCard.last_review
-          ? new Date(card.fsrsCard.last_review).toISOString()
-          : null,
+        due: safeISOString(card.fsrsCard.due),
+        stability: safeNumber(card.fsrsCard.stability),
+        difficulty: safeNumber(card.fsrsCard.difficulty),
+        elapsed_days: safeNumber(card.fsrsCard.elapsed_days),
+        scheduled_days: safeNumber(card.fsrsCard.scheduled_days),
+        reps: safeNumber(card.fsrsCard.reps),
+        lapses: safeNumber(card.fsrsCard.lapses),
+        state: safeNumber(card.fsrsCard.state),
+        last_review: safeISOString(card.fsrsCard.last_review),
         firstLearnedAt: card.firstLearnedAt || null,
         updatedAt: serverTimestamp()
       }),
@@ -612,4 +659,69 @@ export async function syncUserStudyStats(
   } catch (err) {
     console.warn('Lỗi khi đồng bộ chỉ số học tập lên Firestore:', err);
   }
+}
+
+/**
+ * Đẩy toàn bộ dữ liệu thẻ học, folders, decks và stats từ máy lên tạo lại trên Cloud (khi Cloud bị xóa/trống)
+ */
+export async function uploadEntireLocalStateToFirestore(
+  userId: string,
+  cards: StudyCard[],
+  folders: Folder[],
+  decks: Deck[],
+  stats: UserStudyStats
+): Promise<{ cardsSynced: number }> {
+  if (!userId || userId === 'local_device') return { cardsSynced: 0 };
+
+  // 1. Chỉ đẩy các thẻ đã học hoặc có lịch sử ôn tập để tối ưu hiệu năng
+  const learnedCards = cards.filter(
+    (c) => (c.fsrsCard?.reps ?? 0) > 0 || Boolean(c.fsrsCard?.last_review) || !c.isNew
+  );
+
+  console.log(`[Upload to Cloud] Đang đẩy ${learnedCards.length} thẻ đã học lên Firestore cho uid ${userId}...`);
+  const CHUNK_SIZE = 150;
+  let cardsSynced = 0;
+
+  for (let i = 0; i < learnedCards.length; i += CHUNK_SIZE) {
+    const chunk = learnedCards.slice(i, i + CHUNK_SIZE);
+    const batch = writeBatch(db);
+
+    for (const card of chunk) {
+      const fsrs = card.fsrsCard;
+      const cardRef = doc(db, 'users', userId, 'cards', card.id);
+      const cardData = sanitizeFirestoreData({
+        id: card.id,
+        refId: card.refId,
+        type: card.type,
+        deckId: card.deckId,
+        due: fsrs?.due ? new Date(fsrs.due).toISOString() : null,
+        stability: fsrs?.stability ?? 0,
+        difficulty: fsrs?.difficulty ?? 0,
+        elapsed_days: fsrs?.elapsed_days ?? 0,
+        scheduled_days: fsrs?.scheduled_days ?? 0,
+        reps: fsrs?.reps ?? 0,
+        lapses: fsrs?.lapses ?? 0,
+        state: fsrs?.state ?? 0,
+        last_review: fsrs?.last_review ? new Date(fsrs.last_review).toISOString() : null,
+        firstLearnedAt: card.firstLearnedAt || null,
+        updatedAt: serverTimestamp()
+      });
+      batch.set(cardRef, cardData, { merge: true });
+    }
+
+    const commitTimeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Timeout upload cards batch')), 8000)
+    );
+    await Promise.race([batch.commit(), commitTimeout]);
+    cardsSynced += chunk.length;
+  }
+
+  // 2. Đẩy folders, decks, stats song song và flush hàng đợi
+  await Promise.all([
+    syncFoldersAndDecks(userId, folders, decks),
+    syncUserStudyStats(userId, stats),
+    flushOfflineQueue(userId)
+  ]);
+
+  return { cardsSynced };
 }

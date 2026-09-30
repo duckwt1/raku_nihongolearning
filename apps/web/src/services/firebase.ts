@@ -5,6 +5,7 @@ import {
   GoogleAuthProvider,
   signInAnonymously,
   onAuthStateChanged,
+  signOut,
   type User
 } from 'firebase/auth';
 import {
@@ -56,4 +57,4 @@ if (shouldUseEmulator && typeof window !== 'undefined') {
   }
 }
 
-export { signInAnonymously, onAuthStateChanged, type User };
+export { signInAnonymously, onAuthStateChanged, signOut, type User };

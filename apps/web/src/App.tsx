@@ -33,7 +33,7 @@ import {
   getTodayDateString,
   isCardLearnedToday
 } from '@raku/core';
-import { auth, signInAnonymously, onAuthStateChanged, type User } from './services/firebase';
+import { auth, signInAnonymously, onAuthStateChanged, signOut, type User } from './services/firebase';
 import {
   syncUserProfile,
   seedAllN3DataToFirestore,
@@ -43,7 +43,19 @@ import {
   enqueueOfflineReview,
   syncFoldersAndDecks,
   syncUserStudyStats,
-  loadAndApplyFirestoreReviewLogs
+  loadAndApplyFirestoreReviewLogs,
+  checkCloudDataStatus,
+  uploadEntireLocalStateToFirestore,
+  loadUserCards,
+  saveUserCards,
+  loadUserStudyStats,
+  saveUserStudyStats,
+  loadUserFolders,
+  saveUserFolders,
+  loadUserDecks,
+  saveUserDecks,
+  clearOfflineReviewQueue,
+  clearUserDataFromBrowser
 } from './services/firestoreSync';
 import { DataLicensesModal } from './components/DataLicensesModal';
 import { FlashcardStudyView } from './components/FlashcardStudyView';
@@ -54,6 +66,7 @@ import { AuthModal } from './components/AuthModal';
 import { KanjiModal } from './components/KanjiModal';
 import { TodayStatsBar } from './components/TodayStatsBar';
 import { DeckFolderView } from './components/DeckFolderView';
+import { CloudConflictModal } from './components/CloudConflictModal';
 
 export function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -64,6 +77,7 @@ export function App() {
     return typeof navigator !== 'undefined' && navigator.onLine ? 'synced' : 'offline';
   });
   const [pendingCount, setPendingCount] = useState<number>(() => getPendingSyncCount());
+  const [isConflictModalOpen, setIsConflictModalOpen] = useState(false);
   const [syncToast, setSyncToast] = useState<{
     message: string;
     type: 'success' | 'info' | 'warning';
@@ -108,72 +122,15 @@ export function App() {
   const [isPulling, setIsPulling] = useState(false);
   const [pullResult, setPullResult] = useState<string | null>(null);
 
-  // Folders & Decks state (with LocalStorage persistence)
-  const [folders, setFolders] = useState<Folder[]>(() => {
-    try {
-      const saved = localStorage.getItem('raku_folders');
-      return saved ? JSON.parse(saved) : DEFAULT_FOLDERS;
-    } catch {
-      return DEFAULT_FOLDERS;
-    }
-  });
+  // Folders & Decks state (with LocalStorage namespaced persistence)
+  const [folders, setFolders] = useState<Folder[]>(() => loadUserFolders());
+  const [decks, setDecks] = useState<Deck[]>(() => loadUserDecks());
 
-  const [decks, setDecks] = useState<Deck[]>(() => {
-    try {
-      const saved = localStorage.getItem('raku_decks');
-      if (saved) {
-        const parsed: Deck[] = JSON.parse(saved);
-        return parsed.filter((d) => d.id !== 'deck_n3_kanji');
-      }
-      return DEFAULT_DECKS;
-    } catch {
-      return DEFAULT_DECKS;
-    }
-  });
-
-  // Daily Study Stats state (with LocalStorage persistence)
-  const [studyStats, setStudyStats] = useState<UserStudyStats>(() => {
-    try {
-      const saved = localStorage.getItem('raku_study_stats');
-      if (saved) {
-        return recordStudyActivity(JSON.parse(saved), 0);
-      }
-    } catch {}
-    return createInitialStudyStats();
-  });
+  // Daily Study Stats state (with LocalStorage namespaced persistence)
+  const [studyStats, setStudyStats] = useState<UserStudyStats>(() => loadUserStudyStats());
 
   // StudyCards state (Words and Grammar initialized for active flashcard review)
-  const [allCards, setAllCards] = useState<StudyCard[]>(() => {
-    try {
-      const saved = localStorage.getItem('raku_cards');
-      if (saved) {
-        const parsed: StudyCard[] = JSON.parse(saved);
-        return parsed
-          .filter((c) => c.type !== 'kanji' && c.deckId !== 'deck_n3_kanji')
-          .map((c) => {
-            const reps = c.fsrsCard?.reps ?? 0;
-            const hasReviewed = reps > 0 || Boolean(c.fsrsCard?.last_review);
-            const isActuallyNew =
-              !hasReviewed &&
-              (c.isNew ?? true) &&
-              (c.fsrsCard?.state === 0 || c.fsrsCard?.state === undefined);
-            const dueDate = c.fsrsCard?.due ? new Date(c.fsrsCard.due) : new Date();
-
-            return {
-              ...c,
-              isNew: isActuallyNew,
-              isDue: !isActuallyNew && dueDate.getTime() <= Date.now(),
-              fsrsCard: {
-                ...c.fsrsCard,
-                due: dueDate,
-                last_review: c.fsrsCard?.last_review ? new Date(c.fsrsCard.last_review) : undefined
-              }
-            };
-          });
-      }
-    } catch {}
-    return buildDefaultCards();
-  });
+  const [allCards, setAllCards] = useState<StudyCard[]>(() => loadUserCards());
 
   // Extra new cards quota for custom study ("Học thêm từ mới")
   const [extraNewCards, setExtraNewCards] = useState<number>(0);
@@ -189,15 +146,13 @@ export function App() {
     const timer = setInterval(() => {
       setStudyStats((prev) => {
         const next = recordStudyActivity(prev, 1);
-        try {
-          localStorage.setItem('raku_study_stats', JSON.stringify(next));
-        } catch {}
+        saveUserStudyStats(user?.uid, next);
         return next;
       });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isStudying]);
+  }, [isStudying, user?.uid]);
 
   // Network status listener (Local-first: no auto-sync on reconnect)
   useEffect(() => {
@@ -210,7 +165,7 @@ export function App() {
     const handleOffline = () => {
       setIsOnline(false);
       setSyncStatus('offline');
-      setPendingCount(getPendingSyncCount());
+      setPendingCount(getPendingSyncCount(user?.uid));
       showSyncToast(
         '🟠 Đang ở chế độ Ngoại tuyến. Mọi bài học và lượt ôn tập sẽ được lưu an toàn tại máy!',
         'warning'
@@ -224,12 +179,23 @@ export function App() {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [user?.uid]);
 
-  // Auth listener (runs once on mount, no infinite loop or automatic background sync)
+  // Auth listener: switch local user profiles cleanly upon sign-in/sign-out
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+      const uid = currentUser?.uid || 'guest';
+      const uCards = loadUserCards(uid);
+      const uStats = loadUserStudyStats(uid);
+      const uFolders = loadUserFolders(uid);
+      const uDecks = loadUserDecks(uid);
+      setAllCards(uCards);
+      setStudyStats(uStats);
+      setFolders(uFolders);
+      setDecks(uDecks);
+      setPendingCount(getPendingSyncCount(uid));
+
       if (currentUser) {
         syncUserProfile(currentUser);
       }
@@ -385,9 +351,7 @@ export function App() {
     };
     const updated = [...folders, newFolder];
     setFolders(updated);
-    try {
-      localStorage.setItem('raku_folders', JSON.stringify(updated));
-    } catch {}
+    saveUserFolders(user?.uid, updated);
   };
 
   const handleCreateDeck = (
@@ -412,56 +376,118 @@ export function App() {
     };
     const updated = [...decks, newDeck];
     setDecks(updated);
-    try {
-      localStorage.setItem('raku_decks', JSON.stringify(updated));
-    } catch {}
+    saveUserDecks(user?.uid, updated);
   };
 
   const handleDeleteFolder = (folderId: string) => {
     const updated = folders.filter((f) => f.id !== folderId);
     setFolders(updated);
-    try {
-      localStorage.setItem('raku_folders', JSON.stringify(updated));
-    } catch {}
+    saveUserFolders(user?.uid, updated);
   };
 
   const handleDeleteDeck = (deckId: string) => {
     const updated = decks.filter((d) => d.id !== deckId);
     setDecks(updated);
-    try {
-      localStorage.setItem('raku_decks', JSON.stringify(updated));
-    } catch {}
+    saveUserDecks(user?.uid, updated);
   };
 
   const handleRateCard = (card: StudyCard, rating: number) => {
+    const currentUid = user?.uid || auth.currentUser?.uid;
+
     // 1. Update daily study stats
     setStudyStats((prev) => {
       const next = recordStudyActivity(prev, 0, rating);
-      try {
-        localStorage.setItem('raku_study_stats', JSON.stringify(next));
-      } catch {}
+      saveUserStudyStats(currentUid, next);
       return next;
     });
 
     // 2. Update card in allCards
     setAllCards((prevCards) => {
       const updated = prevCards.map((c) => (c.id === card.id ? card : c));
-      try {
-        localStorage.setItem('raku_cards', JSON.stringify(updated));
-      } catch {}
+      saveUserCards(currentUid, updated);
       return updated;
     });
 
-    // 3. Local-First: Luôn lưu vào hàng đợi cục bộ trên máy, KHÔNG gửi request mạng lúc học để lật thẻ tức thì
-    const currentUid = user?.uid || auth.currentUser?.uid || 'local_device';
+    // 3. Local-First: Luôn lưu vào hàng đợi cục bộ trên máy của user
     enqueueOfflineReview({
       id: `${card.id}_${Date.now()}`,
-      userId: currentUid,
+      userId: currentUid || 'guest',
       card,
       rating,
       reviewedAt: new Date().toISOString()
-    });
-    setPendingCount(getPendingSyncCount());
+    }, currentUid);
+    setPendingCount(getPendingSyncCount(currentUid));
+  };
+
+  const handleSignOut = async (clearLocalData = false) => {
+    const currentUid = user?.uid;
+    if (clearLocalData && currentUid) {
+      clearUserDataFromBrowser(currentUid);
+    }
+    await signOut(auth);
+    setUser(null);
+
+    // Chuyển sạch về hồ sơ khách vãng lai mặc định
+    const gCards = loadUserCards('guest');
+    const gStats = loadUserStudyStats('guest');
+    const gFolders = loadUserFolders('guest');
+    const gDecks = loadUserDecks('guest');
+    setAllCards(gCards);
+    setStudyStats(gStats);
+    setFolders(gFolders);
+    setDecks(gDecks);
+    setPendingCount(getPendingSyncCount('guest'));
+    showSyncToast(
+      clearLocalData
+        ? 'Đã đăng xuất và xóa toàn bộ dữ liệu tài khoản khỏi thiết bị này.'
+        : 'Đã đăng xuất. Dữ liệu offline của tài khoản vẫn được lưu an toàn.',
+      'info'
+    );
+  };
+
+  const handleUploadToCloud = async () => {
+    const currentUid = user?.uid || auth.currentUser?.uid;
+    if (!currentUid) return;
+    setSyncStatus('syncing');
+    showSyncToast('☁️ Đang đẩy toàn bộ dữ liệu trên máy lên Cloud Firestore...', 'info');
+    try {
+      const res = await uploadEntireLocalStateToFirestore(
+        currentUid,
+        allCards,
+        folders,
+        decks,
+        studyStats
+      );
+      setPendingCount(0);
+      showSyncToast(
+        `✓ Đã tải thành công ${res.cardsSynced} thẻ học lên Cloud Firestore!`,
+        'success'
+      );
+    } catch (err: any) {
+      showSyncToast(`❌ Tải lên đám mây thất bại: ${err?.message || err}`, 'warning');
+    } finally {
+      setSyncStatus('synced');
+    }
+  };
+
+  const handleResetToCloud = () => {
+    const currentUid = user?.uid || auth.currentUser?.uid;
+    if (currentUid) {
+      clearUserDataFromBrowser(currentUid);
+    }
+    const defCards = buildDefaultCards();
+    const defStats = createInitialStudyStats();
+    setAllCards(defCards);
+    setStudyStats(defStats);
+    setFolders(DEFAULT_FOLDERS);
+    setDecks(DEFAULT_DECKS);
+    saveUserCards(currentUid, defCards);
+    saveUserStudyStats(currentUid, defStats);
+    saveUserFolders(currentUid, DEFAULT_FOLDERS);
+    saveUserDecks(currentUid, DEFAULT_DECKS);
+    clearOfflineReviewQueue(currentUid);
+    setPendingCount(0);
+    showSyncToast('✓ Đã đặt lại dữ liệu trên máy về mặc định thành công.', 'info');
   };
 
   const handleManualSync = async () => {
@@ -475,7 +501,24 @@ export function App() {
       setIsAuthModalOpen(true);
       return;
     }
+
     setSyncStatus('syncing');
+
+    // Kiểm tra xem trên Cloud Firestore có dữ liệu không
+    const cloudStatus = await checkCloudDataStatus(currentUid);
+    const localLearned = allCards.filter(
+      (c) => (c.fsrsCard?.reps ?? 0) > 0 || Boolean(c.fsrsCard?.last_review) || !c.isNew
+    ).length;
+    const pendingQ = getPendingSyncCount(currentUid);
+
+    // Giống Anki: Nếu Cloud trống hoàn toàn (hoặc vừa bị xóa trên Firebase),
+    // nhưng trên máy người dùng đã có tiến độ -> Mở hộp thoại giải quyết xung đột!
+    if (!cloudStatus.hasCloudData && (localLearned > 0 || pendingQ > 0)) {
+      setSyncStatus('synced');
+      setIsConflictModalOpen(true);
+      return;
+    }
+
     showSyncToast('☁️ Đang đồng bộ dữ liệu lên đám mây...', 'info');
 
     try {
@@ -501,7 +544,7 @@ export function App() {
       };
 
       const flushed = await Promise.race([doSync(), timeoutPromise]);
-      const remaining = getPendingSyncCount();
+      const remaining = getPendingSyncCount(currentUid);
       setPendingCount(remaining);
 
       if (remaining > 0) {
@@ -521,7 +564,7 @@ export function App() {
       console.warn('Lỗi khi bấm đồng bộ Firestore:', err);
       showSyncToast(`❌ Đồng bộ thất bại: ${err?.message || err}`, 'warning');
     } finally {
-      setPendingCount(getPendingSyncCount());
+      setPendingCount(getPendingSyncCount(currentUid));
       setSyncStatus('synced');
     }
   };
@@ -551,45 +594,50 @@ export function App() {
       setPullResult('Bạn cần đăng nhập hoặc bấm Dùng thử ẩn danh trước khi đồng bộ.');
       return;
     }
+    const currentUid = user.uid;
+
+    // Kiểm tra xem trên Cloud Firestore có dữ liệu không
+    const cloudStatus = await checkCloudDataStatus(currentUid);
+    const localLearned = allCards.filter(
+      (c) => (c.fsrsCard?.reps ?? 0) > 0 || Boolean(c.fsrsCard?.last_review) || !c.isNew
+    ).length;
+
+    if (!cloudStatus.hasCloudData && localLearned > 0) {
+      setIsConflictModalOpen(true);
+      return;
+    }
+
     setIsPulling(true);
     setPullResult(null);
     try {
       // 1. Tải và tái hiện toàn bộ tiến độ FSRS từ reviewLogs trên Firestore
       const { updatedCards, logsCount, stats } = await loadAndApplyFirestoreReviewLogs(
-        user.uid,
+        currentUid,
         allCards,
         studyStats
       );
       if (logsCount > 0) {
         setAllCards(updatedCards);
-        try {
-          localStorage.setItem('raku_cards', JSON.stringify(updatedCards));
-        } catch {}
+        saveUserCards(currentUid, updatedCards);
       }
 
       // 2. Tải decks, folders, thẻ cards và stats từ Firestore
-      const data = await pullDataFromFirestore(user.uid);
+      const data = await pullDataFromFirestore(currentUid);
       const cardCount = Object.keys(data.cards).length;
 
       if (data.folders) {
         setFolders(data.folders);
-        try {
-          localStorage.setItem('raku_folders', JSON.stringify(data.folders));
-        } catch {}
+        saveUserFolders(currentUid, data.folders);
       }
 
       if (data.decks) {
         setDecks(data.decks);
-        try {
-          localStorage.setItem('raku_decks', JSON.stringify(data.decks));
-        } catch {}
+        saveUserDecks(currentUid, data.decks);
       }
 
       if (stats) {
         setStudyStats(stats);
-        try {
-          localStorage.setItem('raku_study_stats', JSON.stringify(stats));
-        } catch {}
+        saveUserStudyStats(currentUid, stats);
       }
 
       const todayDone = stats?.todayStats?.reviewedCount || 0;
@@ -1136,6 +1184,21 @@ export function App() {
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
+        onSignOut={handleSignOut}
+      />
+
+      {/* Cloud Conflict & Empty Cloud Resolution Modal (Anki-style) */}
+      <CloudConflictModal
+        isOpen={isConflictModalOpen}
+        onClose={() => setIsConflictModalOpen(false)}
+        onUploadToCloud={handleUploadToCloud}
+        onResetToCloud={handleResetToCloud}
+        localReviewedCount={
+          allCards.filter(
+            (c) => (c.fsrsCard?.reps ?? 0) > 0 || Boolean(c.fsrsCard?.last_review) || !c.isNew
+          ).length
+        }
+        pendingQueueCount={getPendingSyncCount(user?.uid)}
       />
 
       {/* AI Quiz Generator Modal */}

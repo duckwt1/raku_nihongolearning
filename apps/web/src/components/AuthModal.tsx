@@ -19,9 +19,10 @@ import { auth, googleProvider } from '../services/firebase';
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSignOut?: (clearLocalData: boolean) => Promise<void> | void;
 }
 
-export function AuthModal({ isOpen, onClose }: AuthModalProps) {
+export function AuthModal({ isOpen, onClose, onSignOut }: AuthModalProps) {
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -69,8 +70,12 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     }
   };
 
-  const handleSignOut = async () => {
-    await signOut(auth);
+  const handleSignOut = async (clearLocal = false) => {
+    if (onSignOut) {
+      await onSignOut(clearLocal);
+    } else {
+      await signOut(auth);
+    }
     onClose();
   };
 
@@ -109,12 +114,22 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
               <div className="font-semibold text-slate-800 dark:text-slate-100 text-sm">{currentUser.email}</div>
               <div className="text-[10px] text-slate-400">UID: {currentUser.uid}</div>
             </div>
-            <button
-              onClick={handleSignOut}
-              className="w-full py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-300 rounded-xl font-semibold touch-target"
-            >
-              Đăng xuất
-            </button>
+
+            <div className="space-y-2 pt-1">
+              <button
+                onClick={() => handleSignOut(false)}
+                className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-semibold touch-target transition"
+              >
+                Đăng xuất (Giữ bản lưu offline)
+              </button>
+
+              <button
+                onClick={() => handleSignOut(true)}
+                className="w-full py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-300 rounded-xl font-medium touch-target transition text-[11px]"
+              >
+                Đăng xuất & Xóa dữ liệu tài khoản khỏi máy
+              </button>
+            </div>
           </div>
         ) : (
           <div className="space-y-4 text-xs">
