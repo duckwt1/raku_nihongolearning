@@ -522,23 +522,21 @@ export function App() {
     showSyncToast('☁️ Đang đồng bộ dữ liệu lên đám mây...', 'info');
 
     try {
-      // Giới hạn thời gian tối đa 25s (tăng lên vì có thêm waitForPendingWrites)
+      // Giới hạn thời gian tối đa 45s cho mạng di động
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(
-          () => reject(new Error('Hết thời gian chờ kết nối máy chủ (25s). Vui lòng thử lại.')),
-          25000
+          () => reject(new Error('Hết thời gian chờ kết nối máy chủ (45s). Vui lòng thử lại.')),
+          45000
         )
       );
 
       const doSync = async () => {
-        // 1. Đẩy offline queue trước (đã bao gồm waitForPendingWrites bên trong)
+        // 1. Đẩy offline queue trước
         const flushed = await flushOfflineQueue(currentUid);
 
-        // 2. Sau đó sync folders, decks, stats song song
-        await Promise.all([
-          syncFoldersAndDecks(currentUid, folders, decks),
-          syncUserStudyStats(currentUid, studyStats)
-        ]);
+        // 2. Sau đó sync folders, decks và stats theo thứ tự để tránh nghẽn WebChannel
+        await syncFoldersAndDecks(currentUid, folders, decks);
+        await syncUserStudyStats(currentUid, studyStats);
 
         return flushed;
       };

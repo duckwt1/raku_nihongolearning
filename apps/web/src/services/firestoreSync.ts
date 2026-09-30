@@ -161,14 +161,14 @@ export async function flushOfflineQueue(userId: string): Promise<number> {
     return 0;
   }
 
-  const queue = getOfflineReviewQueue();
+  const queue = getOfflineReviewQueue(userId);
   if (queue.length === 0) return 0;
 
   console.log(`[Offline Sync] Đang đẩy ${queue.length} lượt ôn tập ngoại tuyến lên Firestore cho uid ${userId}...`);
 
   let syncedCount = 0;
   let skippedCount = 0;
-  const CHUNK_SIZE = 200;
+  const CHUNK_SIZE = 40;
 
   try {
     for (let i = 0; i < queue.length; i += CHUNK_SIZE) {
@@ -226,11 +226,28 @@ export async function flushOfflineQueue(userId: string): Promise<number> {
       }
 
       if (batchItemCount > 0) {
-        // Giới hạn thời gian mỗi batch commit tối đa 8s
-        const commitTimeout = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Hết thời gian chờ phản hồi ghi batch (8s)')), 8000)
-        );
-        await Promise.race([batch.commit(), commitTimeout]);
+        // Cho phép tối đa 35s cho mạng di động kèm 1 lần retry
+        let commitSuccess = false;
+        let lastErr: any = null;
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            const commitTimeout = new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('Hết thời gian chờ phản hồi ghi batch (35s)')), 35000)
+            );
+            await Promise.race([batch.commit(), commitTimeout]);
+            commitSuccess = true;
+            break;
+          } catch (batchErr) {
+            lastErr = batchErr;
+            console.warn(`[Offline Sync] Lần thử ${attempt} thất bại cho batch [${i} - ${i + chunk.length}]:`, batchErr);
+            if (attempt < 2) {
+              await new Promise((r) => setTimeout(r, 1000));
+            }
+          }
+        }
+        if (!commitSuccess) {
+          throw lastErr || new Error('Hết thời gian chờ phản hồi ghi batch');
+        }
       }
       syncedCount += chunk.length;
     }
@@ -240,7 +257,7 @@ export async function flushOfflineQueue(userId: string): Promise<number> {
       await Promise.race([
         waitForPendingWrites(db),
         new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Timeout chờ Firestore ghi lên server (12s)')), 12000)
+          setTimeout(() => reject(new Error('Timeout chờ Firestore ghi lên server (15s)')), 15000)
         )
       ]);
       console.log('✓ [Offline Sync] waitForPendingWrites hoàn tất - data đã lên server.');
@@ -252,7 +269,7 @@ export async function flushOfflineQueue(userId: string): Promise<number> {
     }
 
     // Xóa queue sau khi đã commit thành công vào Firestore (cache hoặc server)
-    clearOfflineReviewQueue();
+    clearOfflineReviewQueue(userId);
 
     if (skippedCount > 0) {
       console.warn(`[Offline Sync] Đã bỏ qua ${skippedCount} bản ghi lỗi.`);
@@ -607,16 +624,18 @@ export async function syncFoldersAndDecks(
       batch.set(ref, sanitizeFirestoreData(d), { merge: true });
     }
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Timeout sync folders/decks')), 6000)
+      setTimeout(() => reject(new Error('Timeout sync folders/decks (25s)')), 25000)
     );
     await Promise.race([batch.commit(), timeoutPromise]);
-    // Chờ SDK thực sự gửi lên server
-    await Promise.race([
-      waitForPendingWrites(db),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout chờ ghi folders/decks lên server')), 8000)
-      )
-    ]);
+    // Chờ SDK thực sự gửi lên server (an toàn không làm crash flow chính)
+    try {
+      await Promise.race([
+        waitForPendingWrites(db),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout chờ ghi folders/decks lên server')), 15000)
+        )
+      ]);
+    } catch {}
     console.log('✓ Đã đồng bộ cấu trúc Thư mục và Deck lên Firestore');
   } catch (err) {
     console.warn('Không thể đồng bộ Thư mục & Deck lên Firestore:', err);
@@ -646,16 +665,18 @@ export async function syncUserStudyStats(
       { merge: true }
     );
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Timeout sync study stats')), 6000)
+      setTimeout(() => reject(new Error('Timeout sync study stats (25s)')), 25000)
     );
     await Promise.race([setPromise, timeoutPromise]);
-    // Chờ SDK thực sự ghi lên server
-    await Promise.race([
-      waitForPendingWrites(db),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout chờ ghi stats lên server')), 8000)
-      )
-    ]);
+    // Chờ SDK thực sự ghi lên server (an toàn không làm crash flow)
+    try {
+      await Promise.race([
+        waitForPendingWrites(db),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout chờ ghi stats lên server')), 15000)
+        )
+      ]);
+    } catch {}
   } catch (err) {
     console.warn('Lỗi khi đồng bộ chỉ số học tập lên Firestore:', err);
   }
@@ -679,7 +700,7 @@ export async function uploadEntireLocalStateToFirestore(
   );
 
   console.log(`[Upload to Cloud] Đang đẩy ${learnedCards.length} thẻ đã học lên Firestore cho uid ${userId}...`);
-  const CHUNK_SIZE = 150;
+  const CHUNK_SIZE = 40;
   let cardsSynced = 0;
 
   for (let i = 0; i < learnedCards.length; i += CHUNK_SIZE) {
@@ -709,19 +730,35 @@ export async function uploadEntireLocalStateToFirestore(
       batch.set(cardRef, cardData, { merge: true });
     }
 
-    const commitTimeout = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Timeout upload cards batch')), 8000)
-    );
-    await Promise.race([batch.commit(), commitTimeout]);
+    // Tăng timeout lên 35s kèm 1 lần retry nếu gặp sự cố mạng chập chờn
+    let commitSuccess = false;
+    let lastError: any = null;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const commitTimeout = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout upload cards batch (35s)')), 35000)
+        );
+        await Promise.race([batch.commit(), commitTimeout]);
+        commitSuccess = true;
+        break;
+      } catch (err) {
+        lastError = err;
+        console.warn(`[Upload to Cloud] Lần thử ${attempt} thất bại khi ghi chunk [${i} - ${i + chunk.length}]:`, err);
+        if (attempt < 2) {
+          await new Promise((r) => setTimeout(r, 1000));
+        }
+      }
+    }
+    if (!commitSuccess) {
+      throw lastError || new Error('Timeout upload cards batch');
+    }
     cardsSynced += chunk.length;
   }
 
-  // 2. Đẩy folders, decks, stats song song và flush hàng đợi
-  await Promise.all([
-    syncFoldersAndDecks(userId, folders, decks),
-    syncUserStudyStats(userId, stats),
-    flushOfflineQueue(userId)
-  ]);
+  // 2. Đẩy folders, decks, stats và flush hàng đợi theo thứ tự tuần tự để tránh nghẽn kết nối WebChannel trên mobile
+  await syncFoldersAndDecks(userId, folders, decks);
+  await syncUserStudyStats(userId, stats);
+  await flushOfflineQueue(userId);
 
   return { cardsSynced };
 }
