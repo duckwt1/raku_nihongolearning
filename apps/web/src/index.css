@@ -10,7 +10,62 @@
     --sal: env(safe-area-inset-left, 0px);
   }
 
+  .raku-app-shell {
+    /* Japanese study palette: mist canvas, ink, deep teal, and a vermilion seal. */
+    --raku-canvas: 243 247 245; /* #F3F7F5 */
+    --raku-surface: 255 255 255; /* #FFFFFF */
+    --raku-subtle: 232 239 237; /* #E8EFED */
+    --raku-ink: 28 44 48; /* #1C2C30 */
+    --raku-muted: 79 97 98; /* #4F6162 */
+    --raku-accent: 0 109 103; /* #006D67 */
+    --raku-accent-soft: 217 239 235; /* #D9EFEB */
+    --raku-signal: 180 63 45; /* #B43F2D */
+    --raku-line: 213 225 222; /* #D5E1DE */
+    --raku-on-accent: 255 255 255; /* #FFFFFF */
+    --raku-neutral-50: 243 247 245;
+    --raku-neutral-100: 232 239 237;
+    --raku-neutral-200: 213 225 222;
+    --raku-neutral-300: 140 160 155;
+    --raku-neutral-400: 94 114 110;
+    --raku-neutral-500: 80 101 99;
+    --raku-neutral-600: 63 84 82;
+    --raku-neutral-700: 52 72 72;
+    --raku-neutral-800: 37 59 61;
+    --raku-neutral-900: 28 44 48;
+    --raku-neutral-950: 18 29 34;
+    color-scheme: light;
+    min-height: 100dvh;
+    background: rgb(var(--raku-canvas));
+    color: rgb(var(--raku-ink));
+  }
+
+  .raku-app-shell.dark {
+    color-scheme: dark;
+    --raku-canvas: 18 29 34; /* #121D22 */
+    --raku-surface: 28 42 47; /* #1C2A2F */
+    --raku-subtle: 33 60 58; /* #213C3A */
+    --raku-ink: 242 244 238; /* #F2F4EE */
+    --raku-muted: 180 194 190; /* #B4C2BE */
+    --raku-accent: 97 214 193; /* #61D6C1 */
+    --raku-accent-soft: 33 60 58; /* #213C3A */
+    --raku-signal: 242 140 116; /* #F28C74 */
+    --raku-line: 53 72 76; /* #35484C */
+    --raku-on-accent: 12 39 36; /* #0C2724 */
+    --raku-neutral-50: 242 245 242;
+    --raku-neutral-100: 224 233 229;
+    --raku-neutral-200: 200 215 210;
+    --raku-neutral-300: 194 208 203;
+    --raku-neutral-400: 170 188 182;
+    --raku-neutral-500: 144 164 159;
+    --raku-neutral-600: 113 137 132;
+    --raku-neutral-700: 83 107 104;
+    --raku-neutral-800: 38 56 61;
+    --raku-neutral-900: 28 42 47;
+    --raku-neutral-950: 18 29 34;
+  }
+
   body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans JP", sans-serif;
     padding-top: var(--sat);
     padding-bottom: var(--sab);
     padding-left: var(--sal);
@@ -23,6 +78,35 @@
     min-height: 44px;
     min-width: 44px;
   }
+
+  .raku-brand-mark {
+    position: relative;
+    overflow: hidden;
+    background: #1c2c30;
+    color: #ffffff;
+  }
+
+  .raku-brand-mark::after {
+    position: absolute;
+    right: 6px;
+    bottom: 6px;
+    width: 7px;
+    height: 7px;
+    border: 1px solid #ffffff;
+    border-radius: 9999px;
+    background: #b43f2d;
+    content: "";
+  }
+
+  .dark .raku-brand-mark {
+    background: #f2f4ee;
+    color: #1c2c30;
+  }
+
+  .raku-app-shell :focus-visible {
+    outline: 3px solid rgb(var(--raku-signal)) !important;
+    outline-offset: 2px !important;
+  }
 }
 
 /* Reduced motion preference */
@@ -34,5 +118,12 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .raku-app-shell [class*="backdrop-blur"] {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
   }
 }

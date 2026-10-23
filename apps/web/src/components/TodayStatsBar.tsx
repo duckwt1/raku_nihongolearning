@@ -26,120 +26,84 @@ export function TodayStatsBar({
   const isDailyGoalFinished = reviewedCount > 0 && totalDueToday === 0 && totalNewToday === 0;
 
   return (
-    <div className="bg-gradient-to-r from-sky-500/10 via-indigo-500/10 to-purple-500/10 dark:from-sky-950/40 dark:via-indigo-950/40 dark:to-purple-950/40 border border-sky-200 dark:border-sky-900/60 rounded-3xl p-4 sm:p-5 shadow-sm space-y-4">
-      {/* Top row: Greeting and Streak */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center space-x-2">
-          <span className="flex h-2.5 w-2.5 relative">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-sky-500"></span>
+    <section className="overflow-hidden rounded-2xl border border-raku-line bg-raku-surface">
+      <div className="flex flex-col gap-3 border-b border-raku-line p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-raku-accent-soft text-raku-accent">
+            <Layers className="h-5 w-5" aria-hidden="true" />
           </span>
-          <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-            Tiến độ hôm nay
-          </span>
-          {isDailyGoalFinished && (
-            <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-100/80 dark:bg-emerald-950/80 px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-800">
-              🎉 Hoàn thành mục tiêu!
-            </span>
-          )}
+          <div>
+            <h2 className="text-base font-bold text-raku-ink">Tiến độ hôm nay</h2>
+            <p className="mt-0.5 text-sm text-raku-muted">Một nhịp học nhỏ, đều đặn mỗi ngày</p>
+          </div>
         </div>
 
-        {/* Streak badge and Quick study button */}
-        <div className="flex items-center space-x-2">
-          <div className="flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-950/80 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold shadow-xs">
-            <Flame className="w-4 h-4 fill-amber-500 text-amber-500 animate-bounce" />
-            <span>{stats.streakDays} ngày liên tiếp</span>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-amber-50 px-3 text-sm font-semibold text-amber-900 dark:bg-amber-950/60 dark:text-amber-200">
+            <Flame className="h-4 w-4 text-amber-700 dark:text-amber-300" aria-hidden="true" />
+            {stats.streakDays} ngày liên tiếp
           </div>
+
+          {isDailyGoalFinished && (
+            <span className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-raku-accent-soft px-3 text-sm font-semibold text-raku-accent">
+              <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> Mục tiêu hôm nay xong
+            </span>
+          )}
 
           {onQuickStudy && (totalDueToday > 0 || totalNewToday > 0) && (
             <button
               onClick={onQuickStudy}
-              className="px-3.5 py-1 rounded-full bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-xs transition touch-target flex items-center space-x-1"
+              className="flex min-h-11 items-center justify-center rounded-xl bg-raku-accent px-4 text-sm font-semibold text-raku-on-accent transition-colors hover:bg-raku-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-raku-signal focus-visible:ring-offset-2"
             >
-              <span>Học ngay</span>
+              Học ngay
             </button>
           )}
 
           {onStudyMoreNew && isDailyGoalFinished && (
             <button
               onClick={onStudyMoreNew}
-              className="px-3.5 py-1 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition touch-target flex items-center space-x-1"
+              className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-raku-line px-3.5 text-sm font-semibold text-raku-ink transition-colors hover:bg-raku-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-raku-accent focus-visible:ring-offset-2"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Học thêm từ mới (+20)</span>
+              <Sparkles className="h-4 w-4 text-raku-accent" aria-hidden="true" />
+              Học thêm 20 từ
             </button>
           )}
         </div>
       </div>
 
-      {/* Stats Cards Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
-        {/* Time studied today */}
-        <div className="p-3 sm:p-3.5 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 backdrop-blur shadow-xs flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-xl bg-sky-100 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
-            <Clock className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              Đã học hôm nay
-            </div>
-            <div className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-slate-100">
-              {formattedTime}
-            </div>
+      <div className="grid grid-cols-2 divide-x divide-y divide-raku-line sm:grid-cols-4 sm:divide-y-0">
+        <div className="flex min-w-0 items-center gap-3 p-4">
+          <Clock className="h-5 w-5 shrink-0 text-raku-muted" aria-hidden="true" />
+          <div className="min-w-0">
+            <div className="text-sm text-raku-muted">Thời gian học</div>
+            <div className="truncate text-lg font-bold text-raku-ink">{formattedTime}</div>
           </div>
         </div>
 
-        {/* Cards reviewed today */}
-        <div className="p-3 sm:p-3.5 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 backdrop-blur shadow-xs flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-            <CheckCircle2 className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              Đã ôn hôm nay
-            </div>
-            <div className="text-sm sm:text-base font-extrabold text-emerald-600 dark:text-emerald-400">
-              {reviewedCount} <span className="text-xs font-normal text-slate-400">thẻ</span>
-            </div>
+        <div className="flex min-w-0 items-center gap-3 p-4">
+          <CheckCircle2 className="h-5 w-5 shrink-0 text-raku-accent" aria-hidden="true" />
+          <div className="min-w-0">
+            <div className="text-sm text-raku-muted">Đã ôn</div>
+            <div className="text-lg font-bold text-raku-ink">{reviewedCount} <span className="text-sm font-medium text-raku-muted">thẻ</span></div>
           </div>
         </div>
 
-        {/* Remaining Due Reviews */}
-        <div className="p-3 sm:p-3.5 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 backdrop-blur shadow-xs flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
-            <Layers className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              Cần ôn lại
-            </div>
-            <div className="text-sm sm:text-base font-extrabold text-indigo-600 dark:text-indigo-400">
-              {totalDueToday} <span className="text-xs font-normal text-slate-400">thẻ</span>
-              {totalDueToday === 0 && reviewedCount > 0 && (
-                <span className="block text-[10px] font-normal text-emerald-500">Đã ôn xong</span>
-              )}
-            </div>
+        <div className="flex min-w-0 items-center gap-3 p-4">
+          <Layers className="h-5 w-5 shrink-0 text-raku-signal" aria-hidden="true" />
+          <div className="min-w-0">
+            <div className="text-sm text-raku-muted">Cần ôn</div>
+            <div className="text-lg font-bold text-raku-ink">{totalDueToday} <span className="text-sm font-medium text-raku-muted">thẻ</span></div>
           </div>
         </div>
 
-        {/* Remaining New Cards */}
-        <div className="p-3 sm:p-3.5 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 backdrop-blur shadow-xs flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-            <Sparkles className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              Thẻ mới chờ học
-            </div>
-            <div className="text-sm sm:text-base font-extrabold text-amber-600 dark:text-amber-400">
-              {totalNewToday} <span className="text-xs font-normal text-slate-400">thẻ</span>
-              {totalNewToday === 0 && reviewedCount > 0 && (
-                <span className="block text-[10px] font-normal text-amber-500">Đạt chỉ tiêu ngày</span>
-              )}
-            </div>
+        <div className="flex min-w-0 items-center gap-3 p-4">
+          <Sparkles className="h-5 w-5 shrink-0 text-raku-accent" aria-hidden="true" />
+          <div className="min-w-0">
+            <div className="text-sm text-raku-muted">Thẻ mới</div>
+            <div className="text-lg font-bold text-raku-ink">{totalNewToday} <span className="text-sm font-medium text-raku-muted">thẻ</span></div>
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

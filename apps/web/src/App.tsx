@@ -777,14 +777,14 @@ export function App() {
   };
 
   return (
-    <div className={`min-h-dvh flex flex-col ${darkMode ? 'dark' : ''}`}>
+    <div className={`raku-app-shell min-h-dvh flex flex-col ${darkMode ? 'dark' : ''}`}>
       {/* Desktop navigation */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 lg:flex">
-        <div className="flex items-center gap-3 border-b border-slate-200 px-6 py-6 dark:border-slate-800">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-sky-600 to-indigo-600 text-xl font-bold text-white shadow-sm">楽</div>
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-raku-line bg-raku-surface lg:flex">
+        <div className="flex items-center gap-3 border-b border-raku-line px-5 py-5">
+          <div className="raku-brand-mark flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-xl font-bold">楽</div>
           <div className="min-w-0">
-            <div className="truncate font-bold text-slate-900 dark:text-slate-100">Raku Nihongo</div>
-            <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Tự học tiếng Nhật</div>
+            <div className="truncate font-bold text-raku-ink">Raku Nihongo</div>
+            <div className="mt-0.5 text-sm text-raku-muted">Tự học tiếng Nhật</div>
           </div>
         </div>
         <nav aria-label="Điều hướng chính" className="flex-1 space-y-1 px-3 py-5">
@@ -793,52 +793,47 @@ export function App() {
               key={id}
               onClick={() => selectTab(id)}
               aria-current={activeTab === id ? 'page' : undefined}
-              className={`flex min-h-12 w-full items-center gap-3 rounded-xl px-4 text-sm font-medium transition ${activeTab === id ? 'bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}`}
+              className={`flex min-h-12 w-full items-center gap-3 rounded-xl px-4 text-sm font-medium transition-colors ${activeTab === id ? 'bg-raku-accent-soft text-raku-accent' : 'text-raku-muted hover:bg-raku-subtle hover:text-raku-ink'}`}
             >
               <Icon className="h-5 w-5 shrink-0" />
               <span>{label}</span>
             </button>
           ))}
         </nav>
-        {!isAppInstalled && (
-          <div className="border-t border-slate-200 p-4 dark:border-slate-800">
-            <button onClick={handleInstallApp} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-sky-600 px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700">
-              <Download className="h-4 w-4" /> Cài ứng dụng
-            </button>
-          </div>
-        )}
       </aside>
-      <div className="flex min-h-dvh min-w-0 flex-1 flex-col lg:ml-64">
+      <div className="flex min-h-dvh min-w-0 flex-1 flex-col lg:ml-60">
       {/* Top Header */}
-      <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-slate-200 bg-white/90 px-3 py-2.5 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90 sm:px-6 sm:py-3 lg:px-8">
+      <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-raku-line bg-raku-surface px-3 py-2.5 sm:px-6 sm:py-3 lg:px-8">
         <div className="flex min-w-0 items-center gap-2 sm:gap-2.5 lg:hidden">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 text-lg font-bold text-white shadow-sm">
+          <div className="raku-brand-mark flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-lg font-bold">
             楽
           </div>
           <div className="min-w-0">
-            <h1 className="truncate whitespace-nowrap text-base font-bold leading-tight text-slate-800 dark:text-slate-100 sm:text-lg">
+            <h1 className="truncate whitespace-nowrap text-base font-bold leading-tight text-raku-ink sm:text-lg">
               Raku Nihongo
             </h1>
-            <span className="hidden text-xs text-slate-500 dark:text-slate-400 sm:block">
+            <span className="hidden text-sm text-raku-muted sm:block">
               Kanji – Từ vựng – Ngữ pháp
             </span>
           </div>
         </div>
-        <div className="hidden min-w-0 flex-1 text-sm font-semibold text-slate-800 dark:text-slate-100 lg:block">
+        <div className="hidden min-w-0 flex-1 text-sm font-semibold text-raku-ink lg:block">
           {navigationItems.find((item) => item.id === activeTab)?.label}
         </div>
 
         <div className="flex shrink-0 items-center gap-0.5 sm:gap-2">
           {/* Offline-First Sync Status indicator */}
           <div
-            className={`inline-flex h-9 w-9 items-center justify-center rounded-full text-xs font-medium transition-all sm:h-auto sm:w-auto sm:px-2.5 sm:py-1 ${
+            role="status"
+            aria-label={!isOnline ? 'Đang ngoại tuyến' : syncStatus === 'syncing' ? 'Đang đồng bộ' : pendingCount > 0 ? `${pendingCount} lượt ôn tập đang chờ đồng bộ` : 'Đã sao lưu an toàn'}
+            className={`inline-flex h-11 w-11 items-center justify-center rounded-full text-sm font-medium transition-colors sm:h-auto sm:w-auto sm:px-3 sm:py-2 ${
               !isOnline
                 ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300/50 dark:border-amber-800'
                 : syncStatus === 'syncing'
-                ? 'bg-sky-100 text-sky-800 dark:bg-sky-950/80 dark:text-sky-300 border border-sky-300/50 dark:border-sky-800'
+                ? 'bg-raku-accent-soft text-raku-accent border border-raku-accent/20'
                 : pendingCount > 0
                 ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-200/50 dark:border-amber-800'
-                : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800'
+                : 'bg-raku-accent-soft text-raku-accent border border-raku-accent/20'
             }`}
             title={
               !isOnline
@@ -876,7 +871,7 @@ export function App() {
           {/* AI Quiz generator button */}
           <button
             onClick={() => setIsAiQuizModalOpen(true)}
-            className="hidden rounded-lg p-2 text-indigo-600 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-indigo-400 dark:hover:bg-indigo-950/60 sm:flex sm:items-center sm:justify-center"
+            className="hidden h-11 w-11 items-center justify-center rounded-xl text-raku-accent transition-colors hover:bg-raku-accent-soft focus:outline-none focus:ring-2 focus:ring-raku-accent sm:flex"
             title="AI tạo bộ câu hỏi"
             aria-label="AI tạo câu hỏi"
           >
@@ -886,7 +881,7 @@ export function App() {
           {/* User profile / login button */}
           <button
             onClick={() => setIsAuthModalOpen(true)}
-            className="flex h-10 w-10 items-center justify-center rounded-lg p-2 text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:text-slate-300 dark:hover:bg-slate-800 sm:h-11 sm:w-11"
+            className="flex h-11 w-11 items-center justify-center rounded-xl p-2 text-raku-muted transition-colors hover:bg-raku-subtle hover:text-raku-ink focus:outline-none focus:ring-2 focus:ring-raku-accent"
             title={user ? (user.isAnonymous ? 'Khách ẩn danh' : user.email || 'Tài khoản') : 'Đăng nhập'}
             aria-label="Tài khoản"
           >
@@ -896,7 +891,7 @@ export function App() {
           {/* Dark mode toggle */}
           <button
             onClick={toggleDarkMode}
-            className="flex h-10 w-10 items-center justify-center rounded-lg p-2 text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:text-slate-300 dark:hover:bg-slate-800 sm:h-11 sm:w-11"
+            className="flex h-11 w-11 items-center justify-center rounded-xl p-2 text-raku-muted transition-colors hover:bg-raku-subtle hover:text-raku-ink focus:outline-none focus:ring-2 focus:ring-raku-accent"
             aria-label="Chuyển chế độ sáng/tối"
           >
             {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
@@ -909,7 +904,7 @@ export function App() {
         <div
           role="status"
           aria-live="polite"
-          className={`fixed top-16 left-1/2 -translate-x-1/2 z-50 max-w-md w-[92%] sm:w-auto px-4 py-3 rounded-2xl shadow-xl border backdrop-blur-md text-xs font-medium flex items-center justify-between gap-3 transition-all animate-in fade-in slide-in-from-top-3 duration-300 ${
+          className={`fixed top-16 left-1/2 -translate-x-1/2 z-50 max-w-md w-[92%] sm:w-auto px-4 py-3 rounded-2xl shadow-xl border text-sm font-medium flex items-center justify-between gap-3 transition-all animate-in fade-in slide-in-from-top-3 duration-300 ${
             syncToast.type === 'success'
               ? 'bg-emerald-50/95 dark:bg-emerald-950/95 border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200'
               : syncToast.type === 'warning'
@@ -925,7 +920,7 @@ export function App() {
           </div>
           <button
             onClick={() => setSyncToast(null)}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 ml-1 p-0.5 rounded"
+            className="ml-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-raku-subtle hover:text-raku-ink"
             aria-label="Đóng thông báo"
           >
             ✕
@@ -934,7 +929,7 @@ export function App() {
       )}
 
       {/* Main Content Area */}
-      <main className="mx-auto w-full max-w-6xl flex-1 px-3 py-4 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] sm:px-6 sm:py-6 lg:px-8 lg:pb-10">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-3 py-4 pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] sm:px-6 sm:py-6 lg:px-8 lg:pb-10">
         {/* User Auth banner for anonymous or unauthenticated users */}
         {!user && (
           <div className="mb-6 p-4 rounded-2xl bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
@@ -1113,243 +1108,232 @@ export function App() {
 
         {/* TAB 5: SETTINGS */}
         {activeTab === 'settings' && (
-          <div className="space-y-4">
-            {/* Database & Firebase Offline-First Sync Section */}
-            <div className="p-4 sm:p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-5 shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center space-x-2">
-                    <Database className="w-5 h-5 text-sky-500" />
-                    <span>Đồng Bộ Đám Mây &amp; Dữ Liệu Ngoại Tuyến (Offline-First)</span>
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Mô hình tự động tương tự Anki: học offline không ngắt quãng, tự động đồng bộ khi có Internet
-                  </p>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <span
-                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                      !isOnline
-                        ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
-                        : syncStatus === 'syncing'
-                        ? 'bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-800'
-                        : pendingCount > 0
-                        ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
-                        : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
-                    }`}
-                  >
-                    {!isOnline ? (
-                      <>
-                        <WifiOff className="w-3.5 h-3.5 mr-1 text-amber-600" />
-                        Ngoại tuyến (Lưu tại máy)
-                      </>
-                    ) : syncStatus === 'syncing' ? (
-                      <>
-                        <RefreshCw className="w-3.5 h-3.5 mr-1 animate-spin text-sky-600" />
-                        Đang đồng bộ...
-                      </>
-                    ) : pendingCount > 0 ? (
-                      <>
-                        <Cloud className="w-3.5 h-3.5 mr-1 text-amber-600" />
-                        {pendingCount} lượt ôn tập lưu tại máy
-                      </>
-                    ) : (
-                      <>
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5" />
-                        Đã khớp với đám mây
-                      </>
-                    )}
-                  </span>
-                </div>
-              </div>
-
-              {/* Status details card */}
-              <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 space-y-3">
-                <div className="grid grid-cols-1 min-[420px]:grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-                  <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/60">
-                    <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Trạng thái mạng</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200 mt-0.5 block">
-                      {isOnline ? '🟢 Đã kết nối Internet' : '🟠 Đang ngoại tuyến'}
-                    </span>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/60">
-                    <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Hàng đợi chờ đồng bộ</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200 mt-0.5 block">
-                      {pendingCount > 0 ? (
-                        <span className="text-amber-600 dark:text-amber-400">{pendingCount} lượt ôn tập chờ sync</span>
-                      ) : (
-                        <span className="text-emerald-600 dark:text-emerald-400">0 bản ghi (Đã khớp hoàn toàn)</span>
-                      )}
-                    </span>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/60">
-                    <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Tài khoản đám mây</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200 mt-0.5 block truncate">
-                      {user ? (user.isAnonymous ? '👤 Khách ẩn danh' : `✓ ${user.email}`) : 'Chưa đăng nhập'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 space-y-1 pt-1 leading-relaxed">
-                  <p>• <strong>Ưu tiên lưu trên máy (Local-First):</strong> Mọi tiến độ học, từ vựng và chỉ số được lưu tức thì vào thiết bị của bạn, giúp lật thẻ 100% mượt mà, không phụ thuộc vào mạng.</p>
-                  <p>• <strong>Chủ động đồng bộ:</strong> Bấm nút <strong>"🔄 Đồng bộ ngay lập tức"</strong> bất cứ khi nào bạn muốn sao lưu dữ liệu lên Cloud Firestore.</p>
-                  <p>• <strong>Khôi phục dữ liệu:</strong> Khi chuyển sang thiết bị mới, bấm <strong>"📥 Kéo dữ liệu từ Firebase về máy"</strong> để tải lại toàn bộ tiến độ.</p>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1">
-                <button
-                  onClick={handleManualSync}
-                  disabled={syncStatus === 'syncing' || !isOnline}
-                  className="flex-1 py-2.5 px-4 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-xs transition flex items-center justify-center space-x-1.5 touch-target"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
-                  <span>{syncStatus === 'syncing' ? 'Đang đồng bộ...' : '🔄 Đồng bộ ngay lập tức'}</span>
-                </button>
-
-                <button
-                  onClick={handlePullFromFirestore}
-                  disabled={isPulling || !isOnline}
-                  className="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 disabled:opacity-50 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl transition flex items-center justify-center space-x-1.5 touch-target"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isPulling ? 'animate-spin' : ''}`} />
-                  <span>{isPulling ? 'Đang tải dữ liệu...' : '📥 Kéo dữ liệu từ Firebase về máy'}</span>
-                </button>
-              </div>
-
-              {pullResult && (
-                <div
-                  className={`p-3 rounded-xl text-xs font-medium ${
-                    pullResult.startsWith('✓')
-                      ? 'bg-emerald-100/80 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
-                      : 'bg-rose-100/80 dark:bg-rose-950 text-rose-800 dark:text-rose-300'
-                  }`}
-                >
-                  {pullResult}
-                </div>
-              )}
-
-              {/* Collapsed Advanced Section: Seeding Database */}
-              <details className="group border border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-900/40 p-4 transition">
-                <summary className="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 cursor-pointer flex items-center justify-between list-none">
-                  <div className="flex items-center space-x-2">
-                    <CloudUpload className="w-4 h-4 text-slate-400 group-open:text-amber-500" />
-                    <span>⚙️ Cài đặt nâng cao: Quản lý kho dữ liệu N3 gốc (2.466 bản ghi)</span>
-                  </div>
-                  <ChevronDown className="w-4 h-4 text-slate-400 transition-transform group-open:rotate-180" />
-                </summary>
-
-                <div className="mt-4 pt-3 border-t border-slate-200/60 dark:border-slate-800 space-y-3">
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                    Kho dữ liệu N3 gồm 609 chữ Kanji, 880 từ vựng Mimikara, 97 cấu trúc ngữ pháp và 880 câu ví dụ đã được xuất lên Cloud Firestore.
-                    Bạn chỉ cần bấm nút dưới đây nếu muốn khôi phục hoặc nạp đè lại dữ liệu gốc.
-                  </p>
-
-                  <button
-                    onClick={handleSeedAllN3}
-                    disabled={isSeeding}
-                    className="py-2 px-4 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-xs transition flex items-center justify-center space-x-1.5 touch-target"
-                  >
-                    <CloudUpload className="w-3.5 h-3.5" />
-                    <span>{isSeeding ? 'Đang xuất dữ liệu lên Firebase...' : '⚡ Nạp lại dữ liệu N3 lên Firestore'}</span>
-                  </button>
-
-                  {isSeeding && seedProgress && (
-                    <div className="space-y-1 pt-1">
-                      <div className="flex justify-between text-[10px] text-amber-800 dark:text-amber-300 font-medium">
-                        <span>Đang nạp: {seedProgress.stage}</span>
-                        <span>{seedProgress.current} / {seedProgress.total}</span>
-                      </div>
-                      <div className="w-full h-1.5 bg-amber-200 dark:bg-amber-900 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-amber-600 transition-all duration-200"
-                          style={{ width: `${(seedProgress.current / seedProgress.total) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {seedResult && (
-                    <div
-                      className={`p-2.5 rounded-xl text-xs font-medium ${
-                        seedResult.startsWith('✓')
-                          ? 'bg-emerald-100/80 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
-                          : 'bg-rose-100/80 dark:bg-rose-950 text-rose-800 dark:text-rose-300'
-                      }`}
-                    >
-                      {seedResult}
-                    </div>
-                  )}
-                </div>
-              </details>
+          <div className="space-y-5">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-raku-accent">Dữ liệu · Thiết bị</p>
+              <h2 className="mt-1 text-2xl font-bold tracking-tight text-raku-ink sm:text-3xl">Cài đặt</h2>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-raku-muted">
+                Quản lý bản sao lưu, dữ liệu ngoại tuyến và ứng dụng trên thiết bị này.
+              </p>
             </div>
 
-            {/* General Settings Section */}
-            <div className="p-4 sm:p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
-              <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Cài đặt ứng dụng</h3>
-
-              <div className="flex flex-col gap-3 rounded-2xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-900 dark:bg-sky-950/40 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-start gap-3">
-                  <Download className="mt-0.5 h-5 w-5 shrink-0 text-sky-600 dark:text-sky-400" />
-                  <div>
-                    <div className="font-semibold text-slate-800 dark:text-slate-100">Cài Raku Nihongo lên thiết bị</div>
-                    <div className="mt-1 text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">
-                      Mở như ứng dụng riêng, có thể thêm vào màn hình chính và dùng nội dung đã lưu khi ngoại tuyến.
+            <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(19rem,0.85fr)]">
+              {/* Sync and recovery */}
+              <section aria-labelledby="sync-settings-title" className="overflow-hidden rounded-2xl border border-raku-line bg-raku-surface">
+                <div className="flex flex-col gap-4 border-b border-raku-line p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-raku-accent-soft text-raku-accent">
+                      <Database className="h-5 w-5" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0">
+                      <h3 id="sync-settings-title" className="text-base font-bold text-raku-ink sm:text-lg">
+                        Đồng bộ và khôi phục
+                      </h3>
+                      <p className="mt-1 text-sm leading-5 text-raku-muted">
+                        Tiến độ được lưu trên thiết bị trước; bạn chủ động sao lưu khi cần.
+                      </p>
                     </div>
                   </div>
-                </div>
-                {isAppInstalled ? (
-                  <span className="shrink-0 self-start rounded-xl bg-emerald-100 px-3 py-2 text-xs font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 sm:self-auto">Đã cài đặt</span>
-                ) : (
-                  <button
-                    onClick={handleInstallApp}
-                    className="flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-sky-700"
+
+                  <span
+                    role="status"
+                    aria-live="polite"
+                    className={`inline-flex min-h-9 shrink-0 items-center gap-2 self-start rounded-full border px-3 text-sm font-semibold sm:self-auto ${
+                      !isOnline
+                        ? 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-200'
+                        : syncStatus === 'syncing'
+                        ? 'border-raku-accent/30 bg-raku-accent-soft text-raku-accent'
+                        : pendingCount > 0
+                        ? 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-200'
+                        : 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-200'
+                    }`}
                   >
-                    <Download className="h-4 w-4" />
-                    Cài ứng dụng
-                  </button>
-                )}
-                {showInstallHelp && !isAppInstalled && (
-                  <p className="basis-full text-xs leading-relaxed text-slate-600 dark:text-slate-300 sm:ml-8">
-                    Trong Chrome, mở menu ⋮ rồi chọn <strong>Cài đặt ứng dụng</strong> hoặc <strong>Thêm vào màn hình chính</strong>.
-                    Nếu chưa thấy lựa chọn này, hãy mở trang đã triển khai bằng HTTPS và tải lại sau khi kết nối mạng.
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-3 text-xs text-slate-700 dark:text-slate-300">
-                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800">
-                  <div>
-                    <div className="font-semibold">Nguồn dữ liệu &amp; Giấy phép bản quyền</div>
-                    <div className="text-[11px] text-slate-400">KANJIDIC2, JMdict, từ điển Hán-Việt, Mimikara N3</div>
-                  </div>
-                  <button
-                    onClick={() => setIsLicenseOpen(true)}
-                    className="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-semibold touch-target"
-                  >
-                    Xem chi tiết
-                  </button>
+                    {!isOnline ? <WifiOff className="h-4 w-4" aria-hidden="true" /> : syncStatus === 'syncing' ? <RefreshCw className="h-4 w-4 animate-spin" aria-hidden="true" /> : pendingCount > 0 ? <Cloud className="h-4 w-4" aria-hidden="true" /> : <CheckCircle2 className="h-4 w-4" aria-hidden="true" />}
+                    {!isOnline ? 'Đang ngoại tuyến' : syncStatus === 'syncing' ? 'Đang đồng bộ' : pendingCount > 0 ? `${pendingCount} mục đang chờ` : 'Đã sao lưu'}
+                  </span>
                 </div>
 
-                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800">
-                  <div>
-                    <div className="font-semibold">Thuật toán ôn tập FSRS</div>
-                    <div className="text-[11px] text-slate-400">Request retention: 0.9 (tối ưu khả năng ghi nhớ 90%)</div>
+                <dl className="grid grid-cols-1 divide-y divide-raku-line sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                  <div className="px-4 py-3.5 sm:p-4">
+                    <dt className="text-sm text-raku-muted">Kết nối</dt>
+                    <dd className="mt-1 flex items-center gap-2 text-sm font-semibold text-raku-ink">
+                      {isOnline ? <Wifi className="h-4 w-4 text-raku-accent" aria-hidden="true" /> : <WifiOff className="h-4 w-4 text-amber-700 dark:text-amber-300" aria-hidden="true" />}
+                      {isOnline ? 'Có Internet' : 'Ngoại tuyến'}
+                    </dd>
                   </div>
-                  <span className="font-bold text-sky-600 dark:text-sky-400">ts-fsrs v4</span>
-                </div>
+                  <div className="px-4 py-3.5 sm:p-4">
+                    <dt className="text-sm text-raku-muted">Chờ sao lưu</dt>
+                    <dd className={`mt-1 text-sm font-semibold ${pendingCount > 0 ? 'text-amber-800 dark:text-amber-300' : 'text-raku-ink'}`}>
+                      {pendingCount > 0 ? `${pendingCount} lượt ôn tập` : 'Không có mục chờ'}
+                    </dd>
+                  </div>
+                  <div className="min-w-0 px-4 py-3.5 sm:p-4">
+                    <dt className="text-sm text-raku-muted">Tài khoản</dt>
+                    <dd className="mt-1 truncate text-sm font-semibold text-raku-ink" title={user?.email || undefined}>
+                      {user ? (user.isAnonymous ? 'Khách ẩn danh' : user.email || 'Đã đăng nhập') : 'Chưa đăng nhập'}
+                    </dd>
+                  </div>
+                </dl>
 
-                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800">
-                  <div>
-                    <div className="font-semibold">Đồng bộ Offline IndexedDB</div>
-                    <div className="text-[11px] text-slate-400">Hỗ trợ đa tab và tiếp tục ôn khi mất mạng</div>
+                <div className="space-y-4 p-4 sm:p-5">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <button
+                      onClick={handleManualSync}
+                      disabled={syncStatus === 'syncing' || !isOnline}
+                      className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-raku-accent px-4 text-sm font-semibold text-raku-on-accent transition-colors hover:bg-raku-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-raku-signal focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} aria-hidden="true" />
+                      {syncStatus === 'syncing' ? 'Đang đồng bộ…' : 'Đồng bộ ngay'}
+                    </button>
+
+                    <button
+                      onClick={handlePullFromFirestore}
+                      disabled={isPulling || !isOnline}
+                      className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-raku-line bg-raku-subtle px-4 text-sm font-semibold text-raku-ink transition-colors hover:bg-raku-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-raku-accent focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Download className={`h-4 w-4 ${isPulling ? 'animate-pulse' : ''}`} aria-hidden="true" />
+                      {isPulling ? 'Đang tải dữ liệu…' : 'Khôi phục về máy'}
+                    </button>
                   </div>
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400">Đang bật</span>
+
+                  {pullResult && (
+                    <div
+                      role="status"
+                      className={`rounded-xl border px-3.5 py-3 text-sm leading-5 ${pullResult.startsWith('✓') ? 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200' : 'border-rose-300 bg-rose-50 text-rose-900 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-200'}`}
+                    >
+                      {pullResult}
+                    </div>
+                  )}
+
+                  <details className="group border-t border-raku-line pt-3">
+                    <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-lg text-sm font-semibold text-raku-muted hover:text-raku-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-raku-accent">
+                      Cách lưu và đồng bộ dữ liệu
+                      <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" aria-hidden="true" />
+                    </summary>
+                    <div className="space-y-2 pb-1 pt-2 text-sm leading-6 text-raku-muted">
+                      <p>Tiến độ học và từ vựng được lưu ngay trên thiết bị, kể cả khi không có Internet.</p>
+                      <p><strong className="font-semibold text-raku-ink">Đồng bộ ngay</strong> sao lưu dữ liệu lên đám mây. Trên thiết bị mới, dùng <strong className="font-semibold text-raku-ink">Khôi phục về máy</strong> để tải tiến độ xuống.</p>
+                    </div>
+                  </details>
+
+                  <details className="group border-t border-raku-line pt-3">
+                    <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-lg text-sm font-semibold text-raku-muted hover:text-raku-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-raku-accent">
+                      <span className="flex min-w-0 items-center gap-2">
+                        <CloudUpload className="h-4 w-4 shrink-0" aria-hidden="true" />
+                        <span className="truncate">Kho dữ liệu N3 · 2.466 bản ghi</span>
+                      </span>
+                      <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" aria-hidden="true" />
+                    </summary>
+
+                    <div className="space-y-3 pb-1 pt-2">
+                      <p className="text-sm leading-6 text-raku-muted">
+                        Kho gồm 609 Kanji, 880 từ vựng Mimikara, 97 cấu trúc ngữ pháp và 880 câu ví dụ. Nạp lại có thể ghi đè dữ liệu gốc trên Firestore.
+                      </p>
+                      <button
+                        onClick={handleSeedAllN3}
+                        disabled={isSeeding}
+                        className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 text-sm font-semibold text-amber-900 transition-colors hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200 dark:hover:bg-amber-950"
+                      >
+                        <CloudUpload className="h-4 w-4" aria-hidden="true" />
+                        {isSeeding ? 'Đang nạp dữ liệu…' : 'Nạp lại dữ liệu N3'}
+                      </button>
+
+                      {isSeeding && seedProgress && (
+                        <div className="space-y-2 pt-1" role="status" aria-live="polite">
+                          <div className="flex justify-between gap-3 text-sm font-medium text-raku-muted">
+                            <span className="truncate">Đang nạp: {seedProgress.stage}</span>
+                            <span className="shrink-0">{seedProgress.current} / {seedProgress.total}</span>
+                          </div>
+                          <div
+                            className="h-2 w-full overflow-hidden rounded-full bg-amber-200 dark:bg-amber-900"
+                            role="progressbar"
+                            aria-valuemin={0}
+                            aria-valuemax={seedProgress.total}
+                            aria-valuenow={seedProgress.current}
+                            aria-label="Tiến độ nạp dữ liệu N3"
+                          >
+                            <div className="h-full bg-amber-600 transition-[width] duration-200 motion-reduce:transition-none" style={{ width: `${(seedProgress.current / seedProgress.total) * 100}%` }} />
+                          </div>
+                        </div>
+                      )}
+
+                      {seedResult && (
+                        <div role="status" className={`rounded-xl border px-3.5 py-3 text-sm leading-5 ${seedResult.startsWith('✓') ? 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200' : 'border-rose-300 bg-rose-50 text-rose-900 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-200'}`}>
+                          {seedResult}
+                        </div>
+                      )}
+                    </div>
+                  </details>
                 </div>
+              </section>
+
+              <div className="space-y-5">
+                <section aria-labelledby="install-title" className="rounded-2xl border border-raku-line bg-raku-surface p-4 sm:p-5">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-raku-accent-soft text-raku-accent">
+                      <Download className="h-5 w-5" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0">
+                      <h3 id="install-title" className="text-base font-bold text-raku-ink">Cài ứng dụng</h3>
+                      <p className="mt-1 text-sm leading-5 text-raku-muted">
+                        Mở Raku Nihongo toàn màn hình và truy cập nhanh từ màn hình chính.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    {isAppInstalled ? (
+                      <div className="flex min-h-11 items-center gap-2 text-sm font-semibold text-raku-accent">
+                        <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> Đã cài trên thiết bị này
+                      </div>
+                    ) : (
+                      <button
+                        onClick={handleInstallApp}
+                        className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-raku-accent px-4 text-sm font-semibold text-raku-on-accent transition-colors hover:bg-raku-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-raku-signal focus-visible:ring-offset-2"
+                      >
+                        <Download className="h-4 w-4" aria-hidden="true" /> Cài ứng dụng
+                      </button>
+                    )}
+                    {showInstallHelp && !isAppInstalled && (
+                      <p className="mt-3 rounded-xl bg-raku-subtle px-3.5 py-3 text-sm leading-6 text-raku-muted">
+                        Trong Chrome, mở menu ⋮ rồi chọn <strong className="font-semibold text-raku-ink">Cài đặt ứng dụng</strong> hoặc <strong className="font-semibold text-raku-ink">Thêm vào màn hình chính</strong>. Trang cần được mở bằng HTTPS.
+                      </p>
+                    )}
+                  </div>
+                </section>
+
+                <section aria-labelledby="app-details-title" className="overflow-hidden rounded-2xl border border-raku-line bg-raku-surface">
+                  <div className="border-b border-raku-line px-4 py-3.5 sm:px-5">
+                    <h3 id="app-details-title" className="text-base font-bold text-raku-ink">Thông tin ứng dụng</h3>
+                  </div>
+                  <div className="divide-y divide-raku-line px-4 sm:px-5">
+                    <div className="flex items-center justify-between gap-4 py-3.5">
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold text-raku-ink">Nguồn dữ liệu và giấy phép</div>
+                        <div className="mt-0.5 text-sm leading-5 text-raku-muted">KANJIDIC2, JMdict, Hán–Việt, Mimikara N3</div>
+                      </div>
+                      <button
+                        onClick={() => setIsLicenseOpen(true)}
+                        className="min-h-11 shrink-0 rounded-xl px-3 text-sm font-semibold text-raku-accent transition-colors hover:bg-raku-accent-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-raku-accent"
+                      >
+                        Xem
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between gap-4 py-3.5">
+                      <div>
+                        <div className="text-sm font-semibold text-raku-ink">Lịch ôn tập</div>
+                        <div className="mt-0.5 text-sm text-raku-muted">Điều chỉnh theo tiến độ ghi nhớ</div>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-raku-accent-soft px-2.5 py-1 text-sm font-semibold text-raku-accent">FSRS v4</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-4 py-3.5">
+                      <div>
+                        <div className="text-sm font-semibold text-raku-ink">Lưu ngoại tuyến</div>
+                        <div className="mt-0.5 text-sm text-raku-muted">IndexedDB · hỗ trợ nhiều tab</div>
+                      </div>
+                      <span className="shrink-0 text-sm font-semibold text-raku-accent">Đang bật</span>
+                    </div>
+                  </div>
+                </section>
               </div>
             </div>
           </div>
@@ -1399,7 +1383,7 @@ export function App() {
       {/* Mobile bottom navigation */}
       <nav
         aria-label="Thanh điều hướng chính"
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-1 pt-1 pb-[calc(0.25rem+env(safe-area-inset-bottom,0px))] backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-raku-line bg-raku-surface px-1 pt-1 pb-[calc(0.25rem+env(safe-area-inset-bottom,0px))] lg:hidden"
       >
         <div className="mx-auto grid max-w-lg grid-cols-5">
           {navigationItems.map(({ id, label, icon: Icon }) => (
@@ -1407,10 +1391,10 @@ export function App() {
               key={id}
               onClick={() => selectTab(id)}
               aria-current={activeTab === id ? 'page' : undefined}
-              className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 transition ${activeTab === id ? 'font-bold text-sky-600 dark:text-sky-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+              className={`flex min-h-14 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 transition-colors ${activeTab === id ? 'bg-raku-accent-soft font-semibold text-raku-accent' : 'text-raku-muted hover:bg-raku-subtle hover:text-raku-ink'}`}
             >
               <Icon className="h-5 w-5 shrink-0" />
-              <span className="max-w-full truncate text-[10px] leading-tight min-[380px]:text-[11px]">{label}</span>
+              <span className="max-w-full truncate text-[13px] leading-tight">{label}</span>
             </button>
           ))}
         </div>
