@@ -199,11 +199,6 @@ export function DeckFolderView({
                         {childDecks.length} deck
                       </span>
                     </div>
-                    {folder.description && (
-                      <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 truncate mt-0.5">
-                        {folder.description}
-                      </p>
-                    )}
                   </div>
                 </div>
 
@@ -283,11 +278,6 @@ export function DeckFolderView({
                                 ({counts.totalCards} thẻ)
                               </span>
                             </div>
-                            {deck.description && (
-                              <p className="line-clamp-1 truncate text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-                                {deck.description}
-                              </p>
-                            )}
                           </div>
 
                           {/* Deck Anki counts */}
