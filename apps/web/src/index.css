@@ -71,6 +71,7 @@
     padding-left: var(--sal);
     padding-right: var(--sar);
   }
+
 }
 
 @layer utilities {
@@ -126,4 +127,15 @@
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
   }
+}
+
+/* Match the page backdrop to the app theme, including the safe-area and
+   reserved space behind the fixed mobile navigation. Keep this unlayered so
+   it overrides the static body background utility in index.html. */
+body:has(.raku-app-shell) {
+  background-color: #f3f7f5;
+}
+
+body:has(.raku-app-shell.dark) {
+  background-color: #121d22;
 }

@@ -163,10 +163,10 @@ export function DeckFolderView({
               className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-xs"
             >
               {/* Folder Header */}
-              <div className="p-3.5 sm:p-4 flex items-center justify-between bg-slate-50/70 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-800/80">
+              <div className="flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-0 sm:p-4 bg-slate-50/70 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-800/80">
                 <div
                   onClick={() => toggleFolder(folder.id)}
-                  className="flex items-center space-x-2.5 cursor-pointer flex-1 select-none"
+                  className="flex min-w-0 items-center gap-2.5 cursor-pointer select-none sm:flex-1"
                 >
                   <button
                     aria-label="Toggle folder"
@@ -190,12 +190,12 @@ export function DeckFolderView({
                     )}
                   </div>
 
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                      <h3 className="min-w-0 break-words text-sm font-bold text-slate-900 dark:text-slate-100">
                         {folder.name}
                       </h3>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium">
+                      <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium">
                         {childDecks.length} deck
                       </span>
                     </div>
@@ -208,9 +208,9 @@ export function DeckFolderView({
                 </div>
 
                 {/* Folder right actions: 3 Anki numbers + Play button */}
-                <div className="flex items-center space-x-3 shrink-0 ml-2">
+                <div className="ml-10 flex min-w-0 items-center justify-between gap-2 sm:ml-2 sm:shrink-0 sm:justify-start sm:gap-3">
                   {/* Anki 3 counts: Blue (New), Red (Learn), Green (Due) */}
-                  <div className="flex items-center space-x-2 text-xs font-mono font-bold">
+                  <div className="flex min-w-0 items-center gap-1.5 text-xs font-mono font-bold sm:gap-2">
                     <span
                       title="Thẻ mới (New)"
                       className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900"
@@ -254,7 +254,7 @@ export function DeckFolderView({
 
               {/* Child Decks in Folder */}
               {!isCollapsed && (
-                <div className="divide-y divide-slate-100 dark:divide-slate-800/60 pl-6 sm:pl-8">
+                <div className="divide-y divide-slate-100 dark:divide-slate-800/60 pl-2 sm:pl-8">
                   {childDecks.length === 0 ? (
                     <div className="py-4 pr-4 text-center text-xs text-slate-400">
                       Chưa có deck nào trong thư mục này. Bấm "Thêm Deck Mới" để tạo.
@@ -269,23 +269,23 @@ export function DeckFolderView({
                       return (
                         <div
                           key={deck.id}
-                          className="py-3 pr-4 flex items-center justify-between hover:bg-slate-50/60 dark:hover:bg-slate-800/20 transition rounded-r-xl"
+                          className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2 gap-y-2 py-3 pl-2 pr-3 hover:bg-slate-50/60 dark:hover:bg-slate-800/20 transition rounded-r-xl sm:flex sm:justify-between sm:gap-0 sm:pl-0 sm:pr-4"
                         >
-                          <div className="flex items-center space-x-3 flex-1 min-w-0 pr-2">
+                          <div className="row-span-1 flex min-w-0 items-center gap-2 sm:flex-1 sm:gap-3 sm:pr-2">
                             <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
                               {getDeckIcon(deck.cardType)}
                             </div>
                             <div className="min-w-0">
-                              <div className="flex items-center space-x-2">
-                                <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">
+                              <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                                <span className="min-w-0 break-words text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 sm:truncate">
                                   {deck.name}
                                 </span>
-                                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
+                                <span className="shrink-0 text-[10px] text-slate-400 dark:text-slate-500 font-mono">
                                   ({counts.totalCards} thẻ)
                                 </span>
                               </div>
                               {deck.description && (
-                                <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate mt-0.5">
+                                <p className="line-clamp-2 break-words text-[11px] text-slate-400 dark:text-slate-500 sm:truncate mt-0.5">
                                   {deck.description}
                                 </p>
                               )}
@@ -293,23 +293,23 @@ export function DeckFolderView({
                           </div>
 
                           {/* Deck Anki 3 counts + Play button */}
-                          <div className="flex items-center space-x-2.5 shrink-0">
-                            <div className="flex items-center space-x-1.5 text-xs font-mono font-bold">
+                          <div className="col-start-2 flex min-w-0 items-center justify-between gap-2 sm:shrink-0 sm:justify-start sm:gap-2.5">
+                            <div className="flex items-center gap-1.5 text-xs font-mono font-bold">
                               <span
                                 title="Thẻ mới hôm nay"
-                                className="w-8 text-center py-0.5 rounded text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 text-xs"
+                                className="min-w-8 px-1 text-center py-0.5 rounded text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 text-xs tabular-nums"
                               >
                                 {counts.newCount}
                               </span>
                               <span
                                 title="Đang học lại"
-                                className="w-8 text-center py-0.5 rounded text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 text-xs"
+                                className="min-w-8 px-1 text-center py-0.5 rounded text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 text-xs tabular-nums"
                               >
                                 {counts.learnCount}
                               </span>
                               <span
                                 title="Đến hạn ôn hôm nay"
-                                className="w-8 text-center py-0.5 rounded text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 text-xs"
+                                className="min-w-8 px-1 text-center py-0.5 rounded text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 text-xs tabular-nums"
                               >
                                 {counts.dueCount}
                               </span>
@@ -317,7 +317,7 @@ export function DeckFolderView({
 
                             <button
                               onClick={() => onSelectDeckToStudy(deck)}
-                              className="px-3 py-1.5 bg-slate-100 hover:bg-sky-600 hover:text-white dark:bg-slate-800 dark:hover:bg-sky-600 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl transition flex items-center space-x-1 touch-target shadow-xs"
+                              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 shadow-xs transition hover:bg-sky-600 hover:text-white dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-sky-600 sm:h-auto sm:w-auto sm:space-x-1 sm:px-3 sm:py-1.5 sm:text-xs sm:font-bold touch-target"
                             >
                               <Play className="w-3 h-3 fill-current" />
                               <span className="hidden sm:inline">Học</span>
