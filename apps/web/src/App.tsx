@@ -16,7 +16,8 @@ import {
   RefreshCw,
   CheckCircle2,
   Cloud,
-  ChevronDown
+  ChevronDown,
+  Download
 } from 'lucide-react';
 import {
   SEED_KANJI,
@@ -43,7 +44,9 @@ import {
   enqueueOfflineReview,
   syncFoldersAndDecks,
   syncUserStudyStats,
-  loadAndApplyFirestoreReviewLogs,
+  mergeFirestoreCardProgress,
+  folderDeckFingerprint,
+  areStudyStatsEqual,
   checkCloudDataStatus,
   uploadEntireLocalStateToFirestore,
   loadUserCards,
@@ -67,6 +70,13 @@ import { KanjiModal } from './components/KanjiModal';
 import { TodayStatsBar } from './components/TodayStatsBar';
 import { DeckFolderView } from './components/DeckFolderView';
 import { CloudConflictModal } from './components/CloudConflictModal';
+
+type AppTab = 'study' | 'kanji' | 'grammar' | 'import' | 'settings';
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+}
 
 export function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -94,7 +104,57 @@ export function App() {
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
-  const [activeTab, setActiveTab] = useState<'study' | 'kanji' | 'grammar' | 'import' | 'settings'>('study');
+  const [activeTab, setActiveTab] = useState<AppTab>('study');
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isAppInstalled, setIsAppInstalled] = useState<boolean>(() =>
+    typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches
+  );
+  const [showInstallHelp, setShowInstallHelp] = useState(false);
+
+  const navigationItems = [
+    { id: 'study' as const, label: 'Ôn từ', icon: BookOpen },
+    { id: 'kanji' as const, label: 'Kanji', icon: Layers },
+    { id: 'grammar' as const, label: 'Ngữ pháp', icon: Sparkles },
+    { id: 'import' as const, label: 'Nhập từ', icon: FileUp },
+    { id: 'settings' as const, label: 'Cài đặt', icon: Settings }
+  ];
+
+  const handleInstallApp = async () => {
+    if (isAppInstalled) return;
+    if (!installPrompt) {
+      setShowInstallHelp(true);
+      setActiveTab('settings');
+      return;
+    }
+
+    const prompt = installPrompt;
+    setInstallPrompt(null);
+    try {
+      await prompt.prompt();
+      const choice = await prompt.userChoice;
+      setShowInstallHelp(choice.outcome !== 'accepted');
+    } catch {
+      setShowInstallHelp(true);
+    }
+  };
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as BeforeInstallPromptEvent);
+    };
+    const handleAppInstalled = () => {
+      setIsAppInstalled(true);
+      setInstallPrompt(null);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
 
   // Modals state
   const [isLicenseOpen, setIsLicenseOpen] = useState(false);
@@ -136,6 +196,12 @@ export function App() {
   // Extra new cards quota for custom study ("Học thêm từ mới")
   const [extraNewCards, setExtraNewCards] = useState<number>(0);
   const [studySessionCards, setStudySessionCards] = useState<StudyCard[]>([]);
+
+  const selectTab = (tab: AppTab) => {
+    setStudySessionCards([]);
+    setIsStudying(false);
+    setActiveTab(tab);
+  };
 
   // Kanji Explorer search
   const [kanjiSearch, setKanjiSearch] = useState('');
@@ -506,6 +572,7 @@ export function App() {
     }
 
     setSyncStatus('syncing');
+    let syncStage = 'đẩy hàng đợi review offline';
 
     // Kiểm tra xem trên Cloud Firestore có dữ liệu không
     let cloudStatus;
@@ -542,23 +609,38 @@ export function App() {
 
       const doSync = async () => {
         // 1. Đẩy offline queue trước
+        syncStage = 'đẩy hàng đợi review offline';
         const flushed = await flushOfflineQueue(currentUid);
 
-        // 2. Pull the complete review history so reviews from other devices are applied too.
-        const remoteProgress = await loadAndApplyFirestoreReviewLogs(currentUid, allCards, studyStats);
-        if (remoteProgress.logsCount > 0) {
-          setAllCards(remoteProgress.updatedCards);
-          saveUserCards(currentUid, remoteProgress.updatedCards);
+        // 2. Read latest card snapshots and compact stats. Recent review logs only
+        // reconcile activity not yet reflected in the saved stats summary.
+        syncStage = 'đọc hồ sơ, thẻ, thư mục, decks và review logs';
+        const remoteProgress = await pullDataFromFirestore(currentUid, {
+          existingStats: studyStats,
+          currentCards: allCards,
+          includeStructure: false
+        });
+        const mergedCards = mergeFirestoreCardProgress(
+          remoteProgress.legacyUpdatedCards || allCards,
+          remoteProgress.cards
+        );
+        if (Object.keys(remoteProgress.cards).length > 0 || remoteProgress.legacyUpdatedCards) {
+          setAllCards(mergedCards);
+          saveUserCards(currentUid, mergedCards);
         }
         const mergedStats = remoteProgress.stats || studyStats;
-        if (remoteProgress.stats) {
-          setStudyStats(mergedStats);
-          saveUserStudyStats(currentUid, mergedStats);
-        }
+        setStudyStats(mergedStats);
+        saveUserStudyStats(currentUid, mergedStats);
 
-        // 3. Sync folders, decks and the merged stats sequentially to avoid WebChannel congestion.
-        await syncFoldersAndDecks(currentUid, folders, decks);
-        await syncUserStudyStats(currentUid, mergedStats);
+        // 3. Skip unchanged structure/stats so repeated manual syncs do not issue no-op writes.
+        if (remoteProgress.structureFingerprint !== folderDeckFingerprint(folders, decks)) {
+          syncStage = 'ghi thư mục và decks';
+          await syncFoldersAndDecks(currentUid, folders, decks);
+        }
+        if (!areStudyStatsEqual(mergedStats, remoteProgress.remoteStats)) {
+          syncStage = 'ghi thống kê học tập';
+          await syncUserStudyStats(currentUid, mergedStats);
+        }
 
         return flushed;
       };
@@ -582,7 +664,8 @@ export function App() {
       }
     } catch (err: any) {
       console.warn('Lỗi khi bấm đồng bộ Firestore:', err);
-      showSyncToast(`❌ Đồng bộ thất bại: ${err?.message || err}`, 'warning');
+      const code = typeof err?.code === 'string' ? ` (${err.code})` : '';
+      showSyncToast(`❌ Đồng bộ thất bại tại bước ${syncStage}${code}: ${err?.message || err}`, 'warning');
     } finally {
       setPendingCount(getPendingSyncCount(currentUid));
       setSyncStatus('synced');
@@ -648,39 +731,18 @@ export function App() {
     setIsPulling(true);
     setPullResult(null);
     try {
-      // 1. Tải và tái hiện toàn bộ tiến độ FSRS từ reviewLogs trên Firestore
-      const { updatedCards, logsCount, stats } = await loadAndApplyFirestoreReviewLogs(
-        currentUid,
-        allCards,
-        studyStats
-      );
-      // 2. Tải decks, folders, thẻ cards và stats từ Firestore
-      const data = await pullDataFromFirestore(currentUid);
-      const cardCount = Object.keys(data.cards).length;
-
-      // The card snapshot is the latest FSRS state; replayed logs remain the fallback
-      // for older accounts that have review logs but no card snapshot.
-      const cardsWithCloudProgress = (logsCount > 0 ? updatedCards : allCards).map((card) => {
-        const cloud = data.cards[card.id];
-        if (!cloud) return card;
-        const due = cloud.due ? new Date(cloud.due) : card.fsrsCard.due;
-        const lastReview = cloud.last_review ? new Date(cloud.last_review) : undefined;
-        const fsrsCard = {
-          ...card.fsrsCard,
-          due,
-          stability: Number(cloud.stability ?? card.fsrsCard.stability),
-          difficulty: Number(cloud.difficulty ?? card.fsrsCard.difficulty),
-          elapsed_days: Number(cloud.elapsed_days ?? card.fsrsCard.elapsed_days),
-          scheduled_days: Number(cloud.scheduled_days ?? card.fsrsCard.scheduled_days),
-          reps: Number(cloud.reps ?? card.fsrsCard.reps),
-          lapses: Number(cloud.lapses ?? card.fsrsCard.lapses),
-          state: Number(cloud.state ?? card.fsrsCard.state),
-          last_review: lastReview
-        };
-        const isNew = fsrsCard.reps === 0 && !lastReview && fsrsCard.state === 0;
-        return { ...card, fsrsCard, isNew, isDue: !isNew && due.getTime() <= Date.now() };
+      // Card documents contain the latest FSRS snapshot; review logs are only
+      // scanned fully for legacy accounts that have no saved profile summary.
+      const data = await pullDataFromFirestore(currentUid, {
+        existingStats: studyStats,
+        currentCards: allCards
       });
-      if (cardCount > 0 || logsCount > 0) {
+      const cardCount = Object.keys(data.cards).length;
+      const cardsWithCloudProgress = mergeFirestoreCardProgress(
+        data.legacyUpdatedCards || allCards,
+        data.cards
+      );
+      if (cardCount > 0 || data.legacyUpdatedCards) {
         setAllCards(cardsWithCloudProgress);
         saveUserCards(currentUid, cardsWithCloudProgress);
       }
@@ -695,14 +757,17 @@ export function App() {
         saveUserDecks(currentUid, data.decks);
       }
 
-      if (stats) {
-        setStudyStats(stats);
-        saveUserStudyStats(currentUid, stats);
+      setStudyStats(data.stats);
+      saveUserStudyStats(currentUid, data.stats);
+      if (data.statsNeedBackfill || !areStudyStatsEqual(data.stats, data.remoteStats)) {
+        // Persist the compact summary so later pulls stay bounded and skip no-op writes.
+        await syncUserStudyStats(currentUid, data.stats);
       }
 
-      const todayDone = stats?.todayStats?.reviewedCount || 0;
+      const todayDone = data.stats.todayStats.reviewedCount;
+      const logScope = data.statsNeedBackfill ? 'lượt review cũ' : 'lượt review gần đây';
       setPullResult(
-        `✓ Đã đồng bộ thành công! Đã nạp ${logsCount} lượt reviewLogs, khôi phục trạng thái FSRS cho ${cardCount || logsCount} thẻ, cập nhật tiến độ hôm nay (${todayDone} thẻ đã ôn tập, chuỗi ${stats?.streakDays || 0} ngày) và đồng bộ ${data.decks?.length || 0} decks từ Firestore.`
+        `✓ Đã đồng bộ thành công! Đã cập nhật ${cardCount} trạng thái thẻ, xử lý ${data.reviewLogsProcessed} ${logScope}, tiến độ hôm nay (${todayDone} lượt ôn, chuỗi ${data.stats.streakDays} ngày) và ${data.decks?.length || 0} decks từ Firestore.`
       );
     } catch (err: any) {
       setPullResult(`❌ Lỗi khi tải dữ liệu: ${err.message || err}`);
@@ -712,27 +777,61 @@ export function App() {
   };
 
   return (
-    <div className={`min-h-full flex flex-col ${darkMode ? 'dark' : ''}`}>
+    <div className={`min-h-dvh flex flex-col ${darkMode ? 'dark' : ''}`}>
+      {/* Desktop navigation */}
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 lg:flex">
+        <div className="flex items-center gap-3 border-b border-slate-200 px-6 py-6 dark:border-slate-800">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-sky-600 to-indigo-600 text-xl font-bold text-white shadow-sm">楽</div>
+          <div className="min-w-0">
+            <div className="truncate font-bold text-slate-900 dark:text-slate-100">Raku Nihongo</div>
+            <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Tự học tiếng Nhật</div>
+          </div>
+        </div>
+        <nav aria-label="Điều hướng chính" className="flex-1 space-y-1 px-3 py-5">
+          {navigationItems.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => selectTab(id)}
+              aria-current={activeTab === id ? 'page' : undefined}
+              className={`flex min-h-12 w-full items-center gap-3 rounded-xl px-4 text-sm font-medium transition ${activeTab === id ? 'bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}`}
+            >
+              <Icon className="h-5 w-5 shrink-0" />
+              <span>{label}</span>
+            </button>
+          ))}
+        </nav>
+        {!isAppInstalled && (
+          <div className="border-t border-slate-200 p-4 dark:border-slate-800">
+            <button onClick={handleInstallApp} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-sky-600 px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700">
+              <Download className="h-4 w-4" /> Cài ứng dụng
+            </button>
+          </div>
+        )}
+      </aside>
+      <div className="flex min-h-dvh min-w-0 flex-1 flex-col lg:ml-64">
       {/* Top Header */}
-      <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center space-x-2.5">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 text-white font-bold flex items-center justify-center text-lg shadow-sm">
+      <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-slate-200 bg-white/90 px-3 py-2.5 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90 sm:px-6 sm:py-3 lg:px-8">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-2.5 lg:hidden">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 text-lg font-bold text-white shadow-sm">
             楽
           </div>
-          <div>
-            <h1 className="text-lg font-bold text-slate-800 dark:text-slate-100 leading-none">
+          <div className="min-w-0">
+            <h1 className="truncate whitespace-nowrap text-base font-bold leading-tight text-slate-800 dark:text-slate-100 sm:text-lg">
               Raku Nihongo
             </h1>
-            <span className="text-xs text-slate-500 dark:text-slate-400">
+            <span className="hidden text-xs text-slate-500 dark:text-slate-400 sm:block">
               Kanji – Từ vựng – Ngữ pháp
             </span>
           </div>
         </div>
+        <div className="hidden min-w-0 flex-1 text-sm font-semibold text-slate-800 dark:text-slate-100 lg:block">
+          {navigationItems.find((item) => item.id === activeTab)?.label}
+        </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex shrink-0 items-center gap-0.5 sm:gap-2">
           {/* Offline-First Sync Status indicator */}
           <div
-            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium cursor-default transition-all ${
+            className={`inline-flex h-9 w-9 items-center justify-center rounded-full text-xs font-medium transition-all sm:h-auto sm:w-auto sm:px-2.5 sm:py-1 ${
               !isOnline
                 ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300/50 dark:border-amber-800'
                 : syncStatus === 'syncing'
@@ -753,23 +852,23 @@ export function App() {
           >
             {!isOnline ? (
               <>
-                <WifiOff className="w-3.5 h-3.5 mr-1.5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
-                <span>Ngoại tuyến{pendingCount > 0 ? ` (${pendingCount})` : ''}</span>
+                <WifiOff className="h-4 w-4 text-amber-600 dark:text-amber-400 sm:mr-1.5 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
+                <span className="hidden sm:inline">Ngoại tuyến{pendingCount > 0 ? ` (${pendingCount})` : ''}</span>
               </>
             ) : syncStatus === 'syncing' ? (
               <>
-                <RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin text-sky-600 dark:text-sky-400" aria-hidden="true" />
-                <span>Đang đồng bộ...</span>
+                <RefreshCw className="h-4 w-4 animate-spin text-sky-600 dark:text-sky-400 sm:mr-1.5 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
+                <span className="hidden sm:inline">Đang đồng bộ...</span>
               </>
             ) : pendingCount > 0 ? (
               <>
-                <Cloud className="w-3.5 h-3.5 mr-1.5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
-                <span>Lưu máy ({pendingCount})</span>
+                <Cloud className="h-4 w-4 text-amber-600 dark:text-amber-400 sm:mr-1.5 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
+                <span className="hidden sm:inline">Lưu máy ({pendingCount})</span>
               </>
             ) : (
               <>
-                <Wifi className="w-3.5 h-3.5 mr-1.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
-                <span>Đã sao lưu</span>
+                <Wifi className="h-4 w-4 text-emerald-600 dark:text-emerald-400 sm:mr-1.5 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
+                <span className="hidden sm:inline">Đã sao lưu</span>
               </>
             )}
           </div>
@@ -777,7 +876,7 @@ export function App() {
           {/* AI Quiz generator button */}
           <button
             onClick={() => setIsAiQuizModalOpen(true)}
-            className="p-2 rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 focus:outline-none focus:ring-2 focus:ring-indigo-500 touch-target flex items-center justify-center"
+            className="hidden rounded-lg p-2 text-indigo-600 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-indigo-400 dark:hover:bg-indigo-950/60 sm:flex sm:items-center sm:justify-center"
             title="AI tạo bộ câu hỏi"
             aria-label="AI tạo câu hỏi"
           >
@@ -787,7 +886,7 @@ export function App() {
           {/* User profile / login button */}
           <button
             onClick={() => setIsAuthModalOpen(true)}
-            className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 touch-target flex items-center justify-center"
+            className="flex h-10 w-10 items-center justify-center rounded-lg p-2 text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:text-slate-300 dark:hover:bg-slate-800 sm:h-11 sm:w-11"
             title={user ? (user.isAnonymous ? 'Khách ẩn danh' : user.email || 'Tài khoản') : 'Đăng nhập'}
             aria-label="Tài khoản"
           >
@@ -797,7 +896,7 @@ export function App() {
           {/* Dark mode toggle */}
           <button
             onClick={toggleDarkMode}
-            className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 touch-target flex items-center justify-center"
+            className="flex h-10 w-10 items-center justify-center rounded-lg p-2 text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:text-slate-300 dark:hover:bg-slate-800 sm:h-11 sm:w-11"
             aria-label="Chuyển chế độ sáng/tối"
           >
             {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
@@ -835,7 +934,7 @@ export function App() {
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 pb-24">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-3 py-4 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] sm:px-6 sm:py-6 lg:px-8 lg:pb-10">
         {/* User Auth banner for anonymous or unauthenticated users */}
         {!user && (
           <div className="mb-6 p-4 rounded-2xl bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
@@ -1016,7 +1115,7 @@ export function App() {
         {activeTab === 'settings' && (
           <div className="space-y-4">
             {/* Database & Firebase Offline-First Sync Section */}
-            <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-5 shadow-sm">
+            <div className="p-4 sm:p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-5 shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center space-x-2">
@@ -1066,8 +1165,8 @@ export function App() {
               </div>
 
               {/* Status details card */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 space-y-3">
+                <div className="grid grid-cols-1 min-[420px]:grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                   <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/60">
                     <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Trạng thái mạng</span>
                     <span className="font-bold text-slate-800 dark:text-slate-200 mt-0.5 block">
@@ -1190,8 +1289,37 @@ export function App() {
             </div>
 
             {/* General Settings Section */}
-            <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
+            <div className="p-4 sm:p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
               <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Cài đặt ứng dụng</h3>
+
+              <div className="flex flex-col gap-3 rounded-2xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-900 dark:bg-sky-950/40 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <Download className="mt-0.5 h-5 w-5 shrink-0 text-sky-600 dark:text-sky-400" />
+                  <div>
+                    <div className="font-semibold text-slate-800 dark:text-slate-100">Cài Raku Nihongo lên thiết bị</div>
+                    <div className="mt-1 text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">
+                      Mở như ứng dụng riêng, có thể thêm vào màn hình chính và dùng nội dung đã lưu khi ngoại tuyến.
+                    </div>
+                  </div>
+                </div>
+                {isAppInstalled ? (
+                  <span className="shrink-0 self-start rounded-xl bg-emerald-100 px-3 py-2 text-xs font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 sm:self-auto">Đã cài đặt</span>
+                ) : (
+                  <button
+                    onClick={handleInstallApp}
+                    className="flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-sky-700"
+                  >
+                    <Download className="h-4 w-4" />
+                    Cài ứng dụng
+                  </button>
+                )}
+                {showInstallHelp && !isAppInstalled && (
+                  <p className="basis-full text-xs leading-relaxed text-slate-600 dark:text-slate-300 sm:ml-8">
+                    Trong Chrome, mở menu ⋮ rồi chọn <strong>Cài đặt ứng dụng</strong> hoặc <strong>Thêm vào màn hình chính</strong>.
+                    Nếu chưa thấy lựa chọn này, hãy mở trang đã triển khai bằng HTTPS và tải lại sau khi kết nối mạng.
+                  </p>
+                )}
+              </div>
 
               <div className="space-y-3 text-xs text-slate-700 dark:text-slate-300">
                 <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800">
@@ -1227,6 +1355,7 @@ export function App() {
           </div>
         )}
       </main>
+      </div>
 
       {/* Kanji Detail Modal */}
       <KanjiModal
@@ -1267,91 +1396,23 @@ export function App() {
         onClose={() => setIsAiQuizModalOpen(false)}
       />
 
-      {/* Bottom Navigation Bar */}
+      {/* Mobile bottom navigation */}
       <nav
         aria-label="Thanh điều hướng chính"
-        className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-t border-slate-200 dark:border-slate-800 px-2 py-1 pb-[calc(0.25rem+env(safe-area-inset-bottom,0px))]"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-1 pt-1 pb-[calc(0.25rem+env(safe-area-inset-bottom,0px))] backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 lg:hidden"
       >
-        <div className="max-w-md mx-auto flex items-center justify-around">
-          <button
-            onClick={() => {
-              setStudySessionCards([]);
-              setIsStudying(false);
-              setActiveTab('study');
-            }}
-            className={`flex flex-col items-center justify-center p-2 rounded-xl touch-target ${
-              activeTab === 'study'
-                ? 'text-sky-600 dark:text-sky-400 font-bold'
-                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
-            }`}
-          >
-            <BookOpen className="w-5 h-5 mb-0.5" />
-            <span className="text-[11px]">Ôn từ</span>
-          </button>
-
-          <button
-            onClick={() => {
-              setStudySessionCards([]);
-              setIsStudying(false);
-              setActiveTab('kanji');
-            }}
-            className={`flex flex-col items-center justify-center p-2 rounded-xl touch-target ${
-              activeTab === 'kanji'
-                ? 'text-sky-600 dark:text-sky-400 font-bold'
-                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
-            }`}
-          >
-            <Layers className="w-5 h-5 mb-0.5" />
-            <span className="text-[11px]">Kanji</span>
-          </button>
-
-          <button
-            onClick={() => {
-              setStudySessionCards([]);
-              setIsStudying(false);
-              setActiveTab('grammar');
-            }}
-            className={`flex flex-col items-center justify-center p-2 rounded-xl touch-target ${
-              activeTab === 'grammar'
-                ? 'text-sky-600 dark:text-sky-400 font-bold'
-                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
-            }`}
-          >
-            <Sparkles className="w-5 h-5 mb-0.5" />
-            <span className="text-[11px]">Ngữ pháp</span>
-          </button>
-
-          <button
-            onClick={() => {
-              setStudySessionCards([]);
-              setIsStudying(false);
-              setActiveTab('import');
-            }}
-            className={`flex flex-col items-center justify-center p-2 rounded-xl touch-target ${
-              activeTab === 'import'
-                ? 'text-sky-600 dark:text-sky-400 font-bold'
-                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
-            }`}
-          >
-            <FileUp className="w-5 h-5 mb-0.5" />
-            <span className="text-[11px]">Nhập từ</span>
-          </button>
-
-          <button
-            onClick={() => {
-              setStudySessionCards([]);
-              setIsStudying(false);
-              setActiveTab('settings');
-            }}
-            className={`flex flex-col items-center justify-center p-2 rounded-xl touch-target ${
-              activeTab === 'settings'
-                ? 'text-sky-600 dark:text-sky-400 font-bold'
-                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
-            }`}
-          >
-            <Settings className="w-5 h-5 mb-0.5" />
-            <span className="text-[11px]">Cài đặt</span>
-          </button>
+        <div className="mx-auto grid max-w-lg grid-cols-5">
+          {navigationItems.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => selectTab(id)}
+              aria-current={activeTab === id ? 'page' : undefined}
+              className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 transition ${activeTab === id ? 'font-bold text-sky-600 dark:text-sky-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+            >
+              <Icon className="h-5 w-5 shrink-0" />
+              <span className="max-w-full truncate text-[10px] leading-tight min-[380px]:text-[11px]">{label}</span>
+            </button>
+          ))}
         </div>
       </nav>
     </div>

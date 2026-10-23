@@ -104,12 +104,14 @@ export function FlashcardStudyView({
 
       // 1. Advance card state via FSRS algorithm
       const recordLog = applyGrade(cardToRate.fsrsCard, rating as 1 | 2 | 3 | 4);
+      const reviewedAt = new Date().toISOString();
       const updatedCard: StudyCard = {
         ...cardToRate,
         fsrsCard: recordLog.card,
         isNew: false,
         isDue: recordLog.card.due.getTime() <= Date.now(),
-        firstLearnedAt: cardToRate.firstLearnedAt || new Date().toISOString()
+        firstLearnedAt: cardToRate.firstLearnedAt || reviewedAt,
+        learnedAt: cardToRate.learnedAt || (rating > Rating.Again ? reviewedAt : undefined)
       };
 
       // 2. Notify parent to persist in allCards, LocalStorage, and Firestore

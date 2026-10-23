@@ -15,6 +15,7 @@ export interface StudyCard {
   isDue: boolean;
   deckId?: string;
   firstLearnedAt?: string;
+  learnedAt?: string;
 }
 
 /**

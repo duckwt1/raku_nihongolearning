@@ -43,11 +43,14 @@ service cloud.firestore {
         allow read, write: if isOwner(uid);
       }
 
-      // Review logs: Append-only! No updates or deletes allowed
+      // Review logs are immutable. Permit a same-value update so a retried
+      // offline batch is idempotent if the prior commit reached Firestore but
+      // the client did not receive its acknowledgement.
       match /reviewLogs/{logId} {
         allow read: if isOwner(uid);
         allow create: if isOwner(uid);
-        allow update, delete: if false;
+        allow update: if isOwner(uid) && request.resource.data == resource.data;
+        allow delete: if false;
       }
 
       // Kanji mastery progress

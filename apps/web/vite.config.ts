@@ -7,15 +7,20 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      includeAssets: ['favicon.svg', 'pwa-192x192.png', 'pwa-512x512.png'],
       manifest: {
         name: 'Raku Nihongo - Tự học tiếng Nhật',
         short_name: 'Raku Nihongo',
         description: 'Tự học tiếng Nhật liên kết Kanji, Từ vựng, Ngữ pháp kèm AI',
         theme_color: '#0284c7',
         background_color: '#ffffff',
+        start_url: '/',
+        scope: '/',
         display: 'standalone',
+        display_override: ['standalone', 'minimal-ui'],
         orientation: 'portrait',
+        lang: 'vi',
+        prefer_related_applications: false,
         icons: [
           {
             src: 'pwa-192x192.png',
