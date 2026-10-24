@@ -119,12 +119,13 @@ export function DeckFolderView({
       {/* Top action buttons: Add Folder & Add Deck */}
       <div className="flex flex-wrap items-center justify-between gap-2.5">
         <div>
-          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center space-x-2">
-            <Layers className="w-5 h-5 text-sky-600 dark:text-sky-400" />
-            <span>Bộ Thẻ & Thư Mục (Kiểu Anki)</span>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-raku-accent">Chọn một chặng</p>
+          <h2 className="mt-1 flex items-center gap-2 text-xl font-bold tracking-tight text-raku-ink">
+            <Layers className="h-5 w-5 text-raku-accent" aria-hidden="true" />
+            <span>Bộ học tập của bạn</span>
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Quản lý và ôn tập theo từng Deck riêng biệt hoặc cả Thư mục JLPT
+          <p className="mt-1 text-sm text-raku-muted">
+            Học theo chủ đề, cấp độ hoặc bộ thẻ bạn tự tạo.
           </p>
         </div>
 

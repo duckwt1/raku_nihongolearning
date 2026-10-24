@@ -396,6 +396,19 @@ export function App() {
     setStudySessionCards(queue);
   };
 
+  const handleQuickStudyToday = () => {
+    setExtraNewCards(0);
+    const target: StudyTarget = {
+      type: 'all',
+      id: 'all',
+      title: 'Ôn tập hôm nay'
+    };
+    setActiveStudyTarget(target);
+    const queue = buildReviewQueue(allCards, 20, 50, new Date(), 0).queue;
+    setStudySessionCards(queue);
+    setIsStudying(true);
+  };
+
   const handleQuickStudyMoreNew = () => {
     setExtraNewCards(20);
     const target: StudyTarget = {
@@ -968,12 +981,7 @@ export function App() {
                   stats={studyStats}
                   totalDueToday={totalDueToday}
                   totalNewToday={totalNewToday}
-                  onQuickStudy={() => {
-                    const firstDeck = decks[0];
-                    if (firstDeck) {
-                      handleSelectDeckToStudy(firstDeck);
-                    }
-                  }}
+                  onQuickStudy={handleQuickStudyToday}
                   onStudyMoreNew={handleQuickStudyMoreNew}
                 />
 

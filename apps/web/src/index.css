@@ -11,28 +11,28 @@
   }
 
   .raku-app-shell {
-    /* Japanese study palette: mist canvas, ink, deep teal, and a vermilion seal. */
-    --raku-canvas: 243 247 245; /* #F3F7F5 */
-    --raku-surface: 255 255 255; /* #FFFFFF */
-    --raku-subtle: 232 239 237; /* #E8EFED */
-    --raku-ink: 28 44 48; /* #1C2C30 */
-    --raku-muted: 79 97 98; /* #4F6162 */
-    --raku-accent: 0 109 103; /* #006D67 */
-    --raku-accent-soft: 217 239 235; /* #D9EFEB */
-    --raku-signal: 180 63 45; /* #B43F2D */
-    --raku-line: 213 225 222; /* #D5E1DE */
-    --raku-on-accent: 255 255 255; /* #FFFFFF */
-    --raku-neutral-50: 243 247 245;
-    --raku-neutral-100: 232 239 237;
-    --raku-neutral-200: 213 225 222;
-    --raku-neutral-300: 140 160 155;
-    --raku-neutral-400: 94 114 110;
-    --raku-neutral-500: 80 101 99;
-    --raku-neutral-600: 63 84 82;
-    --raku-neutral-700: 52 72 72;
-    --raku-neutral-800: 37 59 61;
-    --raku-neutral-900: 28 44 48;
-    --raku-neutral-950: 18 29 34;
+    /* Washi paper, forest ink, and a vermilion hanko give Raku its own voice. */
+    --raku-canvas: 246 243 235; /* #F6F3EB */
+    --raku-surface: 255 252 245; /* #FFFCF5 */
+    --raku-subtle: 238 232 219; /* #EEE8DB */
+    --raku-ink: 36 52 48; /* #243430 */
+    --raku-muted: 83 100 94; /* #53645E */
+    --raku-accent: 40 102 91; /* #28665B */
+    --raku-accent-soft: 220 235 224; /* #DCEBE0 */
+    --raku-signal: 184 78 58; /* #B84E3A */
+    --raku-line: 221 212 197; /* #DDD4C5 */
+    --raku-on-accent: 255 252 245; /* #FFFCF5 */
+    --raku-neutral-50: 246 243 235;
+    --raku-neutral-100: 238 232 219;
+    --raku-neutral-200: 221 212 197;
+    --raku-neutral-300: 173 177 163;
+    --raku-neutral-400: 115 131 123;
+    --raku-neutral-500: 99 115 108;
+    --raku-neutral-600: 83 100 94;
+    --raku-neutral-700: 67 84 77;
+    --raku-neutral-800: 51 67 61;
+    --raku-neutral-900: 36 52 48;
+    --raku-neutral-950: 23 33 31;
     color-scheme: light;
     min-height: 100dvh;
     background: rgb(var(--raku-canvas));
@@ -41,27 +41,27 @@
 
   .raku-app-shell.dark {
     color-scheme: dark;
-    --raku-canvas: 18 29 34; /* #121D22 */
-    --raku-surface: 28 42 47; /* #1C2A2F */
-    --raku-subtle: 33 60 58; /* #213C3A */
-    --raku-ink: 242 244 238; /* #F2F4EE */
-    --raku-muted: 180 194 190; /* #B4C2BE */
-    --raku-accent: 97 214 193; /* #61D6C1 */
-    --raku-accent-soft: 33 60 58; /* #213C3A */
-    --raku-signal: 242 140 116; /* #F28C74 */
-    --raku-line: 53 72 76; /* #35484C */
-    --raku-on-accent: 12 39 36; /* #0C2724 */
-    --raku-neutral-50: 242 245 242;
-    --raku-neutral-100: 224 233 229;
-    --raku-neutral-200: 200 215 210;
-    --raku-neutral-300: 194 208 203;
-    --raku-neutral-400: 170 188 182;
-    --raku-neutral-500: 144 164 159;
-    --raku-neutral-600: 113 137 132;
-    --raku-neutral-700: 83 107 104;
-    --raku-neutral-800: 38 56 61;
-    --raku-neutral-900: 28 42 47;
-    --raku-neutral-950: 18 29 34;
+    --raku-canvas: 23 33 31; /* #17211F */
+    --raku-surface: 32 44 40; /* #202C28 */
+    --raku-subtle: 41 58 52; /* #293A34 */
+    --raku-ink: 243 241 232; /* #F3F1E8 */
+    --raku-muted: 188 199 188; /* #BCC7BC */
+    --raku-accent: 155 208 173; /* #9BD0AD */
+    --raku-accent-soft: 46 64 56; /* #2E4038 */
+    --raku-signal: 240 139 114; /* #F08B72 */
+    --raku-line: 58 74 67; /* #3A4A43 */
+    --raku-on-accent: 25 37 31; /* #19251F */
+    --raku-neutral-50: 243 241 232;
+    --raku-neutral-100: 220 226 216;
+    --raku-neutral-200: 188 199 188;
+    --raku-neutral-300: 155 172 160;
+    --raku-neutral-400: 137 157 145;
+    --raku-neutral-500: 123 145 132;
+    --raku-neutral-600: 103 127 113;
+    --raku-neutral-700: 78 101 89;
+    --raku-neutral-800: 50 70 61;
+    --raku-neutral-900: 32 44 40;
+    --raku-neutral-950: 23 33 31;
   }
 
   body {
@@ -83,7 +83,7 @@
   .raku-brand-mark {
     position: relative;
     overflow: hidden;
-    background: #1c2c30;
+    background: #243430;
     color: #ffffff;
   }
 
@@ -95,19 +95,363 @@
     height: 7px;
     border: 1px solid #ffffff;
     border-radius: 9999px;
-    background: #b43f2d;
+    background: #b84e3a;
     content: "";
   }
 
   .dark .raku-brand-mark {
-    background: #f2f4ee;
-    color: #1c2c30;
+    background: #f3f1e8;
+    color: #243430;
   }
 
   .raku-app-shell :focus-visible {
     outline: 3px solid rgb(var(--raku-signal)) !important;
     outline-offset: 2px !important;
   }
+
+  .raku-daily-card {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border: 1px solid rgb(var(--raku-line));
+    border-radius: 1.75rem;
+    background: linear-gradient(125deg, rgb(var(--raku-surface)) 0%, rgb(var(--raku-subtle)) 145%);
+    box-shadow: 0 12px 34px rgb(36 52 48 / 0.07);
+  }
+
+  .raku-daily-card::before {
+    position: absolute;
+    z-index: -1;
+    inset: 0 0 auto auto;
+    width: 42%;
+    height: 100%;
+    background-image: radial-gradient(rgb(var(--raku-signal) / 0.12) 1px, transparent 1.5px);
+    background-position: 0 0;
+    background-size: 16px 16px;
+    content: "";
+    mask-image: linear-gradient(90deg, transparent, #000 65%);
+  }
+
+  .raku-daily-card__main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+  }
+
+  .raku-daily-copy {
+    min-width: 0;
+  }
+
+  .raku-daily-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: rgb(var(--raku-accent));
+    font-size: 0.8125rem;
+    font-weight: 750;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .raku-daily-kicker__seal {
+    display: inline-flex;
+    width: 1.5rem;
+    height: 1.5rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgb(var(--raku-signal));
+    border-radius: 50%;
+    color: rgb(var(--raku-signal));
+    font-size: 0.875rem;
+    letter-spacing: 0;
+  }
+
+  .raku-daily-date {
+    color: rgb(var(--raku-muted));
+    font-size: 0.875rem;
+    text-transform: capitalize;
+  }
+
+  .raku-daily-title {
+    margin-top: 0.9rem;
+    color: rgb(var(--raku-ink));
+    font-size: clamp(1.65rem, 4vw, 2.45rem);
+    font-weight: 750;
+    letter-spacing: -0.045em;
+    line-height: 1.12;
+  }
+
+  .raku-daily-description {
+    margin-top: 0.55rem;
+    max-width: 37rem;
+    color: rgb(var(--raku-muted));
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+
+  .raku-daily-progress {
+    display: grid;
+    gap: 0.55rem;
+    max-width: 34rem;
+    margin-top: 1.25rem;
+  }
+
+  .raku-progress-track {
+    height: 0.625rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgb(var(--raku-line));
+  }
+
+  .raku-progress-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, rgb(var(--raku-accent)), rgb(var(--raku-signal)));
+    transition: width 350ms ease;
+  }
+
+  .raku-daily-action,
+  .raku-daily-more {
+    display: inline-flex;
+    min-height: 2.875rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    border-radius: 0.9rem;
+    padding: 0 1rem;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    transition: transform 160ms ease, background-color 160ms ease;
+  }
+
+  .raku-daily-action {
+    background: rgb(var(--raku-accent));
+    color: rgb(var(--raku-on-accent));
+    box-shadow: 0 3px 0 rgb(var(--raku-ink) / 0.22);
+  }
+
+  .raku-daily-action:hover {
+    transform: translateY(-1px);
+    background: rgb(var(--raku-accent) / 0.9);
+  }
+
+  .raku-daily-action:active {
+    transform: translateY(2px);
+    box-shadow: none;
+  }
+
+  .raku-daily-more {
+    border: 1px solid rgb(var(--raku-line));
+    background: rgb(var(--raku-surface) / 0.75);
+    color: rgb(var(--raku-ink));
+  }
+
+  .raku-daily-more:hover {
+    background: rgb(var(--raku-subtle));
+  }
+
+  .raku-daily-complete {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 0.9rem;
+    background: rgb(var(--raku-accent-soft));
+    padding: 0 0.875rem;
+    color: rgb(var(--raku-accent));
+    font-size: 0.9375rem;
+    font-weight: 700;
+  }
+
+  .raku-study-stamp {
+    position: relative;
+    display: flex;
+    width: 4.5rem;
+    height: 4.5rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgb(var(--raku-signal));
+    border-radius: 50%;
+    color: rgb(var(--raku-signal));
+    transform: rotate(7deg);
+  }
+
+  .raku-study-stamp::before {
+    position: absolute;
+    inset: 0.3rem;
+    border: 1px solid rgb(var(--raku-signal) / 0.7);
+    border-radius: 50%;
+    content: "";
+  }
+
+  .raku-study-stamp__character {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .raku-study-stamp__caption {
+    display: none;
+    margin-top: 0.2rem;
+    font-size: 0.6875rem;
+    font-weight: 750;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .raku-daily-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-top: 1px solid rgb(var(--raku-line));
+    background: rgb(var(--raku-surface) / 0.68);
+  }
+
+  .raku-daily-stat {
+    display: flex;
+    min-width: 0;
+    min-height: 5.25rem;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+  }
+
+  .raku-daily-stat:nth-child(even) {
+    border-left: 1px solid rgb(var(--raku-line));
+  }
+
+  .raku-daily-stat:nth-child(n + 3) {
+    border-top: 1px solid rgb(var(--raku-line));
+  }
+
+  .raku-daily-stat__icon {
+    display: inline-flex;
+    width: 2.5rem;
+    height: 2.5rem;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.85rem;
+  }
+
+  .raku-daily-stat__icon svg {
+    width: 1.2rem;
+    height: 1.2rem;
+  }
+
+  .raku-daily-stat__icon--green {
+    background: rgb(var(--raku-accent-soft));
+    color: rgb(var(--raku-accent));
+  }
+
+  .raku-daily-stat__icon--red {
+    background: rgb(var(--raku-signal) / 0.12);
+    color: rgb(var(--raku-signal));
+  }
+
+  .raku-daily-stat__icon--gold {
+    background: #f4ead1;
+    color: #7f5b1f;
+  }
+
+  .raku-daily-stat__icon--ink {
+    background: rgb(var(--raku-subtle));
+    color: rgb(var(--raku-ink));
+  }
+
+  .raku-daily-stat__label {
+    display: block;
+    color: rgb(var(--raku-muted));
+    font-size: 0.875rem;
+    line-height: 1.25;
+  }
+
+  .raku-daily-stat strong {
+    display: block;
+    margin-top: 0.125rem;
+    color: rgb(var(--raku-ink));
+    font-size: 1.25rem;
+    font-weight: 750;
+    line-height: 1.25;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .raku-daily-stat strong small {
+    color: rgb(var(--raku-muted));
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+}
+
+@media (min-width: 640px) {
+  .raku-daily-card__main {
+    gap: 2rem;
+    padding: 1.75rem 2rem;
+  }
+
+  .raku-study-stamp {
+    width: 7.25rem;
+    height: 7.25rem;
+  }
+
+  .raku-study-stamp__character {
+    font-size: 3.25rem;
+  }
+
+  .raku-study-stamp__caption {
+    display: block;
+  }
+
+  .raku-daily-stat {
+    min-height: 5.75rem;
+    padding: 1rem 1.25rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .raku-progress-summary {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .raku-study-stamp {
+    width: 3.5rem;
+    height: 3.5rem;
+  }
+
+  .raku-study-stamp__character {
+    font-size: 1.6rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .raku-daily-card__main {
+    padding: 2rem 2.25rem;
+  }
+
+  .raku-daily-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .raku-daily-stat + .raku-daily-stat,
+  .raku-daily-stat:nth-child(even),
+  .raku-daily-stat:nth-child(n + 3) {
+    border-top: 0;
+    border-left: 1px solid rgb(var(--raku-line));
+  }
+}
+
+.dark .raku-daily-card {
+  background: linear-gradient(125deg, rgb(var(--raku-surface)) 0%, rgb(var(--raku-subtle)) 145%);
+  box-shadow: 0 12px 34px rgb(0 0 0 / 0.18);
+}
+
+.dark .raku-daily-stat__icon--gold {
+  background: #453b26;
+  color: #e8cb85;
 }
 
 /* Reduced motion preference */
@@ -137,5 +481,25 @@ body:has(.raku-app-shell) {
 }
 
 body:has(.raku-app-shell.dark) {
-  background-color: #121d22;
+  background-color: #17211f;
+}
+
+body:has(.raku-app-shell:not(.dark)) {
+  background-color: #f6f3eb;
+}
+
+@media (prefers-contrast: more) {
+  .raku-app-shell:not(.dark) {
+    --raku-muted: 62 76 69;
+    --raku-accent: 30 84 74;
+    --raku-signal: 158 52 38;
+    --raku-line: 170 164 148;
+  }
+
+  .raku-app-shell.dark {
+    --raku-muted: 220 228 218;
+    --raku-accent: 185 234 195;
+    --raku-signal: 255 170 145;
+    --raku-line: 105 121 111;
+  }
 }
