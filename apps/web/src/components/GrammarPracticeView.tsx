@@ -208,7 +208,7 @@ export function GrammarPracticeView() {
                 </p>
 
                 {/* Choices */}
-                <div className="grid grid-cols-2 gap-2 max-w-md mx-auto">
+                <div className="grid grid-cols-2 gap-2.5 max-w-md mx-auto">
                   {[
                     selectedGrammar.title.split(' ')[0] || 'うちに',
                     'かわりに',
@@ -221,10 +221,8 @@ export function GrammarPracticeView() {
                         key={choice}
                         disabled={fillSubmitted}
                         onClick={() => setFillAnswer(choice)}
-                        className={`p-3 rounded-xl border text-sm font-medium transition touch-target ${
-                          isSelected
-                            ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300 ring-2 ring-sky-400'
-                            : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100'
+                        className={`p-3.5 duo-chip text-sm transition touch-target ${
+                          isSelected ? 'duo-chip-selected' : ''
                         }`}
                       >
                         {choice}
@@ -238,27 +236,33 @@ export function GrammarPracticeView() {
                     <button
                       disabled={!fillAnswer}
                       onClick={() => setFillSubmitted(true)}
-                      className="px-6 py-2.5 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white font-semibold text-xs rounded-xl shadow-sm touch-target"
+                      className="px-8 py-3 duo-btn-3d duo-btn-sky text-xs rounded-xl shadow-sm touch-target"
                     >
                       Kiểm tra đáp án
                     </button>
                   </div>
                 ) : (
-                  <div className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-2">
+                  <div
+                    className={`p-4 rounded-2xl border-2 space-y-2 shadow-sm ${
+                      fillAnswer === (selectedGrammar.title.split(' ')[0] || 'うちに')
+                        ? 'bg-emerald-50 dark:bg-emerald-950/70 border-emerald-400 dark:border-emerald-700 animate-duo-pop'
+                        : 'bg-rose-50 dark:bg-rose-950/70 border-rose-300 dark:border-rose-700 animate-duo-shake'
+                    }`}
+                  >
                     <div className="flex items-center space-x-2 text-sm font-bold">
                       {fillAnswer === (selectedGrammar.title.split(' ')[0] || 'うちに') ? (
-                        <div className="text-emerald-600 flex items-center space-x-1">
-                          <CheckCircle2 className="w-5 h-5" />
-                          <span>Chính xác! Đáp án đúng là: {selectedGrammar.title.split(' ')[0]}</span>
+                        <div className="text-emerald-700 dark:text-emerald-300 flex items-center space-x-1.5">
+                          <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                          <span>Chính xác! Đáp án đúng là: {selectedGrammar.title.split(' ')[0]} 🎉</span>
                         </div>
                       ) : (
-                        <div className="text-rose-600 flex items-center space-x-1">
-                          <XCircle className="w-5 h-5" />
+                        <div className="text-rose-700 dark:text-rose-300 flex items-center space-x-1.5">
+                          <XCircle className="w-5 h-5 text-rose-600 dark:text-rose-400" />
                           <span>Chưa chính xác! Đáp án đúng là: {selectedGrammar.title.split(' ')[0]}</span>
                         </div>
                       )}
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                    <p className="text-xs text-slate-600 dark:text-slate-300">
                       Giải thích: {selectedGrammar.explanationVi}
                     </p>
                   </div>
@@ -270,11 +274,11 @@ export function GrammarPracticeView() {
             {activeExerciseType === 'order' && (
               <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-4">
                 <div className="text-xs text-slate-500 dark:text-slate-400 text-center">
-                  Chạm hoặc bấm số vào các mảnh ghép bên dưới để ghép thành câu đúng:
+                  Chạm vào các mảnh ghép bên dưới để ghép thành câu đúng:
                 </div>
 
                 {/* Assembled tokens slot */}
-                <div className="min-h-[50px] p-3 rounded-xl bg-white dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-600 flex flex-wrap gap-2 items-center justify-center">
+                <div className="min-h-[58px] p-3 rounded-2xl bg-white dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-600 flex flex-wrap gap-2 items-center justify-center transition-all">
                   {assembledTokens.length === 0 ? (
                     <span className="text-xs text-slate-400 italic">Câu ghép sẽ xuất hiện ở đây...</span>
                   ) : (
@@ -285,8 +289,8 @@ export function GrammarPracticeView() {
                         onClick={() => {
                           setAssembledTokens((prev) => prev.filter((_, i) => i !== idx));
                         }}
-                        className="px-3 py-1.5 rounded-lg bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-200 text-xs font-semibold shadow-sm hover:bg-rose-100 dark:hover:bg-rose-950 hover:text-rose-700 transition"
-                        title="Bấm để xóa mảnh ghép này"
+                        className="px-3.5 py-2 rounded-xl bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-200 text-xs font-bold shadow-sm hover:bg-rose-100 dark:hover:bg-rose-950 hover:text-rose-700 transition animate-duo-pop border border-sky-300 dark:border-sky-800"
+                        title="Bấm để gỡ mảnh ghép này"
                       >
                         {token} ✕
                       </button>
@@ -295,7 +299,7 @@ export function GrammarPracticeView() {
                 </div>
 
                 {/* Available tokens pool */}
-                <div className="flex flex-wrap gap-2 justify-center pt-2">
+                <div className="flex flex-wrap gap-2.5 justify-center pt-2">
                   {shuffledTokens.map((token, idx) => {
                     const isUsed = assembledTokens.includes(token);
                     return (
@@ -303,10 +307,10 @@ export function GrammarPracticeView() {
                         key={idx}
                         disabled={isUsed || orderSubmitted}
                         onClick={() => setAssembledTokens((prev) => [...prev, token])}
-                        className={`px-4 py-2 rounded-xl text-xs font-semibold border transition touch-target ${
+                        className={`px-4 py-2.5 rounded-xl text-xs font-bold transition touch-target ${
                           isUsed
-                            ? 'opacity-30 border-transparent bg-slate-200 dark:bg-slate-700'
-                            : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-sky-500'
+                            ? 'opacity-25 border-2 border-dashed border-slate-300 dark:border-slate-700 bg-transparent shadow-none cursor-default'
+                            : 'duo-chip'
                         }`}
                       >
                         {token}
@@ -315,11 +319,11 @@ export function GrammarPracticeView() {
                   })}
                 </div>
 
-                <div className="flex items-center justify-center space-x-2 pt-2">
+                <div className="flex items-center justify-center space-x-3 pt-2">
                   <button
                     disabled={orderSubmitted || assembledTokens.length === 0}
                     onClick={() => setAssembledTokens([])}
-                    className="px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold rounded-xl flex items-center space-x-1"
+                    className="px-4 py-2.5 duo-btn-3d duo-btn-neutral text-xs rounded-xl flex items-center space-x-1.5"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
                     <span>Làm lại</span>
@@ -327,7 +331,7 @@ export function GrammarPracticeView() {
                   <button
                     disabled={orderSubmitted || assembledTokens.length < sampleTokens.length}
                     onClick={() => setOrderSubmitted(true)}
-                    className="px-5 py-2 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-sm flex items-center space-x-1"
+                    className="px-6 py-2.5 duo-btn-3d duo-btn-sky text-xs rounded-xl flex items-center space-x-1.5"
                   >
                     <span>Kiểm tra câu ghép</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -335,16 +339,22 @@ export function GrammarPracticeView() {
                 </div>
 
                 {orderSubmitted && (
-                  <div className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-1">
+                  <div
+                    className={`p-4 rounded-2xl border-2 space-y-1 shadow-sm ${
+                      isOrderCorrect
+                        ? 'bg-emerald-50 dark:bg-emerald-950/70 border-emerald-400 dark:border-emerald-700 animate-duo-pop'
+                        : 'bg-rose-50 dark:bg-rose-950/70 border-rose-300 dark:border-rose-700 animate-duo-shake'
+                    }`}
+                  >
                     <div className="flex items-center space-x-2 text-sm font-bold">
                       {isOrderCorrect ? (
-                        <div className="text-emerald-600 flex items-center space-x-1">
-                          <CheckCircle2 className="w-5 h-5" />
-                          <span>Xuất sắc! Bạn đã sắp xếp đúng câu hoàn chỉnh.</span>
+                        <div className="text-emerald-700 dark:text-emerald-300 flex items-center space-x-1.5">
+                          <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                          <span>Xuất sắc! Bạn đã sắp xếp đúng câu hoàn chỉnh. 🎉</span>
                         </div>
                       ) : (
-                        <div className="text-rose-600 flex items-center space-x-1">
-                          <XCircle className="w-5 h-5" />
+                        <div className="text-rose-700 dark:text-rose-300 flex items-center space-x-1.5">
+                          <XCircle className="w-5 h-5 text-rose-600 dark:text-rose-400" />
                           <span>Chưa chính xác! Câu đúng là: {sampleTokens.join('')}</span>
                         </div>
                       )}

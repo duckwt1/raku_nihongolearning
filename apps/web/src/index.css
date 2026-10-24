@@ -503,3 +503,290 @@ body:has(.raku-app-shell:not(.dark)) {
     --raku-line: 105 121 111;
   }
 }
+
+/* ==========================================================================
+   Duolingo-Style Smooth & Tactile Animations
+   ========================================================================== */
+
+/* 1. Tactile 3D Buttons (Push-down mechanical feel) */
+.duo-btn-3d {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  border-radius: 1rem;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 90ms cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 90ms cubic-bezier(0.4, 0, 0.2, 1),
+              filter 120ms ease,
+              background-color 150ms ease;
+}
+
+.duo-btn-3d:active:not(:disabled) {
+  transform: translateY(3px) !important;
+}
+
+.duo-btn-3d:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Color Themes for 3D Buttons */
+.duo-btn-sky {
+  background-color: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 4px 0 #0369a1;
+}
+.duo-btn-sky:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.duo-btn-sky:active:not(:disabled) {
+  box-shadow: 0 1px 0 #0369a1 !important;
+}
+
+.duo-btn-emerald {
+  background-color: #059669;
+  color: #ffffff;
+  box-shadow: 0 4px 0 #047857;
+}
+.duo-btn-emerald:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.duo-btn-emerald:active:not(:disabled) {
+  box-shadow: 0 1px 0 #047857 !important;
+}
+
+.duo-btn-amber {
+  background-color: #d97706;
+  color: #ffffff;
+  box-shadow: 0 4px 0 #b45309;
+}
+.duo-btn-amber:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.duo-btn-amber:active:not(:disabled) {
+  box-shadow: 0 1px 0 #b45309 !important;
+}
+
+.duo-btn-rose {
+  background-color: #e11d48;
+  color: #ffffff;
+  box-shadow: 0 4px 0 #be123c;
+}
+.duo-btn-rose:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.duo-btn-rose:active:not(:disabled) {
+  box-shadow: 0 1px 0 #be123c !important;
+}
+
+.duo-btn-neutral {
+  background-color: #ffffff;
+  color: #334155;
+  border: 2px solid #e2e8f0;
+  box-shadow: 0 3px 0 #cbd5e1;
+}
+.dark .duo-btn-neutral {
+  background-color: #1e293b;
+  color: #f1f5f9;
+  border-color: #334155;
+  box-shadow: 0 3px 0 #0f172a;
+}
+.duo-btn-neutral:hover:not(:disabled) {
+  background-color: #f8fafc;
+}
+.dark .duo-btn-neutral:hover:not(:disabled) {
+  background-color: #334155;
+}
+.duo-btn-neutral:active:not(:disabled) {
+  transform: translateY(2px) !important;
+  box-shadow: 0 1px 0 #cbd5e1 !important;
+}
+.dark .duo-btn-neutral:active:not(:disabled) {
+  box-shadow: 0 1px 0 #0f172a !important;
+}
+
+/* 2. Interactive Choice Chips (Sentence scramble & MCQs) */
+.duo-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.85rem;
+  border: 2px solid #e2e8f0;
+  background-color: #ffffff;
+  color: #1e293b;
+  box-shadow: 0 3px 0 #cbd5e1;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 100ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 100ms ease,
+              border-color 150ms ease,
+              background-color 150ms ease;
+}
+
+.dark .duo-chip {
+  background-color: #1e293b;
+  color: #f1f5f9;
+  border-color: #334155;
+  box-shadow: 0 3px 0 #0f172a;
+}
+
+.duo-chip:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 #cbd5e1;
+}
+.dark .duo-chip:hover:not(:disabled) {
+  box-shadow: 0 4px 0 #0f172a;
+}
+
+.duo-chip:active:not(:disabled) {
+  transform: translateY(2px) !important;
+  box-shadow: 0 1px 0 #cbd5e1 !important;
+}
+.dark .duo-chip:active:not(:disabled) {
+  box-shadow: 0 1px 0 #0f172a !important;
+}
+
+.duo-chip-selected {
+  border-color: #0284c7 !important;
+  background-color: #f0f9ff !important;
+  color: #0369a1 !important;
+  box-shadow: 0 2px 0 #0284c7 !important;
+}
+.dark .duo-chip-selected {
+  background-color: #0c4a6e !important;
+  border-color: #38bdf8 !important;
+  color: #e0f2fe !important;
+  box-shadow: 0 2px 0 #0284c7 !important;
+}
+
+/* 3. Glossy Spring Progress Bar */
+.duo-progress-track {
+  height: 0.85rem;
+  border-radius: 9999px;
+  background-color: #e2e8f0;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+.dark .duo-progress-track {
+  background-color: #1e293b;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+.duo-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+  transition: width 450ms cubic-bezier(0.34, 1.4, 0.64, 1);
+  position: relative;
+}
+
+.duo-progress-fill::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 6px;
+  right: 6px;
+  height: 3px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+/* 4. Keyframe Animations */
+
+/* Pop Bounce (Correct answer / reward celebration) */
+@keyframes duo-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.75);
+  }
+  45% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  75% {
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.animate-duo-pop {
+  animation: duo-pop 380ms cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+/* Gentle Head Shake (Empathetic mistake feedback) */
+@keyframes duo-shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-7px);
+  }
+  40% {
+    transform: translateX(7px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+}
+.animate-duo-shake {
+  animation: duo-shake 400ms ease-in-out both;
+}
+
+/* Smooth Card Entry */
+@keyframes duo-card-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-duo-enter {
+  animation: duo-card-enter 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Slide Up Bottom Sheet / Feedback Banner */
+@keyframes duo-slide-up {
+  0% {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-duo-slide-up {
+  animation: duo-slide-up 260ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+/* Sparkle Celebration Particle */
+@keyframes duo-sparkle {
+  0%, 100% {
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.25) rotate(180deg);
+    opacity: 1;
+  }
+}
+.animate-duo-sparkle {
+  animation: duo-sparkle 1400ms ease-in-out infinite;
+}
+

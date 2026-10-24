@@ -2,7 +2,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   CheckCircle2,
   XCircle,
-  ArrowRight
+  ArrowRight,
+  Sparkles,
+  Trophy
 } from 'lucide-react';
 import {
   type StudyCard,
@@ -171,19 +173,47 @@ export function FlashcardStudyView({
 
   if (!currentCard) {
     return (
-      <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
-        <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
-        <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-          Tuyệt vời! Bạn đã hoàn thành phiên ôn tập!
+      <div className="p-8 sm:p-10 text-center bg-white dark:bg-slate-900 rounded-3xl border-2 border-emerald-500/30 dark:border-emerald-500/20 shadow-xl max-w-md mx-auto animate-duo-pop relative overflow-hidden">
+        {/* Subtle decorative celebration sparkles */}
+        <div className="absolute top-4 left-6 text-amber-400 animate-duo-sparkle">
+          <Sparkles className="w-5 h-5" />
+        </div>
+        <div className="absolute top-6 right-8 text-sky-400 animate-duo-sparkle" style={{ animationDelay: '400ms' }}>
+          <Sparkles className="w-6 h-6" />
+        </div>
+        <div className="absolute bottom-6 left-8 text-emerald-400 animate-duo-sparkle" style={{ animationDelay: '800ms' }}>
+          <Sparkles className="w-4 h-4" />
+        </div>
+
+        {/* Animated Trophy Centerpiece */}
+        <div className="relative inline-flex items-center justify-center w-24 h-24 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 mx-auto mb-4 border-4 border-emerald-400/40 shadow-inner">
+          <Trophy className="w-12 h-12 animate-duo-pop" />
+        </div>
+
+        <h3 className="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tight">
+          Hoàn thành xuất sắc! 🎉
         </h3>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 mb-4">
-          Tất cả thẻ đến hạn đã được cập nhật lịch FSRS.
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 mb-6 font-medium leading-relaxed">
+          Bạn đã hoàn thành toàn bộ {totalCards} thẻ trong phiên học này. Trí nhớ dài hạn đã được củng cố theo thuật toán FSRS!
         </p>
+
+        {/* Review summary stats pill */}
+        <div className="bg-slate-50 dark:bg-slate-800/80 rounded-2xl p-4 border border-slate-200 dark:border-slate-700/80 mb-6 grid grid-cols-2 gap-2 text-center">
+          <div>
+            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Đã ôn luyện</div>
+            <div className="text-xl font-black text-slate-800 dark:text-slate-100 mt-0.5">{totalCards} Thẻ</div>
+          </div>
+          <div>
+            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Trạng thái</div>
+            <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">100% Sẵn sàng</div>
+          </div>
+        </div>
+
         <button
           onClick={onComplete}
-          className="px-5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold rounded-xl shadow-sm touch-target"
+          className="w-full py-3.5 duo-btn-3d duo-btn-emerald text-base rounded-2xl shadow-lg touch-target"
         >
-          Trở về kho từ vựng
+          Tiếp tục học tập
         </button>
       </div>
     );
@@ -221,16 +251,21 @@ export function FlashcardStudyView({
         aria-valuenow={currentIndex + 1}
         aria-valuemin={1}
         aria-valuemax={totalCards}
-        className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden"
+        className="w-full duo-progress-track"
       >
         <div
-          className="h-full bg-sky-600 transition-all duration-300"
+          className="duo-progress-fill"
           style={{ width: `${((currentIndex + 1) / totalCards) * 100}%` }}
         />
       </div>
 
-      {/* Main Flashcard Container */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden p-6 sm:p-8 transition-all min-h-[360px] flex flex-col justify-between">
+      {/* Main Flashcard Container with enter animation */}
+      <div
+        key={currentCard.refId || currentIndex}
+        className={`bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden p-6 sm:p-8 min-h-[360px] flex flex-col justify-between animate-duo-enter ${
+          gradeResult && !gradeResult.isCorrect ? 'animate-duo-shake' : ''
+        }`}
+      >
         {/* FRONT FACE (Mặt trước) */}
         <div>
           <label
@@ -284,14 +319,14 @@ export function FlashcardStudyView({
               <div className="flex items-center space-x-2">
                 <button
                   onClick={handleCheckAnswer}
-                  className="flex-1 py-3 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-semibold text-sm rounded-xl shadow-sm transition touch-target flex items-center justify-center space-x-1"
+                  className="flex-1 py-3 duo-btn-3d duo-btn-sky text-sm rounded-xl touch-target flex items-center justify-center space-x-1.5"
                 >
                   <span>Kiểm tra</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
                 <button
                   onClick={handleDoNotKnow}
-                  className="px-4 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-xl transition touch-target"
+                  className="px-4 py-3 duo-btn-3d duo-btn-neutral text-sm rounded-xl touch-target"
                 >
                   Không biết
                 </button>
@@ -303,7 +338,7 @@ export function FlashcardStudyView({
             <div className="text-center mt-6">
               <button
                 onClick={() => setIsAnswerRevealed(true)}
-                className="px-6 py-3 bg-sky-600 hover:bg-sky-700 text-white font-semibold text-sm rounded-xl shadow-sm touch-target"
+                className="px-8 py-3.5 duo-btn-3d duo-btn-sky text-sm rounded-xl touch-target"
               >
                 Hiện đáp án
               </button>
@@ -313,21 +348,21 @@ export function FlashcardStudyView({
           {/* Immediate check feedback */}
           {isAnswerRevealed && gradeResult && (
             <div
-              className={`p-2.5 rounded-xl flex items-center justify-center space-x-2 text-sm font-semibold my-2 ${
+              className={`p-3 rounded-2xl flex items-center justify-center space-x-2 text-sm font-bold my-2 shadow-sm ${
                 gradeResult.isCorrect
-                  ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                  : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border-2 border-emerald-400 dark:border-emerald-700 animate-duo-pop'
+                  : 'bg-rose-50 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border-2 border-rose-300 dark:border-rose-700 animate-duo-shake'
               }`}
             >
               {gradeResult.isCorrect ? (
                 <>
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Chính xác!</span>
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <span>Chính xác! Làm tốt lắm! 🎉</span>
                 </>
               ) : (
                 <>
-                  <XCircle className="w-4 h-4" />
-                  <span>Chưa chính xác (hoặc bỏ qua)</span>
+                  <XCircle className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+                  <span>Chưa chính xác — Hãy xem lại đáp án bên dưới nhé!</span>
                 </>
               )}
             </div>
@@ -461,57 +496,57 @@ export function FlashcardStudyView({
 
       {/* Sticky Bottom Answer Bar: 4 buttons (Again / Hard / Good / Easy) */}
       {isAnswerRevealed && (
-        <div className="sticky bottom-16 sm:bottom-6 z-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-lg grid grid-cols-4 gap-2">
+        <div className="sticky bottom-16 sm:bottom-6 z-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl grid grid-cols-4 gap-2.5 animate-duo-slide-up">
           {/* Again (1) */}
           <button
             onClick={() => handleApplyRating(Rating.Again)}
             aria-label={`Lặp lại (khoảng ôn: ${previews[Rating.Again].intervalLabel})`}
-            className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/50 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 touch-target focus:outline-none focus:ring-2 focus:ring-rose-500 transition"
+            className="duo-btn-3d duo-btn-rose flex flex-col items-center justify-center p-2.5 rounded-xl touch-target focus:outline-none"
           >
-            <span className="text-xs font-bold text-rose-600 dark:text-rose-400">
+            <span className="text-xs font-bold text-white/90">
               {previews[Rating.Again].intervalLabel}
             </span>
-            <span className="text-sm font-bold mt-0.5">Again</span>
-            <span className="text-[10px] text-rose-400 opacity-75 mt-0.5">Phím 1</span>
+            <span className="text-sm font-extrabold mt-0.5">Again</span>
+            <span className="text-[10px] text-white/80 opacity-80 mt-0.5">Phím 1</span>
           </button>
 
           {/* Hard (2) */}
           <button
             onClick={() => handleApplyRating(Rating.Hard)}
             aria-label={`Khó (khoảng ôn: ${previews[Rating.Hard].intervalLabel})`}
-            className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 touch-target focus:outline-none focus:ring-2 focus:ring-amber-500 transition"
+            className="duo-btn-3d duo-btn-amber flex flex-col items-center justify-center p-2.5 rounded-xl touch-target focus:outline-none"
           >
-            <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
+            <span className="text-xs font-bold text-white/90">
               {previews[Rating.Hard].intervalLabel}
             </span>
-            <span className="text-sm font-bold mt-0.5">Hard</span>
-            <span className="text-[10px] text-amber-400 opacity-75 mt-0.5">Phím 2</span>
+            <span className="text-sm font-extrabold mt-0.5">Hard</span>
+            <span className="text-[10px] text-white/80 opacity-80 mt-0.5">Phím 2</span>
           </button>
 
           {/* Good (3) */}
           <button
             onClick={() => handleApplyRating(Rating.Good)}
             aria-label={`Tốt (khoảng ôn: ${previews[Rating.Good].intervalLabel})`}
-            className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/50 dark:hover:bg-sky-900/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 touch-target focus:outline-none focus:ring-2 focus:ring-sky-500 transition"
+            className="duo-btn-3d duo-btn-sky flex flex-col items-center justify-center p-2.5 rounded-xl touch-target focus:outline-none"
           >
-            <span className="text-xs font-bold text-sky-600 dark:text-sky-400">
+            <span className="text-xs font-bold text-white/90">
               {previews[Rating.Good].intervalLabel}
             </span>
-            <span className="text-sm font-bold mt-0.5">Good</span>
-            <span className="text-[10px] text-sky-400 opacity-75 mt-0.5">Phím 3</span>
+            <span className="text-sm font-extrabold mt-0.5">Good</span>
+            <span className="text-[10px] text-white/80 opacity-80 mt-0.5">Phím 3</span>
           </button>
 
           {/* Easy (4) */}
           <button
             onClick={() => handleApplyRating(Rating.Easy)}
             aria-label={`Dễ (khoảng ôn: ${previews[Rating.Easy].intervalLabel})`}
-            className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 touch-target focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
+            className="duo-btn-3d duo-btn-emerald flex flex-col items-center justify-center p-2.5 rounded-xl touch-target focus:outline-none"
           >
-            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+            <span className="text-xs font-bold text-white/90">
               {previews[Rating.Easy].intervalLabel}
             </span>
-            <span className="text-sm font-bold mt-0.5">Easy</span>
-            <span className="text-[10px] text-emerald-400 opacity-75 mt-0.5">Phím 4</span>
+            <span className="text-sm font-extrabold mt-0.5">Easy</span>
+            <span className="text-[10px] text-white/80 opacity-80 mt-0.5">Phím 4</span>
           </button>
         </div>
       )}
