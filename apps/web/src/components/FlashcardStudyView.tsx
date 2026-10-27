@@ -223,7 +223,9 @@ export function FlashcardStudyView({
   const previews = previewCardGrades(currentCard.fsrsCard);
   const sentence = currentCard.word?.exampleIds?.[0]
     ? SENTENCES_BY_ID.get(currentCard.word.exampleIds[0])
-    : undefined;
+    : currentCard.word?.exampleJp
+      ? { jp: currentCard.word.exampleJp, vi: currentCard.word.exampleVi || '' }
+      : undefined;
 
   return (
     <div className="max-w-xl mx-auto space-y-4">
@@ -384,23 +386,30 @@ export function FlashcardStudyView({
                     {currentCard.word.meaningVi}
                   </div>
 
-                  {currentCard.word.kanji && currentCard.word.kanji.length > 0 && (
+                  {((currentCard.word.kanji && currentCard.word.kanji.length > 0) ||
+                    (currentCard.word.hanVietBreakdown && currentCard.word.hanVietBreakdown.length > 0)) && (
                     <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center space-x-1.5 flex-wrap">
                       <span>Hán Việt:</span>
-                      {currentCard.word.kanji.map((char, kIdx) => {
-                        const hv = currentCard.word?.hanVietBreakdown?.[kIdx] || '';
-                        return (
-                          <button
-                            key={`${char}-${kIdx}`}
-                            type="button"
-                            onClick={() => onSelectKanji && onSelectKanji(char)}
-                            className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-sky-100 dark:hover:bg-sky-900 text-sky-700 dark:text-sky-300 font-medium text-xs transition"
-                            title={`Xem chi tiết chữ ${char}`}
-                          >
-                            {char} ({hv})
-                          </button>
-                        );
-                      })}
+                      {currentCard.word.kanji && currentCard.word.kanji.length > 0 ? (
+                        currentCard.word.kanji.map((char, kIdx) => {
+                          const hv = currentCard.word?.hanVietBreakdown?.[kIdx] || '';
+                          return (
+                            <button
+                              key={`${char}-${kIdx}`}
+                              type="button"
+                              onClick={() => onSelectKanji && onSelectKanji(char)}
+                              className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-sky-100 dark:hover:bg-sky-900 text-sky-700 dark:text-sky-300 font-medium text-xs transition"
+                              title={`Xem chi tiết chữ ${char}`}
+                            >
+                              {char} {hv ? `(${hv})` : ''}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">
+                          {currentCard.word.hanVietBreakdown?.join(' ')}
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>

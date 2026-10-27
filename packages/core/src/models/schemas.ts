@@ -32,6 +32,8 @@ export const WordSchema = z.object({
   kanji: z.array(z.string().length(1)).default([]), // Ordered kanji in surface
   hanVietBreakdown: z.array(z.string()).default([]),
   exampleIds: z.array(z.string()).default([]),
+  exampleJp: z.string().optional(),
+  exampleVi: z.string().optional(),
   tags: z.array(z.string()).default([])
 });
 export type Word = z.infer<typeof WordSchema>;

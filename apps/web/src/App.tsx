@@ -835,6 +835,8 @@ export function App() {
       meaningVi: string;
       hanViet?: string;
       pos?: string;
+      exampleJp?: string;
+      exampleVi?: string;
     }
   ) => {
     const currentUid = user?.uid;
@@ -851,8 +853,10 @@ export function App() {
         readings: [cardData.reading],
         meaningVi: cardData.meaningVi,
         pos: cardData.pos || '名詞',
-        hanVietBreakdown: cardData.hanViet ? [cardData.hanViet] : [],
-        kanji: [],
+        hanVietBreakdown: cardData.hanViet ? cardData.hanViet.split(/\s+/).filter(Boolean) : [],
+        kanji: cardData.surface.match(/[\u4E00-\u9FAF\u3400-\u4DBF]/g) || [],
+        exampleJp: cardData.exampleJp,
+        exampleVi: cardData.exampleVi,
         exampleIds: [],
         tags: ['custom']
       },

@@ -270,7 +270,9 @@ export function ImportView({
           meaningVi: r.meaningVi,
           pos: r.pos || '名詞',
           hanVietBreakdown: r.hanViet || [],
-          kanji: [],
+          kanji: r.surface.match(/[\u4E00-\u9FAF\u3400-\u4DBF]/g) || [],
+          exampleJp: r.exampleJp,
+          exampleVi: r.exampleVi,
           exampleIds: [],
           tags: r.tags || ['import']
         },
@@ -514,12 +516,22 @@ export function ImportView({
         {/* Input Text Area & Upload */}
         <div className="mt-4 space-y-3">
           <textarea
-            rows={5}
+            rows={6}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder={`Dán văn bản vào đây, ví dụ kiểu Quizlet (Tab):
-預かる	あずかる	nhận giữ; chăm sóc	動詞
-荷物	にもつ	hành lý	名詞`}
+            placeholder={`Dán văn bản theo hàng (mặc định phân tách bằng phím Tab), hỗ trợ các định dạng:
+1. Chuẩn Mimikara (5 cột):
+Từ vựng	Nghĩa	Hán Việt	Ví dụ tiếng Nhật	Dịch câu ví dụ
+Ví dụ:
+男性	đàn ông; nam giới	NAM TÍNH	あの男性は先生です。	Người đàn ông đó là giáo viên.
+
+2. Đầy đủ có cách đọc riêng (6 cột):
+Từ vựng	Cách đọc	Nghĩa	Hán Việt	Ví dụ tiếng Nhật	Dịch nghĩa
+Ví dụ:
+男性	だんせい	đàn ông	NAM TÍNH	あの男性は先生です。	Người đàn ông đó là giáo viên.
+
+3. Rút gọn Quizlet (2 - 4 cột):
+預かる	あずかる	nhận giữ; chăm sóc	Động từ`}
             className="w-full p-4 font-mono text-xs bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-hidden focus:ring-2 focus:ring-sky-500 text-slate-800 dark:text-slate-100"
           />
 
@@ -712,6 +724,8 @@ export function ImportView({
                   <th className="p-3">Cách đọc</th>
                   <th className="p-3">Nghĩa tiếng Việt</th>
                   <th className="p-3">Hán Việt</th>
+                  <th className="p-3">Ví dụ (JP)</th>
+                  <th className="p-3">Dịch câu ví dụ</th>
                   <th className="p-3">Nguồn</th>
                   <th className="p-3">Tình trạng</th>
                 </tr>
@@ -724,10 +738,16 @@ export function ImportView({
                       {r.surface}
                     </td>
                     <td className="p-3 text-sky-600 dark:text-sky-400 font-medium">
-                      {r.readings.join(', ')}
+                      {r.readings.join(', ') || '-'}
                     </td>
                     <td className="p-3">{r.meaningVi}</td>
                     <td className="p-3 text-slate-400">{r.hanViet?.join(' ') || '-'}</td>
+                    <td className="p-3 text-slate-700 dark:text-slate-300 max-w-xs truncate" title={r.exampleJp || ''}>
+                      {r.exampleJp || '-'}
+                    </td>
+                    <td className="p-3 text-slate-500 dark:text-slate-400 max-w-xs truncate" title={r.exampleVi || ''}>
+                      {r.exampleVi || '-'}
+                    </td>
                     <td className="p-3">
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800">
                         {r.provenance.readings || r.provenance.surface || 'user'}

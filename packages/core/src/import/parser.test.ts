@@ -70,6 +70,45 @@ describe('Import Parser & Filter (Section 5B)', () => {
     expect(exported).toContain('預かる\tあずかる\tchăm sóc; nhận giữ');
   });
 
+  it('parses full 6-column format: surface, reading, meaning, hanViet, exampleJp, exampleVi', () => {
+    const text = '男性\tだんせい\tđàn ông; nam giới\tNAM TÍNH\tあの男性は先生です。\tNgười đàn ông đó là giáo viên.';
+    const result = parseAndFilterImport(text, { delimiter: '\t' });
+
+    expect(result.validCount).toBe(1);
+    const r = result.records[0]!;
+    expect(r.surface).toBe('男性');
+    expect(r.readings).toContain('だんせい');
+    expect(r.meaningVi).toBe('đàn ông; nam giới');
+    expect(r.hanViet).toEqual(['NAM', 'TÍNH']);
+    expect(r.exampleJp).toBe('あの男性は先生です。');
+    expect(r.exampleVi).toBe('Người đàn ông đó là giáo viên.');
+  });
+
+  it('parses 5-column format requested by user: surface -> meaning + hanViet + exampleJp + exampleVi', () => {
+    const text = '男性\tđàn ông; nam giới\tNAM TÍNH\tあの男性は先生です。\tNgười đàn ông đó là giáo viên.';
+    const result = parseAndFilterImport(text, { delimiter: '\t' });
+
+    expect(result.validCount + result.warningCount).toBe(1);
+    expect(result.warningCount).toBe(1); // warning because reading was auto-filled from dictionary
+    const r = result.records[0]!;
+    expect(r.surface).toBe('男性');
+    // Auto-resolved reading from internal seed dictionary
+    expect(r.readings).toContain('だんせい');
+    expect(r.meaningVi).toBe('đàn ông; nam giới');
+    expect(r.hanViet).toEqual(['NAM', 'TÍNH']);
+    expect(r.exampleJp).toBe('あの男性は先生です。');
+    expect(r.exampleVi).toBe('Người đàn ông đó là giáo viên.');
+  });
+
+  it('extracts bracketed kana reading from surface automatically', () => {
+    const text = '預かる[あずかる]\tnhận giữ; chăm sóc\tDỰ\t荷物を預かる\tNhận giữ hành lý';
+    const result = parseAndFilterImport(text, { delimiter: '\t' });
+
+    expect(result.records[0]?.surface).toBe('預かる');
+    expect(result.records[0]?.readings).toContain('あずかる');
+    expect(result.records[0]?.exampleJp).toBe('荷物を預かる');
+  });
+
   it('generates deterministic IDs for identical surface and reading', () => {
     const id1 = generateDeterministicWordId('男性', 'だんせい');
     const id2 = generateDeterministicWordId('男性', 'だんせい');

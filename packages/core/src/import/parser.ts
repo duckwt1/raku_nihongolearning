@@ -125,18 +125,6 @@ export function parseAndFilterImport(
   const startIndex = options.hasHeaderRow ? 1 : 0;
   const processedLines = lines.slice(startIndex);
 
-  // Default mapping if not provided:
-  // Col 0: surface, Col 1: reading, Col 2: meaningVi, Col 3: pos
-  const mapping: ColumnMapping = options.columnMapping || {
-    surfaceIndex: 0,
-    readingIndex: 1,
-    meaningIndex: 2,
-    posIndex: 3,
-    exampleJpIndex: 4,
-    exampleViIndex: 5,
-    tagsIndex: 6
-  };
-
   const records: ImportRecord[] = [];
   const seenBatchKeys = new Set<string>();
   const newKanjiSet = new Set<string>();
@@ -150,6 +138,106 @@ export function parseAndFilterImport(
     const rowNumber = idx + startIndex + 1;
     const cols = parseDelimitedLine(line, delimiter);
 
+    // Tự động nhận diện cấu trúc cột thông minh nếu người dùng không chỉ định columnMapping
+    let mapping: ColumnMapping;
+    if (options.columnMapping) {
+      mapping = options.columnMapping;
+    } else {
+      const c1 = cols[1]?.trim() || '';
+      const isCol1Kana = /^[\u3040-\u309F\u30A0-\u30FF\u30FC\s（）()・/、,]+$/.test(c1);
+      // Nếu cột 1 là Kana hoặc bỏ trống (để tra từ điển), cột 1 là cột cách đọc
+      const isCol1Reading = isCol1Kana || c1 === '';
+      const containsJapanese = (str: string) => /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(str);
+
+      if (cols.length >= 6) {
+        if (isCol1Reading) {
+          // 6 cột chuẩn: Từ vựng -> Cách đọc -> Nghĩa -> Hán Việt -> Ví dụ tiếng Nhật -> Dịch nghĩa
+          mapping = {
+            surfaceIndex: 0,
+            readingIndex: 1,
+            meaningIndex: 2,
+            hanVietIndex: 3,
+            exampleJpIndex: 4,
+            exampleViIndex: 5
+          };
+        } else {
+          // 6 cột không có cách đọc riêng: Từ vựng -> Nghĩa -> Hán Việt -> Ví dụ tiếng Nhật -> Dịch nghĩa -> Khác
+          mapping = {
+            surfaceIndex: 0,
+            meaningIndex: 1,
+            hanVietIndex: 2,
+            exampleJpIndex: 3,
+            exampleViIndex: 4,
+            posIndex: 5
+          };
+        }
+      } else if (cols.length === 5) {
+        if (isCol1Reading) {
+          if (containsJapanese(cols[3] || '')) {
+            // 5 cột có cách đọc: Từ vựng -> Cách đọc -> Nghĩa -> Ví dụ tiếng Nhật -> Dịch nghĩa
+            mapping = {
+              surfaceIndex: 0,
+              readingIndex: 1,
+              meaningIndex: 2,
+              exampleJpIndex: 3,
+              exampleViIndex: 4
+            };
+          } else {
+            // 5 cột: Từ vựng -> Cách đọc -> Nghĩa -> Hán Việt -> Ví dụ JP
+            mapping = {
+              surfaceIndex: 0,
+              readingIndex: 1,
+              meaningIndex: 2,
+              hanVietIndex: 3,
+              exampleJpIndex: 4
+            };
+          }
+        } else {
+          // 5 CỘT ĐÚNG CHUẨN USER YÊU CẦU: Từ vựng -> Nghĩa -> Hán Việt -> Ví dụ tiếng Nhật -> Dịch nghĩa
+          mapping = {
+            surfaceIndex: 0,
+            meaningIndex: 1,
+            hanVietIndex: 2,
+            exampleJpIndex: 3,
+            exampleViIndex: 4
+          };
+        }
+      } else if (cols.length === 4) {
+        if (isCol1Reading) {
+          const c3 = cols[3]?.trim() || '';
+          const isPos = /^(danh từ|động từ|tính từ|phó từ|thành ngữ|trợ từ|liên từ|lượng từ|noun|verb|adj|adverb|名詞|動詞|形容詞|副詞)/i.test(c3);
+          const isExJp = containsJapanese(c3);
+          mapping = {
+            surfaceIndex: 0,
+            readingIndex: 1,
+            meaningIndex: 2,
+            posIndex: isPos ? 3 : undefined,
+            exampleJpIndex: !isPos && isExJp ? 3 : undefined,
+            hanVietIndex: !isPos && !isExJp ? 3 : undefined
+          };
+        } else {
+          // Từ vựng -> Nghĩa -> Hán Việt -> Ví dụ hoặc Từ loại
+          const c3 = cols[3]?.trim() || '';
+          const isPos = /^(danh từ|động từ|tính từ|phó từ|thành ngữ|trợ từ|liên từ|lượng từ|noun|verb|adj|adverb|名詞|動詞|形容詞|副詞)/i.test(c3);
+          mapping = {
+            surfaceIndex: 0,
+            meaningIndex: 1,
+            hanVietIndex: 2,
+            posIndex: isPos ? 3 : undefined,
+            exampleJpIndex: !isPos ? 3 : undefined
+          };
+        }
+      } else if (cols.length === 3) {
+        if (isCol1Reading) {
+          mapping = { surfaceIndex: 0, readingIndex: 1, meaningIndex: 2 };
+        } else {
+          mapping = { surfaceIndex: 0, meaningIndex: 1, hanVietIndex: 2 };
+        }
+      } else {
+        mapping = { surfaceIndex: 0, meaningIndex: 1 };
+      }
+    }
+
     const surfaceRaw = cols[mapping.surfaceIndex] || '';
     const readingRaw = mapping.readingIndex !== undefined ? cols[mapping.readingIndex] || '' : '';
     const meaningRaw = mapping.meaningIndex !== undefined ? cols[mapping.meaningIndex] || '' : '';
@@ -159,8 +247,18 @@ export function parseAndFilterImport(
     const exViRaw = mapping.exampleViIndex !== undefined ? cols[mapping.exampleViIndex] || '' : '';
     const tagsRaw = mapping.tagsIndex !== undefined ? cols[mapping.tagsIndex] || '' : '';
 
-    const surface = normalizeNfc(surfaceRaw.trim());
+    let surface = normalizeNfc(surfaceRaw.trim());
     let reading = normalizeKana(readingRaw.trim());
+
+    // Tự động bóc tách cách đọc nếu từ vựng được viết dạng: 預かる[あずかる] hoặc 男性(だんせい)
+    const bracketMatch = surface.match(/^(.+?)[\[\(（]([\u3040-\u309F\u30A0-\u30FF\u30FC\s]+)[\]\)）]$/);
+    if (bracketMatch && bracketMatch[1] && bracketMatch[2]) {
+      surface = bracketMatch[1].trim();
+      if (!reading) {
+        reading = normalizeKana(bracketMatch[2].trim());
+      }
+    }
+
     let meaningVi = normalizeNfc(meaningRaw.trim());
     let pos = posRaw ? normalizeNfc(posRaw.trim()) : undefined;
     let hanViet = hanVietRaw ? hanVietRaw.split(/[\s,;-]+/).filter(Boolean) : undefined;
