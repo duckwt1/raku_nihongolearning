@@ -18,10 +18,12 @@ import {
   Cloud,
   ChevronDown,
   Download
+  // Lock // Khi cần bật lại mật khẩu Firestore: uncomment Lock
 } from 'lucide-react';
 import {
   SEED_KANJI,
   buildReviewQueue,
+  createNewCard,
   type StudyCard,
   type Deck,
   type Folder,
@@ -60,6 +62,9 @@ import {
   clearOfflineReviewQueue,
   clearUserDataFromBrowser
 } from './services/firestoreSync';
+// Khi cần bật lại kiểm tra mật khẩu tải lên Firestore:
+// import { isSyncAuthorized, revokeSyncAuthorization } from './services/syncSecurity';
+// import { SyncPasswordModal } from './components/SyncPasswordModal';
 import { DataLicensesModal } from './components/DataLicensesModal';
 import { FlashcardStudyView } from './components/FlashcardStudyView';
 import { ImportView } from './components/ImportView';
@@ -93,6 +98,17 @@ export function App() {
     message: string;
     type: 'success' | 'info' | 'warning';
   } | null>(null);
+
+  // Target folder & deck for Import navigation
+  const [importTargetFolderId, setImportTargetFolderId] = useState<string>('');
+  const [importTargetDeckId, setImportTargetDeckId] = useState<string>('');
+
+  // Khi cần bật lại kiểm tra mật khẩu Firestore:
+  // const [isSyncPasswordModalOpen, setIsSyncPasswordModalOpen] = useState(false);
+  // const [syncPasswordActionTitle, setSyncPasswordActionTitle] = useState('Tải dữ liệu lên Cloud Firestore');
+  // const [pendingSyncAction, setPendingSyncAction] = useState<(() => void) | null>(null);
+  // const [syncAuthUpdated, setSyncAuthUpdated] = useState(0);
+  // const isAuthorizedForSync = useMemo(() => isSyncAuthorized(), [syncAuthUpdated]);
 
   const showSyncToast = (message: string, type: 'success' | 'info' | 'warning' = 'info') => {
     setSyncToast({ message, type });
@@ -527,7 +543,18 @@ export function App() {
     );
   };
 
-  const handleUploadToCloud = async () => {
+  // Khi cần bật lại kiểm tra mật khẩu trước khi tải lên Firestore:
+  // const requireSyncPassword = (_actionTitle: string, action: () => void) => {
+  //   if (!isSyncAuthorized()) {
+  //     setSyncPasswordActionTitle(_actionTitle);
+  //     setPendingSyncAction(() => action);
+  //     setIsSyncPasswordModalOpen(true);
+  //     return;
+  //   }
+  //   action();
+  // };
+
+  const executeUploadToCloud = async () => {
     const currentUid = user?.uid || auth.currentUser?.uid;
     if (!currentUid) return;
     setSyncStatus('syncing');
@@ -552,6 +579,15 @@ export function App() {
     }
   };
 
+  const handleUploadToCloud = () => {
+    // Tạm thời bỏ qua hỏi mật khẩu để bạn bè dùng tiện lợi:
+    void executeUploadToCloud();
+    // Khi cần bật lại mật khẩu:
+    // requireSyncPassword('Tải toàn bộ dữ liệu trên máy lên Cloud Firestore', () => {
+    //   void executeUploadToCloud();
+    // });
+  };
+
   const handleResetToCloud = () => {
     const currentUid = user?.uid || auth.currentUser?.uid;
     if (currentUid) {
@@ -572,7 +608,7 @@ export function App() {
     showSyncToast('✓ Đã đặt lại dữ liệu trên máy về mặc định thành công.', 'info');
   };
 
-  const handleManualSync = async () => {
+  const executeManualSync = async () => {
     if (!navigator.onLine) {
       showSyncToast('Thiết bị đang ngoại tuyến, không thể đồng bộ lên đám mây.', 'warning');
       return;
@@ -685,19 +721,32 @@ export function App() {
     }
   };
 
-  // Flush only an existing queue on sign-in or reconnect. New reviews stay batched locally
-  // until the user syncs, avoiding a full-cloud scan after every reviewed card.
+  const handleManualSync = () => {
+    // Tạm thời bỏ qua hỏi mật khẩu để bạn bè dùng tiện lợi:
+    void executeManualSync();
+    // Khi cần bật lại mật khẩu:
+    // requireSyncPassword('Đồng bộ tiến độ học lên Cloud Firestore', () => {
+    //   void executeManualSync();
+    // });
+  };
+
+  // Flush only an existing queue on sign-in or reconnect.
   useEffect(() => {
     if (!autoSyncReason || !isOnline || !user?.uid || syncStatus === 'syncing') return;
     if (pendingCount === 0) {
       setAutoSyncReason(null);
       return;
     }
+    // Khi cần giới hạn auto-sync chỉ khi đã nhập mật khẩu:
+    // if (!isSyncAuthorized()) {
+    //   setAutoSyncReason(null);
+    //   return;
+    // }
     setAutoSyncReason(null);
-    void handleManualSync();
+    void executeManualSync();
   }, [autoSyncReason, isOnline, user?.uid, pendingCount, syncStatus]);
 
-  const handleSeedAllN3 = async () => {
+  const executeSeedAllN3 = async () => {
     setIsSeeding(true);
     setSeedResult(null);
     try {
@@ -715,6 +764,124 @@ export function App() {
     } finally {
       setIsSeeding(false);
     }
+  };
+
+  const handleSeedAllN3 = () => {
+    // Tạm thời bỏ qua hỏi mật khẩu để bạn bè dùng tiện lợi:
+    void executeSeedAllN3();
+    // Khi cần bật lại mật khẩu:
+    // requireSyncPassword('Nạp lại 2.466 bản ghi dữ liệu N3 lên Cloud Firestore', () => {
+    //   void executeSeedAllN3();
+    // });
+  };
+
+  // ==========================================
+  // XỬ LÝ NHẬP TỪ & THÊM THẺ MỚI (LƯU LOCAL)
+  // ==========================================
+  const handleImportCards = (
+    newCards: StudyCard[],
+    targetDeckId: string,
+    newDeck?: Deck,
+    newFolder?: Folder
+  ) => {
+    const currentUid = user?.uid;
+
+    // 1. Cập nhật Folders nếu có tạo mới
+    let updatedFolders = folders;
+    if (newFolder && !folders.some((f) => f.id === newFolder.id)) {
+      updatedFolders = [...folders, newFolder];
+      setFolders(updatedFolders);
+      saveUserFolders(currentUid, updatedFolders);
+    }
+
+    // 2. Cập nhật Decks nếu có tạo mới
+    let updatedDecks = decks;
+    if (newDeck && !decks.some((d) => d.id === newDeck.id)) {
+      updatedDecks = [...decks, newDeck];
+      setDecks(updatedDecks);
+      saveUserDecks(currentUid, updatedDecks);
+    }
+
+    // 3. Nạp danh sách thẻ mới vào allCards và lưu LocalStorage
+    const updatedCards = [...allCards, ...newCards];
+    setAllCards(updatedCards);
+    saveUserCards(currentUid, updatedCards);
+
+    const targetDeckName =
+      newDeck?.name ||
+      decks.find((d) => d.id === targetDeckId)?.name ||
+      'Bộ thẻ';
+
+    showSyncToast(
+      `✓ Đã nhập thành công ${newCards.length} từ vào bộ thẻ "${targetDeckName}" (Lưu an toàn trên máy)!`,
+      'success'
+    );
+  };
+
+  const handleUndoImportCards = (cardIds: string[]) => {
+    const currentUid = user?.uid;
+    const cardIdSet = new Set(cardIds);
+    const updatedCards = allCards.filter((c) => !cardIdSet.has(c.id));
+    setAllCards(updatedCards);
+    saveUserCards(currentUid, updatedCards);
+    showSyncToast(`✓ Đã hoàn tác lượt nhập (${cardIds.length} từ).`, 'info');
+  };
+
+  const handleAddCard = (
+    deckId: string,
+    cardData: {
+      surface: string;
+      reading: string;
+      meaningVi: string;
+      hanViet?: string;
+      pos?: string;
+    }
+  ) => {
+    const currentUid = user?.uid;
+    const cardId = `c_word_manual_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    const wordId = `w_manual_${Date.now()}`;
+
+    const newCard: StudyCard = {
+      id: cardId,
+      type: 'word',
+      refId: wordId,
+      word: {
+        id: wordId,
+        surface: cardData.surface,
+        readings: [cardData.reading],
+        meaningVi: cardData.meaningVi,
+        pos: cardData.pos || '名詞',
+        hanVietBreakdown: cardData.hanViet ? [cardData.hanViet] : [],
+        kanji: [],
+        exampleIds: [],
+        tags: ['custom']
+      },
+      deckId,
+      fsrsCard: createNewCard(),
+      isNew: true,
+      isDue: false
+    };
+
+    const updated = [...allCards, newCard];
+    setAllCards(updated);
+    saveUserCards(currentUid, updated);
+
+    const deckName = decks.find((d) => d.id === deckId)?.name || 'Bộ thẻ';
+    showSyncToast(`✓ Đã thêm từ "${cardData.surface}" vào bộ thẻ "${deckName}" (Lưu trên máy)!`, 'success');
+  };
+
+  const handleNavigateToImport = (deckId: string, folderId?: string) => {
+    setImportTargetDeckId(deckId);
+    if (folderId) setImportTargetFolderId(folderId);
+    setActiveTab('import');
+  };
+
+  const handleNavigateToStudy = (deckId: string) => {
+    const targetDeck = decks.find((d) => d.id === deckId);
+    if (targetDeck) {
+      handleSelectDeckToStudy(targetDeck);
+    }
+    setActiveTab('study');
   };
 
   const handlePullFromFirestore = async () => {
@@ -996,6 +1163,8 @@ export function App() {
                   onCreateDeck={handleCreateDeck}
                   onDeleteDeck={handleDeleteDeck}
                   onDeleteFolder={handleDeleteFolder}
+                  onAddCard={handleAddCard}
+                  onNavigateToImport={handleNavigateToImport}
                 />
               </div>
             ) : (
@@ -1112,7 +1281,17 @@ export function App() {
         {activeTab === 'grammar' && <GrammarPracticeView />}
 
         {/* TAB 4: IMPORT (G2b & G5b) */}
-        {activeTab === 'import' && <ImportView />}
+        {activeTab === 'import' && (
+          <ImportView
+            folders={folders}
+            decks={decks}
+            initialFolderId={importTargetFolderId}
+            initialDeckId={importTargetDeckId}
+            onImportCards={handleImportCards}
+            onUndoImportCards={handleUndoImportCards}
+            onNavigateToStudy={handleNavigateToStudy}
+          />
+        )}
 
         {/* TAB 5: SETTINGS */}
         {activeTab === 'settings' && (
@@ -1212,6 +1391,64 @@ export function App() {
                       {pullResult}
                     </div>
                   )}
+
+                  {/* KHI CẦN BẬT LẠI MẬT KHẨU BẢO VỆ GHI FIRESTORE: Uncomment khối bên dưới
+                  <details className="group border-t border-raku-line pt-3" open={!isAuthorizedForSync}>
+                    <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-lg text-sm font-semibold text-raku-muted hover:text-raku-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-raku-accent">
+                      <span className="flex min-w-0 items-center gap-2">
+                        <Lock className="h-4 w-4 shrink-0 text-sky-600" aria-hidden="true" />
+                        <span className="truncate">Bảo vệ ghi Firestore &amp; Hạn ngạch (Mật khẩu)</span>
+                      </span>
+                      <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" aria-hidden="true" />
+                    </summary>
+
+                    <div className="space-y-3 pb-1 pt-2">
+                      <p className="text-sm leading-6 text-raku-muted">
+                        Mọi từ vựng mới thêm và tiến độ học luôn được lưu tại máy (Local-first) hoàn toàn miễn phí. Để hạn chế số lượt ghi (writes quota) và tránh cạn kiệt tài nguyên Firestore, thao tác tải lên đám mây yêu cầu mật khẩu xác thực do chủ sở hữu cung cấp.
+                      </p>
+
+                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 p-3 border border-slate-200 dark:border-slate-700 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`h-2.5 w-2.5 rounded-full ${isAuthorizedForSync ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                          />
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">
+                            Trạng thái:{' '}
+                            {isAuthorizedForSync
+                              ? 'Đã xác thực quyền ghi trên thiết bị này'
+                              : 'Đang khóa bảo vệ (Cần mật khẩu khi ghi)'}
+                          </span>
+                        </div>
+
+                        {isAuthorizedForSync ? (
+                          <button
+                            onClick={() => {
+                              revokeSyncAuthorization();
+                              setSyncAuthUpdated((v) => v + 1);
+                              showSyncToast('🔒 Đã khóa lại quyền ghi Firestore trên thiết bị này.', 'info');
+                            }}
+                            className="px-3 py-1 bg-amber-100 hover:bg-amber-200 dark:bg-amber-950 text-amber-800 dark:text-amber-200 rounded-lg font-medium transition cursor-pointer"
+                          >
+                            Khóa lại
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setSyncPasswordActionTitle('Xác thực quyền tải lên Cloud Firestore');
+                              setPendingSyncAction(() => () => {
+                                showSyncToast('🔓 Đã xác thực mật khẩu tải lên thành công!', 'success');
+                              });
+                              setIsSyncPasswordModalOpen(true);
+                            }}
+                            className="px-3 py-1 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-semibold transition cursor-pointer"
+                          >
+                            Nhập mật khẩu xác thực
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </details>
+                  */}
 
                   <details className="group border-t border-raku-line pt-3">
                     <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-lg text-sm font-semibold text-raku-muted hover:text-raku-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-raku-accent">
@@ -1387,6 +1624,26 @@ export function App() {
         isOpen={isAiQuizModalOpen}
         onClose={() => setIsAiQuizModalOpen(false)}
       />
+
+      {/* KHI CẦN BẬT LẠI MẬT KHẨU BẢO VỆ GHI FIRESTORE: Uncomment khối bên dưới
+      <SyncPasswordModal
+        isOpen={isSyncPasswordModalOpen}
+        actionTitle={syncPasswordActionTitle}
+        onSuccess={() => {
+          setIsSyncPasswordModalOpen(false);
+          setSyncAuthUpdated((v) => v + 1);
+          if (pendingSyncAction) {
+            const act = pendingSyncAction;
+            setPendingSyncAction(null);
+            act();
+          }
+        }}
+        onClose={() => {
+          setIsSyncPasswordModalOpen(false);
+          setPendingSyncAction(null);
+        }}
+      />
+      */}
 
       {/* Mobile bottom navigation */}
       <nav

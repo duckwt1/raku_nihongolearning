@@ -6,22 +6,52 @@ import {
   CheckCircle,
   Sparkles,
   Download,
-  RotateCcw
+  RotateCcw,
+  Folder as FolderIcon,
+  Layers,
+  Plus,
+  Play,
+  HardDrive
 } from 'lucide-react';
 import {
   parseAndFilterImport,
   exportRecordsToDelimited,
+  createNewCard,
   type Delimiter,
-  type ImportRecord
+  type ImportRecord,
+  type Folder,
+  type Deck,
+  type StudyCard
 } from '@raku/core';
 import { auth } from '../services/firebase';
 import { getApiUrl } from '../services/apiClient';
 
 interface ImportViewProps {
+  folders?: Folder[];
+  decks?: Deck[];
+  initialFolderId?: string;
+  initialDeckId?: string;
   onImportSuccess?: (count: number) => void;
+  onImportCards?: (
+    cards: StudyCard[],
+    targetDeckId: string,
+    newDeck?: Deck,
+    newFolder?: Folder
+  ) => void;
+  onUndoImportCards?: (cardIds: string[]) => void;
+  onNavigateToStudy?: (deckId: string) => void;
 }
 
-export function ImportView({ onImportSuccess }: ImportViewProps) {
+export function ImportView({
+  folders = [],
+  decks = [],
+  initialFolderId,
+  initialDeckId,
+  onImportSuccess,
+  onImportCards,
+  onUndoImportCards,
+  onNavigateToStudy
+}: ImportViewProps) {
   const [inputText, setInputText] = useState('');
   const [delimiter, setDelimiter] = useState<Delimiter>('\t');
   const [hasHeader, setHasHeader] = useState(false);
@@ -29,7 +59,61 @@ export function ImportView({ onImportSuccess }: ImportViewProps) {
   const [aiError, setAiError] = useState<string | null>(null);
   const [showAiConfirm, setShowAiConfirm] = useState(false);
   const [filterStatus, setFilterStatus] = useState<'all' | 'ok' | 'warning' | 'error' | 'duplicate'>('all');
-  const [importHistory, setImportHistory] = useState<Array<{ id: string; count: number; date: string }>>([]);
+
+  // Target Folder & Deck Selection State
+  const defaultFolderId =
+    initialFolderId ||
+    folders.find((f) => f.id === 'folder_custom')?.id ||
+    folders[0]?.id ||
+    '';
+  const [selectedFolderId, setSelectedFolderId] = useState<string>(defaultFolderId);
+
+  const availableDecks = useMemo(() => {
+    if (!selectedFolderId) return decks;
+    return decks.filter((d) => d.folderId === selectedFolderId);
+  }, [decks, selectedFolderId]);
+
+  const defaultDeckId = useMemo(() => {
+    if (initialDeckId && decks.some((d) => d.id === initialDeckId)) return initialDeckId;
+    const customImportDeck = availableDecks.find((d) => d.id === 'deck_custom_import');
+    if (customImportDeck) return customImportDeck.id;
+    return availableDecks[0]?.id || '';
+  }, [availableDecks, initialDeckId, decks]);
+
+  const [selectedDeckId, setSelectedDeckId] = useState<string>(defaultDeckId);
+
+  // Sync selected deck when folder changes
+  useEffect(() => {
+    if (!availableDecks.some((d) => d.id === selectedDeckId)) {
+      setSelectedDeckId(availableDecks[0]?.id || '');
+    }
+  }, [availableDecks, selectedDeckId]);
+
+  // Create new folder / deck inline state
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [isCreatingDeck, setIsCreatingDeck] = useState(false);
+  const [newDeckName, setNewDeckName] = useState('');
+  const [newDeckType, setNewDeckType] = useState<'word' | 'custom' | 'mixed'>('word');
+
+  // Success Feedback Banner
+  const [importSuccessBanner, setImportSuccessBanner] = useState<{
+    deckId: string;
+    deckName: string;
+    count: number;
+  } | null>(null);
+
+  // Import History for Undo
+  const [importHistory, setImportHistory] = useState<
+    Array<{
+      id: string;
+      deckId: string;
+      deckName: string;
+      cardIds: string[];
+      count: number;
+      date: string;
+    }>
+  >([]);
 
   // Parse result computed from text and options
   const parseResult = useMemo(() => {
@@ -123,7 +207,7 @@ export function ImportView({ onImportSuccess }: ImportViewProps) {
     }
   };
 
-  // Commit batch import to local / user storage
+  // Commit batch import to local storage
   const handleCommitImport = () => {
     const validRecords = records.filter((r) => r.surface.trim().length > 0);
     if (validRecords.length === 0) {
@@ -131,23 +215,124 @@ export function ImportView({ onImportSuccess }: ImportViewProps) {
       return;
     }
 
+    let finalFolderId = selectedFolderId;
+    let newFolderObj: Folder | undefined;
+    if (isCreatingFolder || selectedFolderId === '__new__') {
+      if (!newFolderName.trim()) {
+        alert('Vui lòng nhập tên thư mục mới.');
+        return;
+      }
+      finalFolderId = `folder_custom_${Date.now()}`;
+      newFolderObj = {
+        id: finalFolderId,
+        name: newFolderName.trim(),
+        description: 'Thư mục tự tạo từ nhập từ vựng',
+        color: '#8b5cf6',
+        parentId: null,
+        createdAt: new Date().toISOString()
+      };
+    }
+
+    let finalDeckId = selectedDeckId;
+    let newDeckObj: Deck | undefined;
+    if (isCreatingDeck || selectedDeckId === '__new__' || !finalDeckId) {
+      if (!newDeckName.trim()) {
+        alert('Vui lòng nhập tên bộ thẻ (Deck) mới.');
+        return;
+      }
+      finalDeckId = `deck_custom_${Date.now()}`;
+      newDeckObj = {
+        id: finalDeckId,
+        folderId: finalFolderId || null,
+        name: newDeckName.trim(),
+        description: 'Bộ thẻ tự tạo từ nhập từ vựng',
+        cardType: newDeckType,
+        cardIds: [],
+        newCardsPerDay: 20,
+        maxReviewsPerDay: 50,
+        isDefault: false,
+        createdAt: new Date().toISOString()
+      };
+    }
+
+    // Convert records to StudyCards
+    const createdCards: StudyCard[] = validRecords.map((r, i) => {
+      const cardId = `c_word_imp_${Date.now()}_${i}_${Math.random().toString(36).slice(2, 6)}`;
+      const wordId = `w_imp_${Date.now()}_${i}`;
+      return {
+        id: cardId,
+        type: 'word' as const,
+        refId: wordId,
+        word: {
+          id: wordId,
+          surface: r.surface,
+          readings: r.readings && r.readings.length > 0 ? r.readings : [r.surface],
+          meaningVi: r.meaningVi,
+          pos: r.pos || '名詞',
+          hanVietBreakdown: r.hanViet || [],
+          kanji: [],
+          exampleIds: [],
+          tags: r.tags || ['import']
+        },
+        deckId: finalDeckId,
+        fsrsCard: createNewCard(),
+        isNew: true,
+        isDue: false
+      };
+    });
+
     const newImportId = `imp_${Date.now()}`;
+    const targetDeckName =
+      newDeckObj?.name ||
+      decks.find((d) => d.id === finalDeckId)?.name ||
+      'Bộ thẻ đã chọn';
+
     setImportHistory((prev) => [
-      { id: newImportId, count: validRecords.length, date: new Date().toLocaleTimeString() },
+      {
+        id: newImportId,
+        deckId: finalDeckId,
+        deckName: targetDeckName,
+        cardIds: createdCards.map((c) => c.id),
+        count: createdCards.length,
+        date: new Date().toLocaleTimeString()
+      },
       ...prev
     ]);
 
-    alert(`Đã nhập thành công ${validRecords.length} từ vựng vào kho cá nhân!`);
-    if (onImportSuccess) {
-      onImportSuccess(validRecords.length);
+    if (onImportCards) {
+      onImportCards(createdCards, finalDeckId, newDeckObj, newFolderObj);
+    } else if (onImportSuccess) {
+      onImportSuccess(createdCards.length);
     }
+
+    setImportSuccessBanner({
+      deckId: finalDeckId,
+      deckName: targetDeckName,
+      count: createdCards.length
+    });
+
+    // Reset inputs
     setInputText('');
+    setIsCreatingFolder(false);
+    setIsCreatingDeck(false);
+    setNewFolderName('');
+    setNewDeckName('');
   };
 
   // Undo import batch
   const handleUndoImport = (importId: string) => {
-    setImportHistory((prev) => prev.filter((item) => item.id !== importId));
-    alert(`Đã hoàn tác lượt nhập ${importId} thành công.`);
+    const item = importHistory.find((h) => h.id === importId);
+    if (!item) return;
+
+    if (onUndoImportCards && item.cardIds.length > 0) {
+      onUndoImportCards(item.cardIds);
+    }
+
+    setImportHistory((prev) => prev.filter((h) => h.id !== importId));
+    if (importSuccessBanner?.deckId === item.deckId) {
+      setImportSuccessBanner(null);
+    }
+    alert(`Đã hoàn tác lượt nhập (${item.count} từ) khỏi bộ thẻ "${item.deckName}".`);
   };
 
   // Export current list to TSV/CSV
@@ -165,7 +350,159 @@ export function ImportView({ onImportSuccess }: ImportViewProps) {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+      {/* Target Folder & Deck Selection Panel (Local-First) */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center space-x-2.5">
+            <div className="p-2.5 bg-sky-50 dark:bg-sky-950/70 text-sky-600 dark:text-sky-400 rounded-2xl border border-sky-100 dark:border-sky-900">
+              <FolderIcon className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                Chọn Thư mục &amp; Bộ thẻ đích
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Từ vựng khi thêm sẽ được lưu hoàn toàn trên máy (Local-first)
+              </p>
+            </div>
+          </div>
+
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300">
+            <HardDrive className="w-3.5 h-3.5" />
+            <span>Lưu trữ Cục bộ (Local)</span>
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+          {/* Folder Select */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <FolderIcon className="w-3.5 h-3.5 text-sky-600" />
+                <span>Thư mục (Folder):</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCreatingFolder(!isCreatingFolder);
+                  if (!isCreatingFolder) {
+                    setIsCreatingDeck(true);
+                  }
+                }}
+                className="text-[11px] font-semibold text-sky-600 hover:text-sky-700 dark:text-sky-400 flex items-center gap-0.5"
+              >
+                <Plus className="w-3 h-3" />
+                <span>{isCreatingFolder ? 'Chọn thư mục có sẵn' : 'Tạo thư mục mới'}</span>
+              </button>
+            </div>
+
+            {isCreatingFolder ? (
+              <input
+                type="text"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                placeholder="Ví dụ: JLPT N2, Từ vựng chuyên ngành..."
+                className="w-full px-3.5 py-2 text-xs rounded-xl border border-sky-400 bg-sky-50/40 dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-sky-500 text-slate-900 dark:text-slate-100"
+              />
+            ) : (
+              <select
+                value={selectedFolderId}
+                onChange={(e) => setSelectedFolderId(e.target.value)}
+                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 focus:outline-hidden focus:ring-2 focus:ring-sky-500 text-slate-900 dark:text-slate-100 font-medium"
+              >
+                {folders.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    📁 {f.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Deck Select */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Bộ thẻ (Deck):</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsCreatingDeck(!isCreatingDeck)}
+                className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 flex items-center gap-0.5"
+              >
+                <Plus className="w-3 h-3" />
+                <span>{isCreatingDeck ? 'Chọn bộ thẻ có sẵn' : 'Tạo bộ thẻ mới'}</span>
+              </button>
+            </div>
+
+            {isCreatingDeck ? (
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={newDeckName}
+                  onChange={(e) => setNewDeckName(e.target.value)}
+                  placeholder="Ví dụ: Bài 1 - Từ vựng Mimikara..."
+                  className="w-full px-3.5 py-2 text-xs rounded-xl border border-indigo-400 bg-indigo-50/40 dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-slate-100"
+                />
+                <div className="flex items-center gap-2 text-[11px]">
+                  <span className="text-slate-500">Loại thẻ:</span>
+                  <select
+                    value={newDeckType}
+                    onChange={(e) => setNewDeckType(e.target.value as any)}
+                    className="px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
+                  >
+                    <option value="word">Từ vựng (Word)</option>
+                    <option value="custom">Tự do (Custom)</option>
+                    <option value="mixed">Hỗn hợp (Mixed)</option>
+                  </select>
+                </div>
+              </div>
+            ) : (
+              <select
+                value={selectedDeckId}
+                onChange={(e) => setSelectedDeckId(e.target.value)}
+                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 focus:outline-hidden focus:ring-2 focus:ring-sky-500 text-slate-900 dark:text-slate-100 font-medium"
+              >
+                {availableDecks.length === 0 ? (
+                  <option value="">(Chưa có deck nào trong thư mục này - Bấm Tạo bộ thẻ mới)</option>
+                ) : (
+                  availableDecks.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      🗂️ {d.name}
+                    </option>
+                  ))
+                )}
+              </select>
+            )}
+          </div>
+        </div>
+
+        {/* Success Banner if just imported */}
+        {importSuccessBanner && (
+          <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in">
+            <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-200 text-xs font-semibold">
+              <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>
+                Đã thêm thành công <strong>{importSuccessBanner.count} từ vựng</strong> vào bộ thẻ "
+                <strong>{importSuccessBanner.deckName}</strong>" (Lưu an toàn trên máy).
+              </span>
+            </div>
+            {onNavigateToStudy && (
+              <button
+                onClick={() => onNavigateToStudy(importSuccessBanner.deckId)}
+                className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold shadow-xs transition flex items-center gap-1.5 shrink-0"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span>Ôn tập ngay</span>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Main Input Card: Paste Text / File Upload / AI */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs">
         <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-2">
           <Upload className="w-5 h-5 text-sky-600 dark:text-sky-400" />
           <span>Nhập từ vựng (Kiểu Quizlet &amp; AI)</span>
@@ -183,7 +520,7 @@ export function ImportView({ onImportSuccess }: ImportViewProps) {
             placeholder={`Dán văn bản vào đây, ví dụ kiểu Quizlet (Tab):
 預かる	あずかる	nhận giữ; chăm sóc	動詞
 荷物	にもつ	hành lý	名詞`}
-            className="w-full p-4 font-mono text-xs bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800 dark:text-slate-100"
+            className="w-full p-4 font-mono text-xs bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-hidden focus:ring-2 focus:ring-sky-500 text-slate-800 dark:text-slate-100"
           />
 
           <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
@@ -192,7 +529,7 @@ export function ImportView({ onImportSuccess }: ImportViewProps) {
               <select
                 value={delimiter}
                 onChange={(e) => setDelimiter(e.target.value as Delimiter)}
-                className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-hidden focus:ring-2 focus:ring-sky-500"
               >
                 <option value={'\t'}>Tab (\t - Quizlet)</option>
                 <option value={','}>Dấu phẩy (CSV)</option>
@@ -229,7 +566,7 @@ export function ImportView({ onImportSuccess }: ImportViewProps) {
                 type="button"
                 onClick={() => setShowAiConfirm(true)}
                 disabled={isAiLoading || !inputText.trim()}
-                className="px-3 py-1.5 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white rounded-xl font-semibold flex items-center space-x-1 shadow-sm transition touch-target disabled:opacity-50"
+                className="px-3 py-1.5 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white rounded-xl font-semibold flex items-center space-x-1 shadow-xs transition touch-target disabled:opacity-50"
               >
                 <Sparkles className="w-4 h-4" />
                 <span>AI Phân Tích</span>
@@ -252,7 +589,7 @@ export function ImportView({ onImportSuccess }: ImportViewProps) {
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
         >
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 max-w-md w-full shadow-2xl space-y-4">
             <div className="flex items-center space-x-2 text-sky-600 dark:text-sky-400">
@@ -280,7 +617,7 @@ export function ImportView({ onImportSuccess }: ImportViewProps) {
               </button>
               <button
                 onClick={handleRunAiAnalysis}
-                className="px-4 py-2 text-xs font-semibold bg-sky-600 hover:bg-sky-700 text-white rounded-xl shadow-sm"
+                className="px-4 py-2 text-xs font-semibold bg-sky-600 hover:bg-sky-700 text-white rounded-xl shadow-xs"
               >
                 Tiến hành gửi AI
               </button>
@@ -289,16 +626,16 @@ export function ImportView({ onImportSuccess }: ImportViewProps) {
         </div>
       )}
 
-      {/* Live Preview & Screening Table (Section 5B.3 & 5B.5) */}
+      {/* Live Preview & Screening Table */}
       {records.length > 0 && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-4">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
               <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
                 Bảng xem trước &amp; Sàng lọc ({records.length} mục)
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Kiểm tra nguồn từng trường (người dùng, từ điển, AI) và loại bỏ dòng lỗi
+                Đích: <strong>{decks.find((d) => d.id === selectedDeckId)?.name || newDeckName || 'Bộ thẻ mới'}</strong> · Lưu cục bộ trên máy
               </p>
             </div>
 
@@ -313,10 +650,10 @@ export function ImportView({ onImportSuccess }: ImportViewProps) {
               </button>
               <button
                 onClick={handleCommitImport}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center space-x-1"
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1.5"
               >
                 <CheckCircle className="w-4 h-4" />
-                <span>Nhập {records.length} từ vào kho</span>
+                <span>Lưu {records.length} từ vào máy</span>
               </button>
             </div>
           </div>
@@ -416,9 +753,9 @@ export function ImportView({ onImportSuccess }: ImportViewProps) {
         </div>
       )}
 
-      {/* Import History & Undo (Section 5B.5.5) */}
+      {/* Import History & Undo */}
       {importHistory.length > 0 && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-3">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs space-y-3">
           <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-2">
             <RotateCcw className="w-4 h-4 text-sky-600 dark:text-sky-400" />
             <span>Lịch sử nhập &amp; Khả năng hoàn tác</span>
@@ -433,7 +770,9 @@ export function ImportView({ onImportSuccess }: ImportViewProps) {
                   <span className="font-semibold text-slate-800 dark:text-slate-200">
                     Lần nhập lúc {item.date}
                   </span>
-                  <span className="text-slate-500 ml-2">({item.count} từ vựng)</span>
+                  <span className="text-slate-500 ml-2">
+                    ({item.count} từ vào bộ thẻ "{item.deckName}")
+                  </span>
                 </div>
                 <button
                   onClick={() => handleUndoImport(item.id)}

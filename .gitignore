@@ -41,3 +41,9 @@ Thumbs.db
 # Test coverage
 coverage/
 .nyc_output/
+
+# Media recordings
+*.mp4
+*.mov
+*.webm
+
