@@ -345,6 +345,7 @@ export function DeckFolderView({
                         newCardsPerDay: deck.newCardsPerDay,
                         maxReviewsPerDay: deck.maxReviewsPerDay
                       });
+                      const canToggle = deck.id !== 'deck_n3_words' && deck.id !== 'deck_n3_grammar';
 
                       return (
                         <div
@@ -359,14 +360,31 @@ export function DeckFolderView({
                               <span className="min-w-0 flex-1 truncate text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100" title={deck.name}>
                                 {deck.name}
                               </span>
-                              {deck.visibility === 'community' ? (
+                              {canToggle ? (
+                                deck.visibility === 'community' ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => onToggleDeckVisibility?.(deck.id, 'private')}
+                                    className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-0.5 hover:bg-emerald-100 dark:hover:bg-emerald-900 transition"
+                                    title="Đang là Cộng đồng (Bấm để chuyển về Cá nhân)"
+                                  >
+                                    <Globe className="w-2.5 h-2.5" />
+                                    <span>Cộng đồng</span>
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => onToggleDeckVisibility?.(deck.id, 'community')}
+                                    className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 dark:bg-slate-800 dark:hover:bg-emerald-950 text-slate-500 border border-slate-200 dark:border-slate-700 flex items-center gap-0.5 transition"
+                                    title="Đang là Cá nhân (Bấm để chia sẻ lên Cloud cho mọi người cùng học)"
+                                  >
+                                    <span>🔒 Cá nhân (Chia sẻ)</span>
+                                  </button>
+                                )
+                              ) : (
                                 <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-0.5" title="Mọi người cùng học">
                                   <Globe className="w-2.5 h-2.5" />
                                   <span>Cộng đồng</span>
-                                </span>
-                              ) : (
-                                <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700" title="Chỉ lưu trên máy này">
-                                  Cá nhân
                                 </span>
                               )}
                               <span className="shrink-0 text-[10px] text-slate-400 dark:text-slate-500 font-mono">
@@ -425,7 +443,7 @@ export function DeckFolderView({
                             )}
 
                             {/* Toggle Community / Share */}
-                            {onToggleDeckVisibility && !deck.isDefault && (
+                            {onToggleDeckVisibility && canToggle && (
                               <button
                                 onClick={() =>
                                   onToggleDeckVisibility(
@@ -449,7 +467,7 @@ export function DeckFolderView({
                             )}
 
                             {/* Re-sync Community Deck */}
-                            {deck.visibility === 'community' && onSyncCommunityDeck && !deck.isDefault && (
+                            {deck.visibility === 'community' && onSyncCommunityDeck && canToggle && (
                               <button
                                 onClick={() => onSyncCommunityDeck(deck.id)}
                                 className="p-1.5 rounded-lg text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-950/40 transition"

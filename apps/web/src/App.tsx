@@ -1440,6 +1440,7 @@ export function App() {
             onImportCards={handleImportCards}
             onUndoImportCards={handleUndoImportCards}
             onNavigateToStudy={handleNavigateToStudy}
+            onToggleDeckVisibility={handleToggleDeckVisibility}
           />
         )}
 

@@ -11,7 +11,8 @@ import {
   Layers,
   Plus,
   Play,
-  HardDrive
+  HardDrive,
+  Globe
 } from 'lucide-react';
 import {
   parseAndFilterImport,
@@ -40,6 +41,7 @@ interface ImportViewProps {
   ) => void;
   onUndoImportCards?: (cardIds: string[]) => void;
   onNavigateToStudy?: (deckId: string) => void;
+  onToggleDeckVisibility?: (deckId: string, visibility: 'community' | 'private') => void;
 }
 
 export function ImportView({
@@ -50,7 +52,8 @@ export function ImportView({
   onImportSuccess,
   onImportCards,
   onUndoImportCards,
-  onNavigateToStudy
+  onNavigateToStudy,
+  onToggleDeckVisibility
 }: ImportViewProps) {
   const [inputText, setInputText] = useState('');
   const [delimiter, setDelimiter] = useState<Delimiter>('\t');
@@ -506,15 +509,28 @@ export function ImportView({
                 <strong>{importSuccessBanner.deckName}</strong>" (Lưu an toàn trên máy).
               </span>
             </div>
-            {onNavigateToStudy && (
-              <button
-                onClick={() => onNavigateToStudy(importSuccessBanner.deckId)}
-                className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold shadow-xs transition flex items-center gap-1.5 shrink-0"
-              >
-                <Play className="w-3.5 h-3.5 fill-current" />
-                <span>Ôn tập ngay</span>
-              </button>
-            )}
+            <div className="flex items-center gap-2 shrink-0 flex-wrap">
+              {onToggleDeckVisibility && (
+                <button
+                  onClick={() => {
+                    onToggleDeckVisibility(importSuccessBanner.deckId, 'community');
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300 dark:hover:bg-sky-900 border border-sky-200 dark:border-sky-800 text-xs font-semibold transition flex items-center gap-1.5 shadow-xs"
+                >
+                  <Globe className="w-3.5 h-3.5" />
+                  <span>Chia sẻ lên Cộng đồng</span>
+                </button>
+              )}
+              {onNavigateToStudy && (
+                <button
+                  onClick={() => onNavigateToStudy(importSuccessBanner.deckId)}
+                  className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold shadow-xs transition flex items-center gap-1.5 shrink-0"
+                >
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  <span>Ôn tập ngay</span>
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
