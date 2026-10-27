@@ -46,6 +46,7 @@ export const DEFAULT_DECKS: Deck[] = [
     newCardsPerDay: 20,
     maxReviewsPerDay: 50,
     isDefault: true,
+    visibility: 'community',
     createdAt: new Date().toISOString()
   },
   {
@@ -59,6 +60,7 @@ export const DEFAULT_DECKS: Deck[] = [
     newCardsPerDay: 10,
     maxReviewsPerDay: 30,
     isDefault: true,
+    visibility: 'community',
     createdAt: new Date().toISOString()
   },
   {
@@ -72,6 +74,7 @@ export const DEFAULT_DECKS: Deck[] = [
     newCardsPerDay: 20,
     maxReviewsPerDay: 50,
     isDefault: true,
+    visibility: 'community',
     createdAt: new Date().toISOString()
   }
 ];

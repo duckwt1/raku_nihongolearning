@@ -95,6 +95,7 @@ export function ImportView({
   const [isCreatingDeck, setIsCreatingDeck] = useState(false);
   const [newDeckName, setNewDeckName] = useState('');
   const [newDeckType, setNewDeckType] = useState<'word' | 'custom' | 'mixed'>('word');
+  const [newDeckVisibility, setNewDeckVisibility] = useState<'community' | 'private'>('community');
 
   // Success Feedback Banner
   const [importSuccessBanner, setImportSuccessBanner] = useState<{
@@ -251,6 +252,7 @@ export function ImportView({
         newCardsPerDay: 20,
         maxReviewsPerDay: 50,
         isDefault: false,
+        visibility: newDeckVisibility,
         createdAt: new Date().toISOString()
       };
     }
@@ -447,17 +449,31 @@ export function ImportView({
                   placeholder="Ví dụ: Bài 1 - Từ vựng Mimikara..."
                   className="w-full px-3.5 py-2 text-xs rounded-xl border border-indigo-400 bg-indigo-50/40 dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-slate-100"
                 />
-                <div className="flex items-center gap-2 text-[11px]">
-                  <span className="text-slate-500">Loại thẻ:</span>
-                  <select
-                    value={newDeckType}
-                    onChange={(e) => setNewDeckType(e.target.value as any)}
-                    className="px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
-                  >
-                    <option value="word">Từ vựng (Word)</option>
-                    <option value="custom">Tự do (Custom)</option>
-                    <option value="mixed">Hỗn hợp (Mixed)</option>
-                  </select>
+                <div className="flex items-center gap-2 text-[11px] flex-wrap">
+                  <div className="flex items-center gap-1">
+                    <span className="text-slate-500">Loại thẻ:</span>
+                    <select
+                      value={newDeckType}
+                      onChange={(e) => setNewDeckType(e.target.value as any)}
+                      className="px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
+                    >
+                      <option value="word">Từ vựng (Word)</option>
+                      <option value="custom">Tự do (Custom)</option>
+                      <option value="mixed">Hỗn hợp (Mixed)</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <span className="text-slate-500">Chế độ:</span>
+                    <select
+                      value={newDeckVisibility}
+                      onChange={(e) => setNewDeckVisibility(e.target.value as any)}
+                      className="px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-emerald-700 dark:text-emerald-300"
+                    >
+                      <option value="community">🌐 Cộng đồng (Cả nhóm)</option>
+                      <option value="private">🔒 Cá nhân</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             ) : (

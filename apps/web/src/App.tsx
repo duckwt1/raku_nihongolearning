@@ -62,6 +62,12 @@ import {
   clearOfflineReviewQueue,
   clearUserDataFromBrowser
 } from './services/firestoreSync';
+import {
+  fetchCommunityDecks,
+  publishDeckToCommunity,
+  unpublishDeckFromCommunity,
+  mergeCommunityDecksIntoLocalState
+} from './services/communitySync';
 // Khi cần bật lại kiểm tra mật khẩu tải lên Firestore:
 // import { isSyncAuthorized, revokeSyncAuthorization } from './services/syncSecurity';
 // import { SyncPasswordModal } from './components/SyncPasswordModal';
@@ -291,6 +297,50 @@ export function App() {
     };
   }, []);
 
+  // Tự động tải & cập nhật các bộ thẻ Cộng đồng (Community Decks) từ Firestore
+  useEffect(() => {
+    let isMounted = true;
+    const loadCommunity = async () => {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+      try {
+        const remoteCommunity = await fetchCommunityDecks();
+        if (!isMounted || remoteCommunity.length === 0) return;
+
+        const currentUid = user?.uid;
+        const currentDecks = loadUserDecks(currentUid);
+        const currentFolders = loadUserFolders(currentUid);
+        const currentCards = loadUserCards(currentUid);
+
+        const res = mergeCommunityDecksIntoLocalState(
+          currentDecks,
+          currentFolders,
+          currentCards,
+          remoteCommunity
+        );
+
+        if (res.newDecksCount > 0 || res.newCardsCount > 0) {
+          setDecks(res.updatedDecks);
+          setFolders(res.updatedFolders);
+          setAllCards(res.updatedCards);
+          saveUserDecks(currentUid, res.updatedDecks);
+          saveUserFolders(currentUid, res.updatedFolders);
+          saveUserCards(currentUid, res.updatedCards);
+          showSyncToast(
+            `🌐 Đã tự động cập nhật ${res.newDecksCount} bộ thẻ cộng đồng (${res.newCardsCount} từ vựng mới)!`,
+            'info'
+          );
+        }
+      } catch (err) {
+        console.warn('Lỗi khi tải bộ thẻ cộng đồng:', err);
+      }
+    };
+
+    void loadCommunity();
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.uid, isOnline]);
+
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
     document.documentElement.classList.toggle('dark');
@@ -458,7 +508,8 @@ export function App() {
     description?: string,
     cardType?: 'word' | 'kanji' | 'grammar' | 'custom' | 'mixed',
     newCardsPerDay = 20,
-    maxReviewsPerDay = 50
+    maxReviewsPerDay = 50,
+    visibility: 'community' | 'private' = 'community'
   ) => {
     const newDeck: Deck = {
       id: `deck_custom_${Date.now()}`,
@@ -470,11 +521,20 @@ export function App() {
       newCardsPerDay,
       maxReviewsPerDay,
       isDefault: false,
+      visibility,
+      authorName: user?.displayName || user?.email?.split('@')[0] || 'Thành viên',
+      authorUid: user?.uid || 'anonymous',
       createdAt: new Date().toISOString()
     };
     const updated = [...decks, newDeck];
     setDecks(updated);
     saveUserDecks(user?.uid, updated);
+
+    if (visibility === 'community') {
+      const folder = folders.find((f) => f.id === folderId);
+      void publishDeckToCommunity(newDeck, folder, [], user);
+      showSyncToast(`✓ Đã tạo bộ thẻ cộng đồng "${name}"!`, 'success');
+    }
   };
 
   const handleDeleteFolder = (folderId: string) => {
@@ -816,6 +876,23 @@ export function App() {
       `✓ Đã nhập thành công ${newCards.length} từ vào bộ thẻ "${targetDeckName}" (Lưu an toàn trên máy)!`,
       'success'
     );
+
+    // 4. Nếu bộ thẻ ở chế độ Cộng đồng (Community), tự động đồng bộ lên Firestore cho mọi người
+    const deckObj = newDeck || decks.find((d) => d.id === targetDeckId);
+    if (deckObj && deckObj.visibility === 'community') {
+      const folderObj = newFolder || folders.find((f) => f.id === deckObj.folderId);
+      const allCardsForThisDeck = updatedCards.filter((c) => c.deckId === deckObj.id);
+      void publishDeckToCommunity(deckObj, folderObj, allCardsForThisDeck, user)
+        .then((res) => {
+          showSyncToast(
+            `🌐 Đã tự động chia sẻ "${deckObj.name}" (${res.cardsCount} từ) lên Cloud cho mọi người cùng học!`,
+            'info'
+          );
+        })
+        .catch((err) => {
+          console.warn('Lỗi auto sync community deck sau import:', err);
+        });
+    }
   };
 
   const handleUndoImportCards = (cardIds: string[]) => {
@@ -872,6 +949,73 @@ export function App() {
 
     const deckName = decks.find((d) => d.id === deckId)?.name || 'Bộ thẻ';
     showSyncToast(`✓ Đã thêm từ "${cardData.surface}" vào bộ thẻ "${deckName}" (Lưu trên máy)!`, 'success');
+
+    // Nếu bộ thẻ đang là Community, tự động cập nhật lên Firestore
+    const currentDeck = decks.find((d) => d.id === deckId);
+    if (currentDeck?.visibility === 'community') {
+      const folder = folders.find((f) => f.id === currentDeck.folderId);
+      const allCardsInDeck = updated.filter((c) => c.deckId === deckId);
+      void publishDeckToCommunity(currentDeck, folder, allCardsInDeck, user);
+    }
+  };
+
+  const handleToggleDeckVisibility = async (
+    deckId: string,
+    newVisibility: 'community' | 'private'
+  ) => {
+    const deck = decks.find((d) => d.id === deckId);
+    if (!deck) return;
+
+    const currentUid = user?.uid;
+    const updatedDecks: Deck[] = decks.map((d) =>
+      d.id === deckId ? { ...d, visibility: newVisibility } : d
+    );
+    setDecks(updatedDecks);
+    saveUserDecks(currentUid, updatedDecks);
+
+    if (newVisibility === 'community') {
+      const folder = folders.find((f) => f.id === deck.folderId);
+      const cardsInDeck = allCards.filter((c) => c.deckId === deckId);
+      showSyncToast(`☁️ Đang chia sẻ bộ thẻ "${deck.name}" lên cộng đồng...`, 'info');
+      try {
+        const res = await publishDeckToCommunity(
+          { ...deck, visibility: 'community' },
+          folder,
+          cardsInDeck,
+          user
+        );
+        showSyncToast(
+          `✓ Đã chia sẻ thành công "${deck.name}" (${res.cardsCount} từ) lên cộng đồng cho mọi người cùng học!`,
+          'success'
+        );
+      } catch (err: any) {
+        showSyncToast(`❌ Không thể chia sẻ lên cộng đồng: ${err?.message || err}`, 'warning');
+      }
+    } else {
+      try {
+        await unpublishDeckFromCommunity(deckId);
+        showSyncToast(`✓ Đã chuyển bộ thẻ "${deck.name}" về chế độ riêng tư trên máy.`, 'info');
+      } catch (err: any) {
+        showSyncToast(`❌ Lỗi khi gỡ bộ thẻ: ${err?.message || err}`, 'warning');
+      }
+    }
+  };
+
+  const handleSyncCommunityDeck = async (deckId: string) => {
+    const deck = decks.find((d) => d.id === deckId);
+    if (!deck) return;
+    const folder = folders.find((f) => f.id === deck.folderId);
+    const cardsInDeck = allCards.filter((c) => c.deckId === deckId);
+    showSyncToast(`☁️ Đang đồng bộ bộ thẻ "${deck.name}" lên Cloud...`, 'info');
+    try {
+      const res = await publishDeckToCommunity(deck, folder, cardsInDeck, user);
+      showSyncToast(
+        `✓ Đã cập nhật ${res.cardsCount} thẻ của "${deck.name}" lên Cloud cho mọi người!`,
+        'success'
+      );
+    } catch (err: any) {
+      showSyncToast(`❌ Lỗi đồng bộ: ${err?.message || err}`, 'warning');
+    }
   };
 
   const handleNavigateToImport = (deckId: string, folderId?: string) => {
@@ -1167,6 +1311,8 @@ export function App() {
                   onCreateDeck={handleCreateDeck}
                   onDeleteDeck={handleDeleteDeck}
                   onDeleteFolder={handleDeleteFolder}
+                  onToggleDeckVisibility={handleToggleDeckVisibility}
+                  onSyncCommunityDeck={handleSyncCommunityDeck}
                   onAddCard={handleAddCard}
                   onNavigateToImport={handleNavigateToImport}
                 />

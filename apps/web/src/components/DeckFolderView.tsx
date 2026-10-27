@@ -13,7 +13,9 @@ import {
   Sparkles,
   Trash2,
   FileUp,
-  HardDrive
+  HardDrive,
+  Globe,
+  CloudUpload
 } from 'lucide-react';
 import type { Deck, Folder } from '@raku/core';
 import type { StudyCard } from '@raku/core';
@@ -32,10 +34,13 @@ interface DeckFolderViewProps {
     description?: string,
     cardType?: 'word' | 'kanji' | 'grammar' | 'custom' | 'mixed',
     newCardsPerDay?: number,
-    maxReviewsPerDay?: number
+    maxReviewsPerDay?: number,
+    visibility?: 'community' | 'private'
   ) => void;
   onDeleteDeck?: (deckId: string) => void;
   onDeleteFolder?: (folderId: string) => void;
+  onToggleDeckVisibility?: (deckId: string, newVisibility: 'community' | 'private') => void;
+  onSyncCommunityDeck?: (deckId: string) => void;
   onAddCard?: (
     deckId: string,
     cardData: {
@@ -61,6 +66,8 @@ export function DeckFolderView({
   onCreateDeck,
   onDeleteDeck,
   onDeleteFolder,
+  onToggleDeckVisibility,
+  onSyncCommunityDeck,
   onAddCard,
   onNavigateToImport
 }: DeckFolderViewProps) {
@@ -86,6 +93,7 @@ export function DeckFolderView({
   >('word');
   const [deckNewPerDay, setDeckNewPerDay] = useState(20);
   const [deckMaxReviews, setDeckMaxReviews] = useState(50);
+  const [deckVisibility, setDeckVisibility] = useState<'community' | 'private'>('community');
 
   // Add Card form state
   const [cardTargetDeckId, setCardTargetDeckId] = useState<string>('');
@@ -122,7 +130,8 @@ export function DeckFolderView({
       deckDesc.trim() || undefined,
       deckCardType,
       deckNewPerDay,
-      deckMaxReviews
+      deckMaxReviews,
+      deckVisibility
     );
     setDeckName('');
     setDeckDesc('');
@@ -350,6 +359,16 @@ export function DeckFolderView({
                               <span className="min-w-0 flex-1 truncate text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100" title={deck.name}>
                                 {deck.name}
                               </span>
+                              {deck.visibility === 'community' ? (
+                                <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-0.5" title="Mọi người cùng học">
+                                  <Globe className="w-2.5 h-2.5" />
+                                  <span>Cộng đồng</span>
+                                </span>
+                              ) : (
+                                <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700" title="Chỉ lưu trên máy này">
+                                  Cá nhân
+                                </span>
+                              )}
                               <span className="shrink-0 text-[10px] text-slate-400 dark:text-slate-500 font-mono">
                                 ({counts.totalCards} thẻ)
                               </span>
@@ -402,6 +421,41 @@ export function DeckFolderView({
                                 title={`Nhập danh sách từ vào deck ${deck.name}`}
                               >
                                 <FileUp className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+
+                            {/* Toggle Community / Share */}
+                            {onToggleDeckVisibility && !deck.isDefault && (
+                              <button
+                                onClick={() =>
+                                  onToggleDeckVisibility(
+                                    deck.id,
+                                    deck.visibility === 'community' ? 'private' : 'community'
+                                  )
+                                }
+                                className={`p-1.5 rounded-lg transition ${
+                                  deck.visibility === 'community'
+                                    ? 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
+                                    : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
+                                }`}
+                                title={
+                                  deck.visibility === 'community'
+                                    ? 'Đang là Bộ thẻ Cộng đồng (bấm để chuyển về Cá nhân)'
+                                    : 'Chia sẻ bộ thẻ này lên Cloud cho mọi người cùng học'
+                                }
+                              >
+                                <Globe className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+
+                            {/* Re-sync Community Deck */}
+                            {deck.visibility === 'community' && onSyncCommunityDeck && !deck.isDefault && (
+                              <button
+                                onClick={() => onSyncCommunityDeck(deck.id)}
+                                className="p-1.5 rounded-lg text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-950/40 transition"
+                                title="Đồng bộ cập nhật mới nhất của bộ thẻ lên Cloud"
+                              >
+                                <CloudUpload className="w-3.5 h-3.5" />
                               </button>
                             )}
 
@@ -717,6 +771,20 @@ export function DeckFolderView({
                   <option value="kanji">Chữ Hán (Kanji)</option>
                   <option value="grammar">Ngữ pháp (Grammar)</option>
                   <option value="custom">Tự do / Nhập ngoài (Custom)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Chế Độ Hiển Thị
+                </label>
+                <select
+                  value={deckVisibility}
+                  onChange={(e) => setDeckVisibility(e.target.value as 'community' | 'private')}
+                  className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-sky-500 text-slate-900 dark:text-slate-100 font-medium"
+                >
+                  <option value="community">🌐 Cộng đồng (Tự động hiển thị mặc định cho bạn bè)</option>
+                  <option value="private">🔒 Cá nhân (Chỉ lưu trên thiết bị này)</option>
                 </select>
               </div>
 
