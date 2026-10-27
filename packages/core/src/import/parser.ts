@@ -261,7 +261,14 @@ export function parseAndFilterImport(
 
     let meaningVi = normalizeNfc(meaningRaw.trim());
     let pos = posRaw ? normalizeNfc(posRaw.trim()) : undefined;
-    let hanViet = hanVietRaw ? hanVietRaw.split(/[\s,;-]+/).filter(Boolean) : undefined;
+    let hanViet = hanVietRaw
+      ? hanVietRaw
+          .split(/[\s,;—–-]+/)
+          .filter((x) => x && !/^[-—–_x/]+$/i.test(x))
+      : undefined;
+    if (hanViet && hanViet.length === 0) {
+      hanViet = undefined;
+    }
 
     const provenance: ImportRecord['provenance'] = {
       surface: 'user'

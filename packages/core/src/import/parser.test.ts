@@ -100,6 +100,20 @@ describe('Import Parser & Filter (Section 5B)', () => {
     expect(r.exampleVi).toBe('Người đàn ông đó là giáo viên.');
   });
 
+  it('parses onomatopoeia / kana-only words with dash as Han Viet', () => {
+    const text = 'うっかり\tsơ ý; lơ đãng\t—\tうっかり財布を忘れました。\tTôi đã sơ ý quên ví.';
+    const result = parseAndFilterImport(text, { delimiter: '\t' });
+
+    expect(result.records.length).toBe(1);
+    const r = result.records[0]!;
+    expect(r.surface).toBe('うっかり');
+    expect(r.readings).toContain('うっかり');
+    expect(r.meaningVi).toBe('sơ ý; lơ đãng');
+    expect(r.hanViet).toBeUndefined();
+    expect(r.exampleJp).toBe('うっかり財布を忘れました。');
+    expect(r.exampleVi).toBe('Tôi đã sơ ý quên ví.');
+  });
+
   it('extracts bracketed kana reading from surface automatically', () => {
     const text = '預かる[あずかる]\tnhận giữ; chăm sóc\tDỰ\t荷物を預かる\tNhận giữ hành lý';
     const result = parseAndFilterImport(text, { delimiter: '\t' });
