@@ -167,7 +167,7 @@ export const DeckSchema = z.object({
   newCardsPerDay: z.number().int().default(20),
   maxReviewsPerDay: z.number().int().default(50),
   isDefault: z.boolean().default(false),
-  visibility: z.enum(['community', 'private']).default('community'),
+  visibility: z.enum(['community', 'private']).optional(),
   authorName: z.string().optional(),
   authorUid: z.string().optional(),
   createdAt: z.string().optional(),
