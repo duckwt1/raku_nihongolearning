@@ -42,6 +42,23 @@ export function isCardLearnedToday(card: StudyCard, todayStr: string): boolean {
   );
 }
 
+/**
+ * Đếm số từ / mục mới thực sự được học lần đầu trong ngày.
+ * Dùng word.id (hoặc refId/card.id) để tránh đếm trùng khi cùng một từ
+ * xuất hiện trong nhiều deck/card khác nhau.
+ */
+export function countNewItemsLearnedToday(
+  cards: StudyCard[],
+  todayStr: string
+): number {
+  const learnedKeys = new Set<string>();
+  for (const card of cards) {
+    if (!isCardLearnedToday(card, todayStr)) continue;
+    learnedKeys.add(card.word?.id || card.refId || card.id);
+  }
+  return learnedKeys.size;
+}
+
 export interface ReviewSessionState {
   queue: StudyCard[];
   currentIndex: number;

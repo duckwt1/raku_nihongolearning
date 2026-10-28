@@ -35,6 +35,7 @@ import {
   createInitialStudyStats,
   getTodayDateString,
   isCardLearnedToday,
+  countNewItemsLearnedToday,
   canDeleteDeck
 } from '@raku/core';
 import { auth, signInAnonymously, onAuthStateChanged, signOut, type User } from './services/firebase';
@@ -458,7 +459,7 @@ export function App() {
   }, [kanjiSearch]);
 
   // Overall totals due and new across all cards
-  const { totalDueToday, totalNewToday } = useMemo(() => {
+  const { totalDueToday, totalNewToday, newItemsLearnedToday } = useMemo(() => {
     let due = 0;
     let nw = 0;
     const now = new Date();
@@ -485,7 +486,8 @@ export function App() {
     const remainingDailyNew = Math.max(0, 20 - learnedToday);
     return {
       totalDueToday: due,
-      totalNewToday: Math.min(nw, remainingDailyNew)
+      totalNewToday: Math.min(nw, remainingDailyNew),
+      newItemsLearnedToday: countNewItemsLearnedToday(allCards, todayStr)
     };
   }, [allCards]);
 
@@ -1500,6 +1502,7 @@ export function App() {
                   stats={studyStats}
                   totalDueToday={totalDueToday}
                   totalNewToday={totalNewToday}
+                  newItemsLearnedToday={newItemsLearnedToday}
                   onQuickStudy={handleQuickStudyToday}
                   onStudyMoreNew={handleQuickStudyMoreNew}
                 />

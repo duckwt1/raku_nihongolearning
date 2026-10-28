@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { buildReviewQueue, applyReviewLogsToCards, type StudyCard } from './studySession.js';
+import {
+  buildReviewQueue,
+  applyReviewLogsToCards,
+  countNewItemsLearnedToday,
+  getTodayDateString,
+  type StudyCard
+} from './studySession.js';
 import { createNewCard } from './scheduler.js';
 
 describe('buildReviewQueue', () => {
@@ -148,6 +154,80 @@ describe('buildReviewQueue', () => {
     expect(updated!.fsrsCard.last_review?.toISOString()).toBe(reviewDate2.toISOString());
     // After 2 Good ratings, due date is in the future (> May 2)
     expect(updated!.fsrsCard.due.getTime()).toBeGreaterThan(reviewDate2.getTime());
+  });
+});
+
+describe('countNewItemsLearnedToday', () => {
+  const now = new Date();
+  const todayStr = getTodayDateString(now);
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  const makeCard = (
+    id: string,
+    overrides: Partial<StudyCard> = {}
+  ): StudyCard => ({
+    id,
+    type: 'word',
+    refId: `ref_${id}`,
+    word: {
+      id: `w_${id}`,
+      surface: id,
+      readings: [id],
+      meaningVi: id,
+      kanji: [],
+      hanVietBreakdown: [],
+      exampleIds: [],
+      tags: []
+    },
+    fsrsCard: {
+      ...createNewCard(now),
+      reps: 1,
+      last_review: now
+    },
+    isNew: false,
+    isDue: false,
+    firstLearnedAt: now.toISOString(),
+    ...overrides
+  });
+
+  it('counts only items introduced today, once per unique word', () => {
+    const cards: StudyCard[] = [
+      makeCard('c1'),
+      // Same word in another deck/card must not be counted twice
+      makeCard('c1_copy', {
+        word: {
+          id: 'w_c1',
+          surface: 'c1',
+          readings: ['c1'],
+          meaningVi: 'c1',
+          kanji: [],
+          hanVietBreakdown: [],
+          exampleIds: [],
+          tags: []
+        }
+      }),
+      // Introduced yesterday
+      makeCard('c2', { firstLearnedAt: yesterday.toISOString() }),
+      // Legacy card without firstLearnedAt but first review today
+      makeCard('c3', { firstLearnedAt: undefined }),
+      // Grammar item uses refId as its key
+      makeCard('c4', {
+        type: 'grammar',
+        refId: 'g1',
+        word: undefined,
+        firstLearnedAt: now.toISOString()
+      }),
+      // Reviewed today but not new today
+      makeCard('c5', { firstLearnedAt: yesterday.toISOString(), fsrsCard: { ...createNewCard(now), reps: 4, last_review: now } })
+    ];
+
+    expect(countNewItemsLearnedToday(cards, todayStr)).toBe(3); // c1, c3, g1
+  });
+
+  it('returns 0 when nothing new was learned today', () => {
+    const cards = [makeCard('c1', { firstLearnedAt: yesterday.toISOString() })];
+    expect(countNewItemsLearnedToday(cards, todayStr)).toBe(0);
   });
 });
 

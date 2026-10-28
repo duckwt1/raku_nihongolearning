@@ -1,10 +1,12 @@
-import { CheckCircle2, Clock3, Flame, Layers3, Sparkles } from 'lucide-react';
+import { CheckCircle2, Clock3, Flame, Layers3, BookOpen, Sparkles } from 'lucide-react';
 import type { UserStudyStats } from '@raku/core';
 
 interface TodayStatsBarProps {
   stats: UserStudyStats;
   totalDueToday: number;
   totalNewToday: number;
+  /** Số từ/mục mới thực sự được học lần đầu trong ngày */
+  newItemsLearnedToday: number;
   onQuickStudy?: () => void;
   onStudyMoreNew?: () => void;
 }
@@ -13,6 +15,7 @@ export function TodayStatsBar({
   stats,
   totalDueToday,
   totalNewToday,
+  newItemsLearnedToday,
   onQuickStudy,
   onStudyMoreNew
 }: TodayStatsBarProps) {
@@ -126,10 +129,10 @@ export function TodayStatsBar({
           </div>
         </div>
         <div className="raku-daily-stat">
-          <span className="raku-daily-stat__icon raku-daily-stat__icon--gold"><Sparkles aria-hidden="true" /></span>
+          <span className="raku-daily-stat__icon raku-daily-stat__icon--gold"><BookOpen aria-hidden="true" /></span>
           <div>
-            <span className="raku-daily-stat__label">Từ mới</span>
-            <strong>{totalNewToday}<small> thẻ</small></strong>
+            <span className="raku-daily-stat__label">Từ mới đã học</span>
+            <strong>{newItemsLearnedToday}<small> từ</small></strong>
           </div>
         </div>
         <div className="raku-daily-stat">
