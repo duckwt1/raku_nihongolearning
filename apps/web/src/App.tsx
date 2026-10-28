@@ -34,7 +34,8 @@ import {
   recordStudyActivity,
   createInitialStudyStats,
   getTodayDateString,
-  isCardLearnedToday
+  isCardLearnedToday,
+  canDeleteDeck
 } from '@raku/core';
 import { auth, signInAnonymously, onAuthStateChanged, signOut, type User } from './services/firebase';
 import {
@@ -684,20 +685,23 @@ export function App() {
   const handleDeleteDeck = (deckId: string) => {
     const deck = decks.find((d) => d.id === deckId);
     if (!deck) return;
-    if (deck.isDefault || deck.origin === 'builtin') {
-      showSyncToast('Không thể xoá bộ thẻ nội dung có sẵn.', 'warning');
+    if (!canDeleteDeck(deck, user?.uid)) {
+      showSyncToast(
+        'Bạn không phải chủ sở hữu bộ thẻ này nên không thể xoá.',
+        'warning'
+      );
       return;
     }
 
     const isCommunityDeck = deck.origin === 'community';
     const confirmed = window.confirm(
       isCommunityDeck
-        ? `Bỏ bộ thẻ "${deck.name}" khỏi thư viện của bạn? Bạn có thể thêm lại từ cộng đồng sau.`
+        ? `Xoá bộ thẻ "${deck.name}" khỏi máy và gỡ khỏi cộng đồng?`
         : `Xoá bộ thẻ "${deck.name}"? Toàn bộ thẻ trong bộ này cũng sẽ bị xoá khỏi máy.`
     );
     if (!confirmed) return;
 
-    const shouldUnpublish = !isCommunityDeck && deck.visibility === 'community';
+    const shouldUnpublish = deck.visibility === 'community';
     cancelDeckPublish(deckId);
 
     // Tombstone: chặn loader cộng đồng tự thêm lại deck vừa xoá.
@@ -1505,6 +1509,7 @@ export function App() {
                   folders={folders}
                   decks={decks}
                   cards={allCards}
+                  currentUid={user?.uid}
                   onSelectDeckToStudy={handleSelectDeckToStudy}
                   onSelectFolderToStudy={handleSelectFolderToStudy}
                   onCreateFolder={handleCreateFolder}

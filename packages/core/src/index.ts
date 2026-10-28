@@ -9,3 +9,4 @@ export * from './import/parser.js';
 export * from './quiz/generators.js';
 export * from './decks/deckManager.js';
 export * from './decks/deckMigration.js';
+export * from './decks/deckOwnership.js';

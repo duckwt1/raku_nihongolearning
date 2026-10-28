@@ -19,12 +19,13 @@ import {
 } from 'lucide-react';
 import type { Deck, Folder } from '@raku/core';
 import type { StudyCard } from '@raku/core';
-import { calculateDeckCounts, calculateFolderCounts } from '@raku/core';
+import { calculateDeckCounts, calculateFolderCounts, canDeleteDeck } from '@raku/core';
 
 interface DeckFolderViewProps {
   folders: Folder[];
   decks: Deck[];
   cards: StudyCard[];
+  currentUid?: string | null;
   onSelectDeckToStudy: (deck: Deck) => void;
   onSelectFolderToStudy: (folder: Folder) => void;
   onCreateFolder: (name: string, description?: string, color?: string) => void;
@@ -58,6 +59,7 @@ export function DeckFolderView({
   folders,
   decks,
   cards,
+  currentUid,
   onSelectDeckToStudy,
   onSelectFolderToStudy,
   onCreateFolder,
@@ -190,6 +192,7 @@ export function DeckFolderView({
     });
     const isBuiltin = deck.origin === 'builtin' || deck.isDefault;
     const isCommunityDeck = deck.origin === 'community';
+    const showDelete = canDeleteDeck(deck, currentUid);
 
     return (
       <div
@@ -308,11 +311,11 @@ export function DeckFolderView({
             <span className="hidden sm:inline">Học</span>
           </button>
 
-          {!isBuiltin && onDeleteDeck && (
+          {showDelete && onDeleteDeck && (
             <button
               onClick={() => onDeleteDeck(deck.id)}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 sm:h-auto sm:w-auto sm:p-1.5"
-              title={isCommunityDeck ? 'Bỏ khỏi thư viện' : 'Xoá deck'}
+              title="Xoá deck"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
