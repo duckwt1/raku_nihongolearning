@@ -54,6 +54,7 @@ export async function syncUserProfile(user: User): Promise<void> {
 }
 
 export type { OfflineReviewItem } from './userStorage';
+export type { DeckSyncPrefs } from './userStorage';
 export {
   getOfflineReviewQueue,
   getPendingSyncCount,
@@ -68,7 +69,9 @@ export {
   loadUserFolders,
   saveUserFolders,
   loadUserDecks,
-  saveUserDecks
+  saveUserDecks,
+  loadDeckSyncPrefs,
+  saveDeckSyncPrefs
 } from './userStorage';
 import {
   getOfflineReviewQueue,

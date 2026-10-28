@@ -8,3 +8,4 @@ export * from './fsrs/studySession.js';
 export * from './import/parser.js';
 export * from './quiz/generators.js';
 export * from './decks/deckManager.js';
+export * from './decks/deckMigration.js';

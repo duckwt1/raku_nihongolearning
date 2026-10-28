@@ -13,7 +13,9 @@ import {
   Sparkles,
   Trash2,
   FileUp,
-  HardDrive
+  HardDrive,
+  Globe,
+  Lock
 } from 'lucide-react';
 import type { Deck, Folder } from '@raku/core';
 import type { StudyCard } from '@raku/core';
@@ -36,6 +38,7 @@ interface DeckFolderViewProps {
   ) => void;
   onDeleteDeck?: (deckId: string) => void;
   onDeleteFolder?: (folderId: string) => void;
+  onToggleDeckVisibility?: (deckId: string) => void;
   onAddCard?: (
     deckId: string,
     cardData: {
@@ -61,6 +64,7 @@ export function DeckFolderView({
   onCreateDeck,
   onDeleteDeck,
   onDeleteFolder,
+  onToggleDeckVisibility,
   onAddCard,
   onNavigateToImport
 }: DeckFolderViewProps) {
@@ -175,6 +179,149 @@ export function DeckFolderView({
     }
   };
 
+  const unfiledDecks = decks.filter(
+    (deck) => !deck.folderId || !folders.some((folder) => folder.id === deck.folderId)
+  );
+
+  const renderDeckRow = (deck: Deck) => {
+    const counts = calculateDeckCounts(cards, deck.id, {
+      newCardsPerDay: deck.newCardsPerDay,
+      maxReviewsPerDay: deck.maxReviewsPerDay
+    });
+    const isBuiltin = deck.origin === 'builtin' || deck.isDefault;
+    const isCommunityDeck = deck.origin === 'community';
+
+    return (
+      <div
+        key={deck.id}
+        className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-2 py-3 pl-2 pr-3 hover:bg-slate-50/60 dark:hover:bg-slate-800/20 transition rounded-r-xl sm:flex sm:justify-between sm:gap-0 sm:pl-0 sm:pr-4"
+      >
+        <div className="row-span-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 sm:mr-3">
+          {getDeckIcon(deck.cardType)}
+        </div>
+        <div className="col-start-2 row-start-1 min-w-0 sm:flex-1 sm:pr-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <span
+              className="min-w-0 flex-1 truncate text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100"
+              title={deck.name}
+            >
+              {deck.name}
+            </span>
+
+            {isCommunityDeck ? (
+              <span
+                className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-0.5"
+                title={
+                  deck.authorName
+                    ? `Bộ thẻ cộng đồng của ${deck.authorName}`
+                    : 'Bộ thẻ cộng đồng'
+                }
+              >
+                <Globe className="w-2.5 h-2.5" />
+                <span>Cộng đồng</span>
+              </span>
+            ) : !isBuiltin && onToggleDeckVisibility ? (
+              <button
+                type="button"
+                onClick={() => onToggleDeckVisibility(deck.id)}
+                className={
+                  deck.visibility === 'community'
+                    ? 'shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-0.5 hover:bg-emerald-100 dark:hover:bg-emerald-900 transition'
+                    : 'shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 dark:bg-slate-800 dark:hover:bg-emerald-950 text-slate-500 border border-slate-200 dark:border-slate-700 flex items-center gap-0.5 transition'
+                }
+                title={
+                  deck.visibility === 'community'
+                    ? 'Đang chia sẻ cộng đồng (Bấm để chuyển về riêng tư)'
+                    : 'Đang riêng tư trên máy (Bấm để chia sẻ lên cộng đồng)'
+                }
+              >
+                {deck.visibility === 'community' ? (
+                  <Globe className="w-2.5 h-2.5" />
+                ) : (
+                  <Lock className="w-2.5 h-2.5" />
+                )}
+                <span>{deck.visibility === 'community' ? 'Cộng đồng' : 'Riêng tư'}</span>
+              </button>
+            ) : null}
+
+            <span className="shrink-0 text-[10px] text-slate-400 dark:text-slate-500 font-mono">
+              ({counts.totalCards} thẻ)
+            </span>
+          </div>
+        </div>
+
+        {/* Deck Anki counts */}
+        <div className="col-start-2 row-start-2 flex min-w-0 items-center gap-1.5 text-xs font-mono font-bold sm:order-2 sm:shrink-0 sm:gap-1.5">
+          <span
+            title="Thẻ mới hôm nay"
+            className="min-w-8 px-1 text-center py-0.5 rounded text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 text-xs tabular-nums"
+          >
+            {counts.newCount}
+          </span>
+          <span
+            title="Đang học lại"
+            className="min-w-8 px-1 text-center py-0.5 rounded text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 text-xs tabular-nums"
+          >
+            {counts.learnCount}
+          </span>
+          <span
+            title="Đến hạn ôn hôm nay"
+            className="min-w-8 px-1 text-center py-0.5 rounded text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 text-xs tabular-nums"
+          >
+            {counts.dueCount}
+          </span>
+        </div>
+
+        {/* Deck Actions */}
+        <div className="col-start-3 row-span-2 flex items-center gap-1 sm:order-3 sm:shrink-0 sm:gap-2">
+          {/* Quick Add Card to this deck */}
+          {onAddCard && (
+            <button
+              onClick={() => {
+                setCardTargetDeckId(deck.id);
+                setIsAddCardOpen(true);
+              }}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition"
+              title={`Thêm từ vựng vào deck ${deck.name}`}
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          {/* Quick Jump to Import for this deck */}
+          {onNavigateToImport && (
+            <button
+              onClick={() => onNavigateToImport(deck.id, deck.folderId ?? undefined)}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-950/40 transition"
+              title={`Nhập danh sách từ vào deck ${deck.name}`}
+            >
+              <FileUp className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          {/* Start Study */}
+          <button
+            onClick={() => onSelectDeckToStudy(deck)}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 shadow-xs transition hover:bg-sky-600 hover:text-white dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-sky-600 sm:h-auto sm:w-auto sm:space-x-1 sm:px-3 sm:py-1.5 sm:text-xs sm:font-bold touch-target"
+          >
+            <Play className="w-3 h-3 fill-current" />
+            <span className="hidden sm:inline">Học</span>
+          </button>
+
+          {!isBuiltin && onDeleteDeck && (
+            <button
+              onClick={() => onDeleteDeck(deck.id)}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 sm:h-auto sm:w-auto sm:p-1.5"
+              title={isCommunityDeck ? 'Bỏ khỏi thư viện' : 'Xoá deck'}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-4">
       {/* Top action buttons: Add Folder & Add Deck & Add Card */}
@@ -215,7 +362,7 @@ export function DeckFolderView({
 
           <button
             onClick={() => {
-              setDeckFolderId(folders[0]?.id || '');
+              setDeckFolderId('');
               setIsNewDeckOpen(true);
             }}
             className="px-3.5 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white text-xs font-semibold shadow-xs transition flex items-center space-x-1.5 touch-target"
@@ -311,11 +458,11 @@ export function DeckFolderView({
                     <Play className="w-3.5 h-3.5 fill-current" />
                   </button>
 
-                  {!folder.parentId && folder.id.startsWith('folder_custom_') && onDeleteFolder && (
+                  {!folder.parentId && !folder.isDefault && onDeleteFolder && (
                     <button
                       onClick={() => onDeleteFolder(folder.id)}
                       className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg"
-                      title="Xóa thư mục"
+                      title="Xoá thư mục"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -331,108 +478,37 @@ export function DeckFolderView({
                       Chưa có deck nào trong thư mục này. Bấm "Thêm Deck Mới" để tạo.
                     </div>
                   ) : (
-                    childDecks.map((deck) => {
-                      const counts = calculateDeckCounts(cards, deck.id, {
-                        newCardsPerDay: deck.newCardsPerDay,
-                        maxReviewsPerDay: deck.maxReviewsPerDay
-                      });
-
-                      return (
-                        <div
-                          key={deck.id}
-                          className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-2 py-3 pl-2 pr-3 hover:bg-slate-50/60 dark:hover:bg-slate-800/20 transition rounded-r-xl sm:flex sm:justify-between sm:gap-0 sm:pl-0 sm:pr-4"
-                        >
-                          <div className="row-span-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 sm:mr-3">
-                            {getDeckIcon(deck.cardType)}
-                          </div>
-                          <div className="col-start-2 row-start-1 min-w-0 sm:flex-1 sm:pr-2">
-                            <div className="flex min-w-0 items-center gap-2">
-                              <span className="min-w-0 flex-1 truncate text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100" title={deck.name}>
-                                {deck.name}
-                              </span>
-                              <span className="shrink-0 text-[10px] text-slate-400 dark:text-slate-500 font-mono">
-                                ({counts.totalCards} thẻ)
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Deck Anki counts */}
-                          <div className="col-start-2 row-start-2 flex min-w-0 items-center gap-1.5 text-xs font-mono font-bold sm:order-2 sm:shrink-0 sm:gap-1.5">
-                            <span
-                              title="Thẻ mới hôm nay"
-                              className="min-w-8 px-1 text-center py-0.5 rounded text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 text-xs tabular-nums"
-                            >
-                              {counts.newCount}
-                            </span>
-                            <span
-                              title="Đang học lại"
-                              className="min-w-8 px-1 text-center py-0.5 rounded text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 text-xs tabular-nums"
-                            >
-                              {counts.learnCount}
-                            </span>
-                            <span
-                              title="Đến hạn ôn hôm nay"
-                              className="min-w-8 px-1 text-center py-0.5 rounded text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 text-xs tabular-nums"
-                            >
-                              {counts.dueCount}
-                            </span>
-                          </div>
-
-                          {/* Deck Actions */}
-                          <div className="col-start-3 row-span-2 flex items-center gap-1 sm:order-3 sm:shrink-0 sm:gap-2">
-                            {/* Quick Add Card to this deck */}
-                            {onAddCard && (
-                              <button
-                                onClick={() => {
-                                  setCardTargetDeckId(deck.id);
-                                  setIsAddCardOpen(true);
-                                }}
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition"
-                                title={`Thêm từ vựng vào deck ${deck.name}`}
-                              >
-                                <Plus className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-
-                            {/* Quick Jump to Import for this deck */}
-                            {onNavigateToImport && (
-                              <button
-                                onClick={() => onNavigateToImport(deck.id, folder.id)}
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-950/40 transition"
-                                title={`Nhập danh sách từ vào deck ${deck.name}`}
-                              >
-                                <FileUp className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-
-                            {/* Start Study */}
-                            <button
-                              onClick={() => onSelectDeckToStudy(deck)}
-                              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 shadow-xs transition hover:bg-sky-600 hover:text-white dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-sky-600 sm:h-auto sm:w-auto sm:space-x-1 sm:px-3 sm:py-1.5 sm:text-xs sm:font-bold touch-target"
-                            >
-                              <Play className="w-3 h-3 fill-current" />
-                              <span className="hidden sm:inline">Học</span>
-                            </button>
-
-                            {!deck.isDefault && onDeleteDeck && (
-                              <button
-                                onClick={() => onDeleteDeck(deck.id)}
-                                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 sm:h-auto sm:w-auto sm:p-1.5"
-                                title="Xóa deck"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })
+                    childDecks.map(renderDeckRow)
                   )}
                 </div>
               )}
             </div>
           );
         })}
+
+        {/* Decks không thuộc thư mục nào */}
+        {unfiledDecks.length > 0 && (
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-xs">
+            <div className="flex items-center justify-between gap-2 p-3.5 sm:p-4 bg-slate-50/70 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-800/80">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-xs bg-slate-500">
+                  <FolderIcon className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">
+                    Chưa phân loại
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    {unfiledDecks.length} deck
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="divide-y divide-slate-100 dark:divide-slate-800/60 pl-2 sm:pl-4">
+              {unfiledDecks.map(renderDeckRow)}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* MODAL: THÊM THẺ / TỪ MỚI (LƯU LOCAL) */}
@@ -682,6 +758,7 @@ export function DeckFolderView({
                   onChange={(e) => setDeckFolderId(e.target.value)}
                   className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-sky-500 text-slate-900 dark:text-slate-100"
                 >
+                  <option value="">📂 Không thuộc thư mục nào</option>
                   {folders.map((f) => (
                     <option key={f.id} value={f.id}>
                       📁 {f.name}

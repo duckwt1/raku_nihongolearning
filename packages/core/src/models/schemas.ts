@@ -148,6 +148,8 @@ export const FolderSchema = z.object({
   description: z.string().optional(),
   color: z.string().optional(),
   parentId: z.string().nullable().default(null),
+  /** Folder nội dung có sẵn (JLPT N3) - không cho người dùng xoá */
+  isDefault: z.boolean().optional(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional()
 });
@@ -167,7 +169,14 @@ export const DeckSchema = z.object({
   newCardsPerDay: z.number().int().default(20),
   maxReviewsPerDay: z.number().int().default(50),
   isDefault: z.boolean().default(false),
-  visibility: z.enum(['community', 'private']).optional(),
+  /** Ai đang sở hữu bộ thẻ này: người dùng tạo, tải từ cộng đồng, hay nội dung có sẵn */
+  origin: z.enum(['owned', 'community', 'builtin']).default('owned'),
+  /** Riêng tư trên máy hay đã chia sẻ lên cộng đồng */
+  visibility: z.enum(['community', 'private']).default('private'),
+  /** Id document tương ứng trong collection communityDecks (nếu đã chia sẻ) */
+  communityDocId: z.string().optional(),
+  /** Deck gốc nếu deck này là bản tải từ cộng đồng */
+  sourceDeckId: z.string().optional(),
   authorName: z.string().optional(),
   authorUid: z.string().optional(),
   createdAt: z.string().optional(),

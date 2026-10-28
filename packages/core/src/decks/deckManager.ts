@@ -22,14 +22,7 @@ export const DEFAULT_FOLDERS: Folder[] = [
     description: 'Kho kiến thức chuẩn JLPT N3 đầy đủ Kanji, Từ vựng, Ngữ pháp',
     color: '#0284c7', // sky-600
     parentId: null,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: 'folder_custom',
-    name: 'Kho Cá Nhân & AI',
-    description: 'Bộ thẻ tự nhập từ file và bộ đề do AI sinh tự động',
-    color: '#8b5cf6', // violet-500
-    parentId: null,
+    isDefault: true,
     createdAt: new Date().toISOString()
   }
 ];
@@ -46,7 +39,8 @@ export const DEFAULT_DECKS: Deck[] = [
     newCardsPerDay: 20,
     maxReviewsPerDay: 50,
     isDefault: true,
-    visibility: 'community',
+    origin: 'builtin',
+    visibility: 'private',
     createdAt: new Date().toISOString()
   },
   {
@@ -60,21 +54,8 @@ export const DEFAULT_DECKS: Deck[] = [
     newCardsPerDay: 10,
     maxReviewsPerDay: 30,
     isDefault: true,
-    visibility: 'community',
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: 'deck_custom_import',
-    folderId: 'folder_custom',
-    name: 'Từ Vựng Tự Nhập (Import)',
-    description: 'Từ vựng người dùng tự dán hoặc upload từ file CSV/TSV/Anki',
-    color: '#8b5cf6',
-    cardType: 'custom',
-    cardIds: [],
-    newCardsPerDay: 20,
-    maxReviewsPerDay: 50,
-    isDefault: true,
-    visibility: 'community',
+    origin: 'builtin',
+    visibility: 'private',
     createdAt: new Date().toISOString()
   }
 ];

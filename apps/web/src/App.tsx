@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   BookOpen,
   Layers,
@@ -59,14 +59,18 @@ import {
   saveUserFolders,
   loadUserDecks,
   saveUserDecks,
+  loadDeckSyncPrefs,
+  saveDeckSyncPrefs,
   clearOfflineReviewQueue,
   clearUserDataFromBrowser
 } from './services/firestoreSync';
 import {
   fetchCommunityDecks,
   publishDeckToCommunity,
+  unpublishDeckFromCommunity,
   mergeCommunityDecksIntoLocalState
 } from './services/communitySync';
+import { deckPublishQueue } from './services/deckPublishQueue';
 // Khi cần bật lại kiểm tra mật khẩu tải lên Firestore:
 // import { isSyncAuthorized, revokeSyncAuthorization } from './services/syncSecurity';
 // import { SyncPasswordModal } from './components/SyncPasswordModal';
@@ -214,6 +218,74 @@ export function App() {
   // StudyCards state (Words and Grammar initialized for active flashcard review)
   const [allCards, setAllCards] = useState<StudyCard[]>(() => loadUserCards());
 
+  // Refs cho debounced publisher: luôn đọc dữ liệu mới nhất khi timer chạy
+  const decksRef = useRef<Deck[]>(decks);
+  const foldersRef = useRef<Folder[]>(folders);
+  const cardsRef = useRef<StudyCard[]>(allCards);
+  const userRef = useRef<User | null>(user);
+
+  useEffect(() => {
+    decksRef.current = decks;
+  }, [decks]);
+  useEffect(() => {
+    foldersRef.current = folders;
+  }, [folders]);
+  useEffect(() => {
+    cardsRef.current = allCards;
+  }, [allCards]);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
+  const publishLatestDeckSnapshot = async (deckId: string) => {
+    const currentUser = userRef.current;
+    const deck = decksRef.current.find((d) => d.id === deckId);
+    if (!currentUser || !deck) return;
+    if (deck.origin !== 'owned' || deck.visibility !== 'community') return;
+
+    const folder = foldersRef.current.find((f) => f.id === deck.folderId);
+    const cardsInDeck = cardsRef.current.filter((c) => c.deckId === deckId);
+    await publishDeckToCommunity(deck, folder, cardsInDeck, currentUser);
+  };
+
+  const scheduleDeckPublish = (deckId: string) => {
+    const deck = decksRef.current.find((d) => d.id === deckId);
+    if (!deck || deck.origin !== 'owned' || deck.visibility !== 'community') return;
+
+    deckPublishQueue.schedule(`deck:${deckId}`, async () => {
+      try {
+        await publishLatestDeckSnapshot(deckId);
+      } catch (err: any) {
+        console.warn('Lỗi publish deck (debounced):', err);
+        showSyncToast(
+          `Không thể cập nhật bộ thẻ cộng đồng: ${err?.message || err}`,
+          'warning'
+        );
+      }
+    });
+  };
+
+  const cancelDeckPublish = (deckId: string) => {
+    deckPublishQueue.cancel(`deck:${deckId}`);
+  };
+
+  // Ghi nốt các thay đổi đang chờ khi ẩn tab hoặc rời trang
+  useEffect(() => {
+    const flushPending = () => deckPublishQueue.flushAll();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') flushPending();
+    };
+
+    window.addEventListener('pagehide', flushPending);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('pagehide', flushPending);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      flushPending();
+    };
+  }, []);
+
   // Extra new cards quota for custom study ("Học thêm từ mới")
   const [extraNewCards, setExtraNewCards] = useState<number>(0);
   const [studySessionCards, setStudySessionCards] = useState<StudyCard[]>([]);
@@ -273,6 +345,8 @@ export function App() {
   // Auth listener: switch local user profiles cleanly upon sign-in/sign-out
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      // Huỷ các publish đang chờ của phiên trước trước khi đổi dữ liệu
+      deckPublishQueue.cancelAll();
       setUser(currentUser);
       const uid = currentUser?.uid || 'guest';
       const uCards = loadUserCards(uid);
@@ -309,12 +383,16 @@ export function App() {
         const currentDecks = loadUserDecks(currentUid);
         const currentFolders = loadUserFolders(currentUid);
         const currentCards = loadUserCards(currentUid);
+        const syncPrefs = loadDeckSyncPrefs(currentUid);
+        const hiddenDeckIds = new Set(syncPrefs.hiddenDeckIds);
+        const hiddenFolderIds = new Set(syncPrefs.hiddenFolderIds);
 
         const res = mergeCommunityDecksIntoLocalState(
           currentDecks,
           currentFolders,
           currentCards,
-          remoteCommunity
+          remoteCommunity,
+          { hiddenDeckIds, hiddenFolderIds, currentUid }
         );
 
         if (res.newDecksCount > 0 || res.newCardsCount > 0) {
@@ -328,6 +406,26 @@ export function App() {
             `🌐 Đã tự động cập nhật ${res.newDecksCount} bộ thẻ cộng đồng (${res.newCardsCount} từ vựng mới)!`,
             'info'
           );
+        }
+
+        // Dọn tombstone: chỉ giữ id của deck/folder vẫn còn tồn tại trên Cloud.
+        const remoteDeckIds = new Set<string>();
+        const remoteFolderIds = new Set<string>();
+        for (const payload of remoteCommunity) {
+          remoteDeckIds.add(payload.docId || payload.deck.id);
+          remoteDeckIds.add(payload.deck.id);
+          if (payload.folder) remoteFolderIds.add(payload.folder.id);
+        }
+        const nextHiddenDeckIds = syncPrefs.hiddenDeckIds.filter((id) => remoteDeckIds.has(id));
+        const nextHiddenFolderIds = syncPrefs.hiddenFolderIds.filter((id) => remoteFolderIds.has(id));
+        if (
+          nextHiddenDeckIds.length !== syncPrefs.hiddenDeckIds.length ||
+          nextHiddenFolderIds.length !== syncPrefs.hiddenFolderIds.length
+        ) {
+          saveDeckSyncPrefs(currentUid, {
+            hiddenDeckIds: nextHiddenDeckIds,
+            hiddenFolderIds: nextHiddenFolderIds
+          });
         }
       } catch (err) {
         console.warn('Lỗi khi tải bộ thẻ cộng đồng:', err);
@@ -519,29 +617,187 @@ export function App() {
       newCardsPerDay,
       maxReviewsPerDay,
       isDefault: false,
+      origin: 'owned',
+      visibility: 'private',
       authorName: user?.displayName || user?.email?.split('@')[0] || 'Thành viên',
-      authorUid: user?.uid || 'anonymous',
+      authorUid: user?.uid,
       createdAt: new Date().toISOString()
     };
     const updated = [...decks, newDeck];
     setDecks(updated);
     saveUserDecks(user?.uid, updated);
 
-    // Tự động đồng bộ lên Cloud để mọi người/bạn bè cùng thấy
-    const folder = folders.find((f) => f.id === folderId);
-    void publishDeckToCommunity(newDeck, folder, [], user);
+    const folderName = folders.find((f) => f.id === folderId)?.name;
+    showSyncToast(
+      folderName
+        ? `✓ Đã tạo bộ thẻ "${name}" trong thư mục "${folderName}" (Riêng tư trên máy).`
+        : `✓ Đã tạo bộ thẻ "${name}" (Riêng tư trên máy).`,
+      'success'
+    );
+  };
+
+  const applyDeckPatch = (deckId: string, patch: Partial<Deck>) => {
+    setDecks((prevDecks) => {
+      const updated = prevDecks.map((deck) =>
+        deck.id === deckId ? { ...deck, ...patch } : deck
+      );
+      saveUserDecks(user?.uid, updated);
+      return updated;
+    });
   };
 
   const handleDeleteFolder = (folderId: string) => {
-    const updated = folders.filter((f) => f.id !== folderId);
-    setFolders(updated);
-    saveUserFolders(user?.uid, updated);
+    const folder = folders.find((f) => f.id === folderId);
+    if (!folder) return;
+    if (folder.isDefault) {
+      showSyncToast('Không thể xoá thư mục nội dung có sẵn.', 'warning');
+      return;
+    }
+
+    const childDecks = decks.filter((deck) => deck.folderId === folderId);
+    if (childDecks.length > 0) {
+      const confirmed = window.confirm(
+        `Thư mục "${folder.name}" đang có ${childDecks.length} bộ thẻ. Xoá thư mục sẽ chuyển các bộ thẻ sang "Chưa phân loại". Tiếp tục?`
+      );
+      if (!confirmed) return;
+    }
+
+    const updatedFolders = folders.filter((f) => f.id !== folderId);
+    const updatedDecks = decks.map((deck) =>
+      deck.folderId === folderId ? { ...deck, folderId: null } : deck
+    );
+    setFolders(updatedFolders);
+    saveUserFolders(user?.uid, updatedFolders);
+    setDecks(updatedDecks);
+    saveUserDecks(user?.uid, updatedDecks);
+
+    // Giữ tombstone để loader cộng đồng không tạo lại folder vừa xoá.
+    const prefs = loadDeckSyncPrefs(user?.uid);
+    saveDeckSyncPrefs(user?.uid, {
+      ...prefs,
+      hiddenFolderIds: [...new Set([...prefs.hiddenFolderIds, folderId])]
+    });
+
+    showSyncToast(`✓ Đã xoá thư mục "${folder.name}".`, 'info');
   };
 
   const handleDeleteDeck = (deckId: string) => {
-    const updated = decks.filter((d) => d.id !== deckId);
-    setDecks(updated);
-    saveUserDecks(user?.uid, updated);
+    const deck = decks.find((d) => d.id === deckId);
+    if (!deck) return;
+    if (deck.isDefault || deck.origin === 'builtin') {
+      showSyncToast('Không thể xoá bộ thẻ nội dung có sẵn.', 'warning');
+      return;
+    }
+
+    const isCommunityDeck = deck.origin === 'community';
+    const confirmed = window.confirm(
+      isCommunityDeck
+        ? `Bỏ bộ thẻ "${deck.name}" khỏi thư viện của bạn? Bạn có thể thêm lại từ cộng đồng sau.`
+        : `Xoá bộ thẻ "${deck.name}"? Toàn bộ thẻ trong bộ này cũng sẽ bị xoá khỏi máy.`
+    );
+    if (!confirmed) return;
+
+    const shouldUnpublish = !isCommunityDeck && deck.visibility === 'community';
+    cancelDeckPublish(deckId);
+
+    // Tombstone: chặn loader cộng đồng tự thêm lại deck vừa xoá.
+    const prefs = loadDeckSyncPrefs(user?.uid);
+    const hiddenIds = [deck.id, deck.communityDocId].filter(Boolean) as string[];
+    saveDeckSyncPrefs(user?.uid, {
+      ...prefs,
+      hiddenDeckIds: [...new Set([...prefs.hiddenDeckIds, ...hiddenIds])]
+    });
+
+    const updatedDecks = decks.filter((d) => d.id !== deckId);
+    const updatedCards = allCards.filter((c) => c.deckId !== deckId);
+    setDecks(updatedDecks);
+    saveUserDecks(user?.uid, updatedDecks);
+    setAllCards(updatedCards);
+    saveUserCards(user?.uid, updatedCards);
+
+    if (shouldUnpublish) {
+      void unpublishDeckFromCommunity(deck.communityDocId || deck.id)
+        .then(() =>
+          showSyncToast(`✓ Đã xoá "${deck.name}" và gỡ khỏi cộng đồng.`, 'success')
+        )
+        .catch((err) =>
+          showSyncToast(
+            `Đã xoá trên máy nhưng chưa gỡ được khỏi cộng đồng: ${err?.message || err}`,
+            'warning'
+          )
+        );
+    } else if (isCommunityDeck) {
+      showSyncToast(`✓ Đã bỏ "${deck.name}" khỏi thư viện của bạn.`, 'info');
+    } else {
+      showSyncToast(`✓ Đã xoá bộ thẻ "${deck.name}".`, 'success');
+    }
+  };
+
+  const handleToggleDeckVisibility = (deckId: string) => {
+    const deck = decks.find((d) => d.id === deckId);
+    if (!deck || deck.origin !== 'owned' || deck.isDefault) return;
+
+    if (!user || user.isAnonymous) {
+      showSyncToast(
+        'Vui lòng đăng nhập bằng tài khoản (không dùng chế độ ẩn danh) để chia sẻ bộ thẻ lên cộng đồng.',
+        'warning'
+      );
+      return;
+    }
+
+    const prefs = loadDeckSyncPrefs(user.uid);
+
+    if (deck.visibility === 'community') {
+      cancelDeckPublish(deckId);
+      applyDeckPatch(deckId, { visibility: 'private' });
+      void unpublishDeckFromCommunity(deck.communityDocId || deck.id)
+        .then(() => showSyncToast(`✓ Đã gỡ "${deck.name}" khỏi cộng đồng.`, 'info'))
+        .catch((err) => {
+          applyDeckPatch(deckId, { visibility: 'community' });
+          showSyncToast(
+            `❌ Không thể gỡ khỏi cộng đồng: ${err?.message || err}`,
+            'warning'
+          );
+        });
+      return;
+    }
+
+    const folder = folders.find((f) => f.id === deck.folderId);
+    const cardsInDeck = allCards.filter((c) => c.deckId === deckId);
+    cancelDeckPublish(deckId);
+    saveDeckSyncPrefs(user.uid, {
+      ...prefs,
+      hiddenDeckIds: prefs.hiddenDeckIds.filter(
+        (id) => id !== deck.id && id !== (deck.communityDocId || deck.id)
+      )
+    });
+    applyDeckPatch(deckId, { visibility: 'community' });
+
+    void publishDeckToCommunity(
+      { ...deck, visibility: 'community' },
+      folder,
+      cardsInDeck,
+      user
+    )
+      .then((res) =>
+        applyDeckPatch(deckId, {
+          visibility: 'community',
+          communityDocId: res.docId
+        })
+      )
+      .then(() =>
+        showSyncToast(
+          `✓ Đã chia sẻ "${deck.name}" (${cardsInDeck.length} từ) lên cộng đồng.`,
+          'success'
+        )
+      )
+      .catch((err) => {
+        applyDeckPatch(deckId, { visibility: 'private' });
+        showSyncToast(
+          `❌ Không thể chia sẻ "${deck.name}": ${err?.message || err}`,
+          'warning'
+        );
+      });
   };
 
   const handleRateCard = (card: StudyCard, rating: number) => {
@@ -573,6 +829,7 @@ export function App() {
   };
 
   const handleSignOut = async (clearLocalData = false) => {
+    deckPublishQueue.cancelAll();
     const currentUid = user?.uid;
     if (clearLocalData && currentUid) {
       clearUserDataFromBrowser(currentUid);
@@ -644,6 +901,7 @@ export function App() {
   };
 
   const handleResetToCloud = () => {
+    deckPublishQueue.cancelAll();
     const currentUid = user?.uid || auth.currentUser?.uid;
     if (currentUid) {
       clearUserDataFromBrowser(currentUid);
@@ -851,8 +1109,14 @@ export function App() {
 
     // 2. Cập nhật Decks nếu có tạo mới
     let updatedDecks = decks;
+    let savedNewDeck = newDeck;
     if (newDeck && !decks.some((d) => d.id === newDeck.id)) {
-      updatedDecks = [...decks, newDeck];
+      savedNewDeck = {
+        ...newDeck,
+        authorUid: user?.uid,
+        authorName: user?.displayName || user?.email?.split('@')[0] || 'Thành viên'
+      };
+      updatedDecks = [...decks, savedNewDeck];
       setDecks(updatedDecks);
       saveUserDecks(currentUid, updatedDecks);
     }
@@ -868,16 +1132,30 @@ export function App() {
       'Bộ thẻ';
 
     showSyncToast(
-      `✓ Đã nhập thành công ${newCards.length} từ vào bộ thẻ "${targetDeckName}" (Lưu an toàn trên máy)!`,
+      `✓ Đã nhập thành công ${newCards.length} từ vào bộ thẻ "${targetDeckName}" (Lưu trên máy)!`,
       'success'
     );
 
-    // 4. Tự động đồng bộ lên Cloud Firestore cho mọi người cùng học
-    const deckObj = newDeck || decks.find((d) => d.id === targetDeckId);
-    if (deckObj) {
+    // 4. Chỉ đồng bộ lại lên Cloud nếu bộ thẻ đang ở chế độ Cộng đồng
+    const deckObj = savedNewDeck || decks.find((d) => d.id === targetDeckId);
+    if (
+      deckObj &&
+      deckObj.origin !== 'community' &&
+      deckObj.visibility === 'community' &&
+      user
+    ) {
       const folderObj = newFolder || folders.find((f) => f.id === deckObj.folderId);
       const allCardsForThisDeck = updatedCards.filter((c) => c.deckId === deckObj.id);
-      void publishDeckToCommunity(deckObj, folderObj, allCardsForThisDeck, user);
+      cancelDeckPublish(deckObj.id);
+      void publishDeckToCommunity(deckObj, folderObj, allCardsForThisDeck, user).catch(
+        (err) => {
+          console.warn('Lỗi auto sync community deck sau import:', err);
+          showSyncToast(
+            `Không thể cập nhật bộ thẻ cộng đồng: ${err?.message || err}`,
+            'warning'
+          );
+        }
+      );
     }
   };
 
@@ -936,13 +1214,8 @@ export function App() {
     const deckName = decks.find((d) => d.id === deckId)?.name || 'Bộ thẻ';
     showSyncToast(`✓ Đã thêm từ "${cardData.surface}" vào bộ thẻ "${deckName}" (Lưu trên máy)!`, 'success');
 
-    // Tự động cập nhật lên Cloud Firestore cho mọi người
-    const currentDeck = decks.find((d) => d.id === deckId);
-    if (currentDeck) {
-      const folder = folders.find((f) => f.id === currentDeck.folderId);
-      const allCardsInDeck = updated.filter((c) => c.deckId === deckId);
-      void publishDeckToCommunity(currentDeck, folder, allCardsInDeck, user);
-    }
+    // Gom nhiều lần thêm thẻ liên tiếp thành 1 lần ghi Firestore (debounce)
+    scheduleDeckPublish(deckId);
   };
 
   const handleNavigateToImport = (deckId: string, folderId?: string) => {
@@ -1238,6 +1511,7 @@ export function App() {
                   onCreateDeck={handleCreateDeck}
                   onDeleteDeck={handleDeleteDeck}
                   onDeleteFolder={handleDeleteFolder}
+                  onToggleDeckVisibility={handleToggleDeckVisibility}
                   onAddCard={handleAddCard}
                   onNavigateToImport={handleNavigateToImport}
                 />

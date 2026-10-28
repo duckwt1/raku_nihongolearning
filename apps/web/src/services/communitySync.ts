@@ -17,6 +17,8 @@ import { db } from './firebase';
 import { sanitizeFirestoreData } from './firestoreSync';
 
 export interface CommunityDeckPayload {
+  /** Id document Firestore (mặc định trùng deck.id với dữ liệu cũ) */
+  docId?: string;
   id: string;
   deck: Deck;
   folder?: Folder;
@@ -53,7 +55,7 @@ export async function fetchCommunityDecks(): Promise<CommunityDeckPayload[]> {
     snap.forEach((d) => {
       const data = d.data() as CommunityDeckPayload;
       if (data && data.deck && data.cards) {
-        list.push(data);
+        list.push({ ...data, docId: d.id });
       }
     });
     return list;
@@ -64,14 +66,23 @@ export async function fetchCommunityDecks(): Promise<CommunityDeckPayload[]> {
 }
 
 /**
- * Chia sẻ / Đăng tải một bộ thẻ lên Cloud Firestore làm Community Deck
+ * Chia sẻ một bộ thẻ lên Cloud Firestore làm Community Deck.
+ * Chỉ chủ sở hữu deck mới được chia sẻ; document id giữ nguyên là deck.id
+ * để tương thích với dữ liệu đã publish trước đây.
  */
 export async function publishDeckToCommunity(
   deck: Deck,
   folder: Folder | undefined,
   cardsInDeck: StudyCard[],
   user: User | null
-): Promise<{ success: boolean; cardsCount: number }> {
+): Promise<{ success: boolean; cardsCount: number; docId: string }> {
+  if (!user) {
+    throw new Error('Bạn cần đăng nhập trước khi chia sẻ bộ thẻ lên cộng đồng.');
+  }
+  if (deck.origin === 'community') {
+    throw new Error('Không thể chia sẻ lại một bộ thẻ tải từ cộng đồng.');
+  }
+
   try {
     const cleanCards = cardsInDeck.map((c) => ({
       id: c.id,
@@ -97,12 +108,14 @@ export async function publishDeckToCommunity(
     const communityDeckObj: Deck = {
       ...deck,
       visibility: 'community',
-      authorName: user?.displayName || user?.email?.split('@')[0] || 'Thành viên',
-      authorUid: user?.uid || 'anonymous',
+      authorName: user.displayName || user.email?.split('@')[0] || 'Thành viên',
+      authorUid: user.uid,
+      communityDocId: deck.id,
       updatedAt: new Date().toISOString()
     };
 
     const payload: CommunityDeckPayload = {
+      docId: deck.id,
       id: deck.id,
       deck: communityDeckObj,
       folder: folder ? { ...folder } : undefined,
@@ -117,11 +130,7 @@ export async function publishDeckToCommunity(
       syncedAt: serverTimestamp()
     }), { merge: true });
 
-    if (folder) {
-      await setDoc(doc(db, 'communityFolders', folder.id), sanitizeFirestoreData(folder), { merge: true });
-    }
-
-    return { success: true, cardsCount: cleanCards.length };
+    return { success: true, cardsCount: cleanCards.length, docId: deck.id };
   } catch (err) {
     console.error('Lỗi khi chia sẻ bộ thẻ lên cộng đồng:', err);
     throw err;
@@ -141,18 +150,29 @@ export async function unpublishDeckFromCommunity(deckId: string): Promise<boolea
   }
 }
 
+export interface CommunityMergeOptions {
+  /** Id deck người dùng đã xoá / bỏ khỏi thư viện - không merge lại */
+  hiddenDeckIds?: ReadonlySet<string>;
+  /** Id folder người dùng đã xoá - không tạo lại */
+  hiddenFolderIds?: ReadonlySet<string>;
+  /** Uid hiện tại, dùng để nhận biết deck do chính người dùng publish */
+  currentUid?: string | null;
+}
+
 /**
  * Tự động gộp các bộ thẻ cộng đồng vào bộ thẻ trên máy của người dùng.
  * Đảm bảo:
  * 1. Không ghi đè tiến độ học FSRS cá nhân của người dùng.
- * 2. Cập nhật nội dung từ vựng / ví dụ mới nhất từ tác giả.
- * 3. Tự động thêm các thẻ mới trong bộ nếu tác giả vừa bổ sung.
+ * 2. Không ghi đè deck do người dùng sở hữu (origin: 'owned' / 'builtin').
+ * 3. Không thêm lại deck/folder người dùng vừa xoá.
+ * 4. Cập nhật nội dung từ vựng / ví dụ mới nhất từ tác giả.
  */
 export function mergeCommunityDecksIntoLocalState(
   localDecks: Deck[],
   localFolders: Folder[],
   localCards: StudyCard[],
-  communityPayloads: CommunityDeckPayload[]
+  communityPayloads: CommunityDeckPayload[],
+  options: CommunityMergeOptions = {}
 ): {
   updatedDecks: Deck[];
   updatedFolders: Folder[];
@@ -160,6 +180,10 @@ export function mergeCommunityDecksIntoLocalState(
   newDecksCount: number;
   newCardsCount: number;
 } {
+  const hiddenDeckIds = options.hiddenDeckIds ?? new Set<string>();
+  const hiddenFolderIds = options.hiddenFolderIds ?? new Set<string>();
+  const currentUid = options.currentUid ?? null;
+
   const deckMap = new Map<string, Deck>(localDecks.map((d) => [d.id, d]));
   const folderMap = new Map<string, Folder>(localFolders.map((f) => [f.id, f]));
   const cardMap = new Map<string, StudyCard>(localCards.map((c) => [c.id, c]));
@@ -169,28 +193,48 @@ export function mergeCommunityDecksIntoLocalState(
 
   for (const item of communityPayloads) {
     const { deck, folder, cards } = item;
+    const docId = item.docId || deck.id;
 
-    // 1. Thêm hoặc cập nhật Folder nếu có
-    if (folder && !folderMap.has(folder.id)) {
-      folderMap.set(folder.id, folder);
+    // Người dùng đã xoá / bỏ deck này khỏi thư viện
+    if (hiddenDeckIds.has(docId) || hiddenDeckIds.has(deck.id)) continue;
+
+    const isSelfAuthored =
+      Boolean(currentUid) &&
+      (item.authorUid === currentUid || deck.authorUid === currentUid);
+
+    const existingDeck = deckMap.get(deck.id);
+
+    // Không bao giờ ghi đè deck người dùng tự tạo hoặc nội dung builtin.
+    // Deck tự publish bởi chính người dùng được xem là owned và giữ nguyên bản local.
+    if (existingDeck && (existingDeck.origin !== 'community' || isSelfAuthored)) {
+      continue;
+    }
+
+    // 1. Thêm Folder nếu có và chưa bị người dùng xoá
+    if (folder && !hiddenFolderIds.has(folder.id) && !folderMap.has(folder.id)) {
+      folderMap.set(folder.id, { ...folder, isDefault: false });
     }
 
     // 2. Thêm hoặc cập nhật Deck
-    if (!deckMap.has(deck.id)) {
+    if (!existingDeck) {
       deckMap.set(deck.id, {
         ...deck,
-        visibility: 'community'
+        origin: isSelfAuthored ? 'owned' : 'community',
+        visibility: 'community',
+        communityDocId: docId,
+        sourceDeckId: deck.id,
+        isDefault: false
       });
       newDecksCount++;
     } else {
-      // Cập nhật thông tin mô tả, tên bộ thẻ mới nhất nếu tác giả có sửa
-      const existing = deckMap.get(deck.id)!;
+      // Chỉ cập nhật metadata của deck đã tải từ cộng đồng, giữ nguyên FSRS của người dùng
       deckMap.set(deck.id, {
-        ...existing,
+        ...existingDeck,
         name: deck.name,
-        description: deck.description || existing.description,
+        description: deck.description || existingDeck.description,
         visibility: 'community',
-        authorName: deck.authorName || existing.authorName
+        communityDocId: docId,
+        authorName: deck.authorName || existingDeck.authorName
       });
     }
 

@@ -4,7 +4,9 @@ import {
   DEFAULT_DECKS,
   buildDefaultCards,
   createInitialStudyStats,
-  recordStudyActivity
+  recordStudyActivity,
+  migrateDecks,
+  migrateFolders
 } from '@raku/core';
 
 export interface OfflineReviewItem {
@@ -152,9 +154,9 @@ export function loadUserFolders(userId?: string | null): Folder[] {
   const key = getUserStorageKey('folders', userId);
   try {
     const saved = localStorage.getItem(key);
-    return saved ? JSON.parse(saved) : DEFAULT_FOLDERS;
+    return saved ? migrateFolders(JSON.parse(saved)) : migrateFolders(DEFAULT_FOLDERS);
   } catch {
-    return DEFAULT_FOLDERS;
+    return migrateFolders(DEFAULT_FOLDERS);
   }
 }
 
@@ -183,10 +185,13 @@ export function loadUserDecks(userId?: string | null): Deck[] {
     const saved = localStorage.getItem(key);
     if (saved) {
       const parsed: Deck[] = JSON.parse(saved);
-      return parsed.filter((d) => d.id !== 'deck_n3_kanji');
+      return migrateDecks(
+        parsed.filter((d) => d.id !== 'deck_n3_kanji'),
+        userId
+      );
     }
   } catch {}
-  return DEFAULT_DECKS;
+  return migrateDecks(DEFAULT_DECKS, userId);
 }
 
 /**
@@ -275,8 +280,54 @@ export function removeOfflineReviewItems(userId: string, itemIds: string[]): voi
  */
 export function clearUserDataFromBrowser(userId?: string | null): void {
   if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
-  const bases = ['cards', 'study_stats', 'folders', 'decks', 'offline_queue'];
+  const bases = ['cards', 'study_stats', 'folders', 'decks', 'offline_queue', 'deck_sync_prefs'];
   for (const b of bases) {
     localStorage.removeItem(getUserStorageKey(b, userId));
   }
+}
+
+export interface DeckSyncPrefs {
+  /** Deck đã xoá / đã bỏ khỏi thư viện - không merge lại từ Cloud */
+  hiddenDeckIds: string[];
+  /** Folder đã xoá - không merge lại từ Cloud */
+  hiddenFolderIds: string[];
+}
+
+const MAX_HIDDEN_IDS = 500;
+
+/**
+ * Tải danh sách deck/folder người dùng đã xoá.
+ * Dùng để chặn loader cộng đồng tự động thêm lại dữ liệu vừa xoá.
+ */
+export function loadDeckSyncPrefs(userId?: string | null): DeckSyncPrefs {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return { hiddenDeckIds: [], hiddenFolderIds: [] };
+  }
+  try {
+    const raw = localStorage.getItem(getUserStorageKey('deck_sync_prefs', userId));
+    if (!raw) return { hiddenDeckIds: [], hiddenFolderIds: [] };
+    const parsed = JSON.parse(raw) as Partial<DeckSyncPrefs>;
+    return {
+      hiddenDeckIds: Array.isArray(parsed.hiddenDeckIds) ? parsed.hiddenDeckIds : [],
+      hiddenFolderIds: Array.isArray(parsed.hiddenFolderIds) ? parsed.hiddenFolderIds : []
+    };
+  } catch {
+    return { hiddenDeckIds: [], hiddenFolderIds: [] };
+  }
+}
+
+export function saveDeckSyncPrefs(
+  userId: string | null | undefined,
+  prefs: DeckSyncPrefs
+): void {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(
+      getUserStorageKey('deck_sync_prefs', userId),
+      JSON.stringify({
+        hiddenDeckIds: prefs.hiddenDeckIds.slice(-MAX_HIDDEN_IDS),
+        hiddenFolderIds: prefs.hiddenFolderIds.slice(-MAX_HIDDEN_IDS)
+      })
+    );
+  } catch {}
 }

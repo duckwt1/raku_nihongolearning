@@ -11,14 +11,17 @@ import {
 
 describe('Deck and Folder Manager', () => {
   it('has default folders and decks set up correctly', () => {
-    expect(DEFAULT_FOLDERS.length).toBeGreaterThanOrEqual(2);
-    expect(DEFAULT_DECKS.length).toBeGreaterThanOrEqual(3);
+    expect(DEFAULT_FOLDERS.length).toBeGreaterThanOrEqual(1);
+    expect(DEFAULT_DECKS.length).toBeGreaterThanOrEqual(2);
 
     const n3Folder = DEFAULT_FOLDERS.find((f) => f.id === 'folder_jlpt_n3');
     expect(n3Folder).toBeDefined();
+    expect(n3Folder?.isDefault).toBe(true);
 
     const n3Decks = DEFAULT_DECKS.filter((d) => d.folderId === 'folder_jlpt_n3');
     expect(n3Decks.length).toBe(2); // Words, Grammar
+    expect(DEFAULT_DECKS.every((d) => d.origin === 'builtin')).toBe(true);
+    expect(DEFAULT_DECKS.every((d) => d.visibility === 'private')).toBe(true);
   });
 
   it('builds default cards for words and grammar', () => {

@@ -61,11 +61,7 @@ export function ImportView({
   const [filterStatus, setFilterStatus] = useState<'all' | 'ok' | 'warning' | 'error' | 'duplicate'>('all');
 
   // Target Folder & Deck Selection State
-  const defaultFolderId =
-    initialFolderId ||
-    folders.find((f) => f.id === 'folder_custom')?.id ||
-    folders[0]?.id ||
-    '';
+  const defaultFolderId = initialFolderId || '';
   const [selectedFolderId, setSelectedFolderId] = useState<string>(defaultFolderId);
 
   const availableDecks = useMemo(() => {
@@ -75,8 +71,6 @@ export function ImportView({
 
   const defaultDeckId = useMemo(() => {
     if (initialDeckId && decks.some((d) => d.id === initialDeckId)) return initialDeckId;
-    const customImportDeck = availableDecks.find((d) => d.id === 'deck_custom_import');
-    if (customImportDeck) return customImportDeck.id;
     return availableDecks[0]?.id || '';
   }, [availableDecks, initialDeckId, decks]);
 
@@ -229,6 +223,7 @@ export function ImportView({
         description: 'Thư mục tự tạo từ nhập từ vựng',
         color: '#8b5cf6',
         parentId: null,
+        isDefault: false,
         createdAt: new Date().toISOString()
       };
     }
@@ -251,6 +246,8 @@ export function ImportView({
         newCardsPerDay: 20,
         maxReviewsPerDay: 50,
         isDefault: false,
+        origin: 'owned',
+        visibility: 'private',
         createdAt: new Date().toISOString()
       };
     }
@@ -412,6 +409,7 @@ export function ImportView({
                 onChange={(e) => setSelectedFolderId(e.target.value)}
                 className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 focus:outline-hidden focus:ring-2 focus:ring-sky-500 text-slate-900 dark:text-slate-100 font-medium"
               >
+                <option value="">📂 Không thuộc thư mục nào</option>
                 {folders.map((f) => (
                   <option key={f.id} value={f.id}>
                     📁 {f.name}
@@ -487,7 +485,7 @@ export function ImportView({
               <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>
                 Đã thêm thành công <strong>{importSuccessBanner.count} từ vựng</strong> vào bộ thẻ "
-                <strong>{importSuccessBanner.deckName}</strong>" (Lưu an toàn trên máy).
+                <strong>{importSuccessBanner.deckName}</strong>" (Lưu trên máy - có thể chia sẻ lên cộng đồng sau).
               </span>
             </div>
             {onNavigateToStudy && (
