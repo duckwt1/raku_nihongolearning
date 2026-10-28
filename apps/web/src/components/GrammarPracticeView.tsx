@@ -1,124 +1,521 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   BookOpen,
-  CheckCircle2,
-  XCircle,
-  ArrowRight,
-  RotateCcw,
+  FileJson,
+  Globe,
+  Lock,
+  Pencil,
+  Play,
+  Plus,
+  Search,
   Sparkles,
-  Search
+  Trash2,
+  Users
 } from 'lucide-react';
-import { SEED_GRAMMAR, type Grammar } from '@raku/core';
+import {
+  SEED_GRAMMAR,
+  generateSeedGrammarExercises,
+  type Grammar,
+  type GrammarExerciseRecord,
+  type Question
+} from '@raku/core';
+import type { User } from '../services/firebase';
+import {
+  createGrammarExerciseId,
+  deleteGrammarExerciseFromCloud,
+  fetchPublicGrammarExercises,
+  loadLocalGrammarExercises,
+  mergeGrammarExercises,
+  publishGrammarExercise,
+  saveLocalGrammarExercises,
+  unpublishGrammarExercise
+} from '../services/grammarExerciseStore';
+import { GrammarExerciseFormModal } from './GrammarExerciseFormModal';
+import { GrammarExerciseImportModal } from './GrammarExerciseImportModal';
+import { GrammarExercisePlayer } from './GrammarExercisePlayer';
+import { GrammarAiGeneratorModal } from './GrammarAiGeneratorModal';
 
-export function GrammarPracticeView() {
+interface GrammarPracticeViewProps {
+  user: User | null;
+  onNotify?: (message: string, type?: 'success' | 'info' | 'warning') => void;
+}
+
+type ExerciseTab = 'mine' | 'community' | 'samples';
+type ExerciseSource = ExerciseTab;
+
+function typeLabel(type: string): string {
+  switch (type) {
+    case 'fill_blank':
+      return 'Điền chỗ trống';
+    case 'order':
+      return 'Sắp xếp câu';
+    case 'translate_jp_vi':
+      return 'Dịch Nhật → Việt';
+    case 'translate_vi_jp':
+      return 'Dịch Việt → Nhật';
+    default:
+      return 'Trắc nghiệm';
+  }
+}
+
+function seedRecord(grammarId: string, question: Question): GrammarExerciseRecord {
+  return {
+    ...question,
+    grammarId,
+    ownerUid: 'seed',
+    authorName: 'Raku',
+    visibility: 'public',
+    createdAt: '',
+    updatedAt: ''
+  };
+}
+
+export function GrammarPracticeView({ user, onNotify }: GrammarPracticeViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedGrammar, setSelectedGrammar] = useState<Grammar | null>(() => SEED_GRAMMAR[0] || null);
-  const [activeExerciseType, setActiveExerciseType] = useState<'fill_blank' | 'order' | 'translate'>('fill_blank');
+  const [selectedGrammarId, setSelectedGrammarId] = useState<string>(
+    () => SEED_GRAMMAR[0]?.id || ''
+  );
+  const [localExercises, setLocalExercises] = useState<GrammarExerciseRecord[]>([]);
+  const [publicExercises, setPublicExercises] = useState<GrammarExerciseRecord[]>([]);
+  const [isLoadingPublic, setIsLoadingPublic] = useState(false);
+  const [activeTab, setActiveTab] = useState<ExerciseTab>('mine');
+  const [practice, setPractice] = useState<{
+    title: string;
+    exercises: GrammarExerciseRecord[];
+  } | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingExercise, setEditingExercise] = useState<GrammarExerciseRecord | null>(null);
+  const [initialDraft, setInitialDraft] = useState<Question | null>(null);
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isAiOpen, setIsAiOpen] = useState(false);
 
-  // Exercise states
-  // 1. Fill blank:
-  const [fillAnswer, setFillAnswer] = useState<string | null>(null);
-  const [fillSubmitted, setFillSubmitted] = useState<boolean>(false);
+  const ownerUid = user?.uid || 'guest';
+  const authorName =
+    user?.displayName || user?.email?.split('@')[0] || 'Thành viên';
+  const canPublish = Boolean(user && !user.isAnonymous);
 
-  // 2. Sentence scramble / order:
-  const sampleTokens = useMemo(() => {
-    if (!selectedGrammar || !selectedGrammar.examples[0]) {
-      return ['毎日話している', 'うちに、', '好きに', 'なりました。'];
-    }
-    const jp = selectedGrammar.examples[0].jp;
-    return jp.replace(/([。、？！])/g, ' $1 ').split(/\s+/).filter(Boolean);
-  }, [selectedGrammar]);
-
-  const [shuffledTokens, setShuffledTokens] = useState<string[]>(() => {
-    return [...sampleTokens].sort(() => Math.random() - 0.5);
-  });
-  const [assembledTokens, setAssembledTokens] = useState<string[]>([]);
-  const [orderSubmitted, setOrderSubmitted] = useState<boolean>(false);
-
-  // Filter grammar points by search query
-  const filteredGrammar = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return SEED_GRAMMAR;
-    return SEED_GRAMMAR.filter((g) => {
-      return (
-        g.title.toLowerCase().includes(q) ||
-        g.explanationVi.toLowerCase().includes(q) ||
-        g.examples.some((ex) => ex.jp.includes(q) || ex.vi.toLowerCase().includes(q))
-      );
-    });
-  }, [searchQuery]);
-
-  // Reset exercise state when choosing a grammar point
-  const handleSelectGrammar = (g: Grammar) => {
-    setSelectedGrammar(g);
-    setFillAnswer(null);
-    setFillSubmitted(false);
-    setAssembledTokens([]);
-    setOrderSubmitted(false);
-
-    // Reshuffle tokens for order exercise
-    const tokens = g.examples[0]?.jp
-      ? g.examples[0].jp.replace(/([。、？！])/g, ' $1 ').split(/\s+/).filter(Boolean)
-      : ['毎日話している', 'うちに、', '好きに', 'なりました。'];
-    setShuffledTokens([...tokens].sort(() => Math.random() - 0.5));
+  const notify = (message: string, type: 'success' | 'info' | 'warning' = 'info') => {
+    onNotify?.(message, type);
   };
 
-  const isOrderCorrect = assembledTokens.join('') === sampleTokens.join('');
+  const selectedGrammar: Grammar | null = useMemo(() => {
+    return SEED_GRAMMAR.find((grammar) => grammar.id === selectedGrammarId) || SEED_GRAMMAR[0] || null;
+  }, [selectedGrammarId]);
+
+  const refreshPublic = async () => {
+    setIsLoadingPublic(true);
+    const remote = await fetchPublicGrammarExercises();
+    setPublicExercises(remote);
+    setIsLoadingPublic(false);
+  };
+
+  useEffect(() => {
+    setLocalExercises(loadLocalGrammarExercises(ownerUid));
+  }, [ownerUid]);
+
+  useEffect(() => {
+    void refreshPublic();
+    // Chỉ tải một lần khi mở tab; dữ liệu public không phụ thuộc user.
+  }, []);
+
+  const filteredGrammar = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return SEED_GRAMMAR;
+    return SEED_GRAMMAR.filter(
+      (grammar) =>
+        grammar.title.toLowerCase().includes(query) ||
+        grammar.explanationVi.toLowerCase().includes(query) ||
+        grammar.examples.some(
+          (example) =>
+            example.jp.includes(searchQuery) || example.vi.toLowerCase().includes(query)
+        )
+    );
+  }, [searchQuery]);
+
+  const mergedExercises = useMemo(
+    () => mergeGrammarExercises(localExercises, publicExercises),
+    [localExercises, publicExercises]
+  );
+
+  const exerciseCountByGrammar = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const exercise of mergedExercises) {
+      counts.set(exercise.grammarId, (counts.get(exercise.grammarId) || 0) + 1);
+    }
+    return counts;
+  }, [mergedExercises]);
+
+  const grammarExercises = useMemo(
+    () =>
+      selectedGrammar
+        ? mergedExercises.filter((exercise) => exercise.grammarId === selectedGrammar.id)
+        : [],
+    [mergedExercises, selectedGrammar]
+  );
+
+  const mineExercises = useMemo(
+    () => grammarExercises.filter((exercise) => exercise.ownerUid === ownerUid),
+    [grammarExercises, ownerUid]
+  );
+
+  const communityExercises = useMemo(
+    () =>
+      grammarExercises.filter(
+        (exercise) => exercise.visibility === 'public' && exercise.ownerUid !== ownerUid
+      ),
+    [grammarExercises, ownerUid]
+  );
+
+  const sampleExercises = useMemo(() => {
+    if (!selectedGrammar) return [];
+    const existingPrompts = new Set(grammarExercises.map((exercise) => exercise.prompt));
+    return generateSeedGrammarExercises(selectedGrammar, SEED_GRAMMAR)
+      .filter((exercise) => !existingPrompts.has(exercise.prompt))
+      .map((exercise) => seedRecord(selectedGrammar.id, exercise));
+  }, [selectedGrammar, grammarExercises]);
+
+  const allExercisesForPractice = useMemo(
+    () => [...mineExercises, ...communityExercises, ...sampleExercises],
+    [mineExercises, communityExercises, sampleExercises]
+  );
+
+  const persistLocal = (records: GrammarExerciseRecord[]) => {
+    setLocalExercises(records);
+    saveLocalGrammarExercises(ownerUid, records);
+  };
+
+  const upsertLocal = (record: GrammarExerciseRecord) => {
+    persistLocal([...localExercises.filter((item) => item.id !== record.id), record]);
+  };
+
+  const removeLocal = (exerciseId: string) => {
+    persistLocal(localExercises.filter((item) => item.id !== exerciseId));
+  };
+
+  const handleSaveExercise = async (
+    record: GrammarExerciseRecord,
+    options: { publish: boolean }
+  ) => {
+    const previous = localExercises.find((item) => item.id === record.id);
+    const nextRecord: GrammarExerciseRecord = {
+      ...record,
+      visibility: options.publish ? 'public' : 'private',
+      updatedAt: new Date().toISOString()
+    };
+    upsertLocal(nextRecord);
+
+    try {
+      if (options.publish) {
+        await publishGrammarExercise(nextRecord);
+        await refreshPublic();
+        notify('✓ Đã lưu và công khai bài tập lên ngân hàng.', 'success');
+      } else {
+        if (previous?.visibility === 'public') {
+          await unpublishGrammarExercise(record.id);
+          await refreshPublic();
+        }
+        notify('✓ Đã lưu bài tập.', 'success');
+      }
+    } catch (err) {
+      if (previous) {
+        upsertLocal(previous);
+      } else {
+        removeLocal(record.id);
+      }
+      notify(
+        `Không thể đồng bộ bài tập lên ngân hàng: ${err instanceof Error ? err.message : err}`,
+        'warning'
+      );
+      throw err;
+    }
+  };
+
+  const handleToggleVisibility = async (record: GrammarExerciseRecord) => {
+    if (record.ownerUid !== ownerUid) return;
+
+    if (record.visibility === 'public') {
+      const next = { ...record, visibility: 'private' as const, updatedAt: new Date().toISOString() };
+      upsertLocal(next);
+      try {
+        await unpublishGrammarExercise(record.id);
+        await refreshPublic();
+        notify('✓ Đã gỡ bài tập khỏi ngân hàng chung.', 'info');
+      } catch (err) {
+        upsertLocal(record);
+        notify(`Không thể gỡ bài tập: ${err instanceof Error ? err.message : err}`, 'warning');
+      }
+      return;
+    }
+
+    if (!canPublish) {
+      notify('Đăng nhập bằng tài khoản (không phải ẩn danh) để công khai bài tập.', 'warning');
+      return;
+    }
+
+    const next = { ...record, visibility: 'public' as const, updatedAt: new Date().toISOString() };
+    upsertLocal(next);
+    try {
+      await publishGrammarExercise(next);
+      await refreshPublic();
+      notify('✓ Đã công khai bài tập lên ngân hàng chung.', 'success');
+    } catch (err) {
+      upsertLocal(record);
+      notify(`Không thể công khai bài tập: ${err instanceof Error ? err.message : err}`, 'warning');
+    }
+  };
+
+  const handleDeleteExercise = async (record: GrammarExerciseRecord) => {
+    if (record.ownerUid !== ownerUid) return;
+    if (!window.confirm('Xoá bài tập này? Thao tác không thể hoàn tác.')) return;
+
+    removeLocal(record.id);
+    if (record.visibility === 'public') {
+      try {
+        await deleteGrammarExerciseFromCloud(record.id);
+        await refreshPublic();
+      } catch (err) {
+        notify(`Đã xoá trên máy nhưng chưa xoá được bản công khai: ${err instanceof Error ? err.message : err}`, 'warning');
+        return;
+      }
+    }
+    notify('✓ Đã xoá bài tập.', 'success');
+  };
+
+  const handleCopyExercise = (record: GrammarExerciseRecord) => {
+    const now = new Date().toISOString();
+    const copy: GrammarExerciseRecord = {
+      ...record,
+      id: createGrammarExerciseId(ownerUid),
+      ownerUid,
+      authorName,
+      visibility: 'private',
+      copyOf: record.id,
+      createdAt: now,
+      updatedAt: now
+    };
+    upsertLocal(copy);
+    setActiveTab('mine');
+    notify('✓ Đã lưu bài tập vào bộ của bạn.', 'success');
+  };
+
+  const handleImport = async (
+    records: GrammarExerciseRecord[],
+    options: { publish: boolean }
+  ) => {
+    const next = [...localExercises];
+    for (const record of records) {
+      const index = next.findIndex((item) => item.id === record.id);
+      if (index >= 0) next[index] = record;
+      else next.push(record);
+    }
+    persistLocal(next);
+
+    if (options.publish) {
+      for (const record of records) {
+        await publishGrammarExercise(record);
+      }
+      await refreshPublic();
+    }
+    notify(`✓ Đã lưu ${records.length} bài tập.`, 'success');
+  };
+
+  const openCreate = () => {
+    setEditingExercise(null);
+    setInitialDraft(null);
+    setIsFormOpen(true);
+  };
+
+  const openEdit = (record: GrammarExerciseRecord) => {
+    setEditingExercise(record);
+    setInitialDraft(null);
+    setIsFormOpen(true);
+  };
+
+  const startPractice = (exercises: GrammarExerciseRecord[], title: string) => {
+    if (exercises.length === 0) return;
+    setPractice({ title, exercises });
+  };
+
+  const activeExercises =
+    activeTab === 'mine'
+      ? mineExercises
+      : activeTab === 'community'
+        ? communityExercises
+        : sampleExercises;
+
+  const renderExerciseCard = (record: GrammarExerciseRecord, source: ExerciseSource) => {
+    const isOwner = record.ownerUid === ownerUid;
+    const prompt =
+      record.type === 'fill_blank'
+        ? record.prompt.replace(/\{\{blank\}\}/g, '（　　　）')
+        : record.prompt;
+
+    return (
+      <div
+        key={record.id}
+        className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs dark:border-slate-800 dark:bg-slate-900"
+      >
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-700 dark:bg-sky-950 dark:text-sky-300">
+            {typeLabel(record.type)}
+          </span>
+          {record.provenance.origin === 'ai' && (
+            <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700 dark:bg-violet-950 dark:text-violet-300">
+              AI hỗ trợ
+            </span>
+          )}
+          {record.provenance.origin === 'seed' && (
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+              Bài mẫu
+            </span>
+          )}
+          {source === 'mine' && (
+            <span
+              className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                record.visibility === 'public'
+                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                  : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+              }`}
+            >
+              {record.visibility === 'public' ? (
+                <Globe className="h-2.5 w-2.5" />
+              ) : (
+                <Lock className="h-2.5 w-2.5" />
+              )}
+              {record.visibility === 'public' ? 'Công khai' : 'Riêng tư'}
+            </span>
+          )}
+          {record.authorName && (
+            <span className="text-[10px] text-slate-400">· {record.authorName}</span>
+          )}
+        </div>
+
+        <p className="mt-2 whitespace-pre-line text-sm font-medium leading-relaxed text-slate-800 dark:text-slate-100">
+          {prompt}
+        </p>
+
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => startPractice([record], selectedGrammar?.title || 'Ngữ pháp')}
+            className="flex items-center gap-1 rounded-lg bg-sky-600 px-2.5 py-1.5 text-[11px] font-bold text-white hover:bg-sky-700"
+          >
+            <Play className="h-3 w-3 fill-current" />
+            Luyện
+          </button>
+
+          {source === 'mine' && isOwner && (
+            <>
+              <button
+                type="button"
+                onClick={() => openEdit(record)}
+                className="flex items-center gap-1 rounded-lg border border-slate-300 px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                <Pencil className="h-3 w-3" />
+                Sửa
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleToggleVisibility(record)}
+                className="flex items-center gap-1 rounded-lg border border-emerald-300 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950"
+              >
+                {record.visibility === 'public' ? (
+                  <>
+                    <Lock className="h-3 w-3" />
+                    Gỡ công khai
+                  </>
+                ) : (
+                  <>
+                    <Globe className="h-3 w-3" />
+                    Công khai
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleDeleteExercise(record)}
+                className="flex items-center gap-1 rounded-lg border border-rose-200 px-2.5 py-1.5 text-[11px] font-semibold text-rose-600 hover:bg-rose-50 dark:border-rose-900 dark:hover:bg-rose-950"
+              >
+                <Trash2 className="h-3 w-3" />
+                Xoá
+              </button>
+            </>
+          )}
+
+          {source !== 'mine' && (
+            <button
+              type="button"
+              onClick={() => handleCopyExercise(record)}
+              className="flex items-center gap-1 rounded-lg border border-slate-300 px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+            >
+              <Plus className="h-3 w-3" />
+              Lưu vào bộ của tôi
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
-      {/* Grammar list header */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="mb-4 flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
           <div>
-            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-2">
-              <BookOpen className="w-5 h-5 text-sky-600 dark:text-sky-400" />
+            <h2 className="flex items-center space-x-2 text-xl font-bold text-slate-800 dark:text-slate-100">
+              <BookOpen className="h-5 w-5 text-sky-600 dark:text-sky-400" />
               <span>Tổng Hợp Ngữ Pháp N3 ({SEED_GRAMMAR.length} điểm)</span>
             </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Toàn bộ các cấu trúc ngữ pháp N3 hay xuất hiện trong các đề thi JLPT
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+              Chọn một mẫu ngữ pháp để xem giải thích, ví dụ và luyện bài tập.
             </p>
           </div>
 
-          {/* Search bar */}
           <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm ngữ pháp (ví dụ: うちに, わけ, ため...)"
-              className="pl-9 pr-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800 dark:text-slate-100 w-full sm:w-64"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 sm:w-64"
             />
           </div>
         </div>
 
-        {/* Grammar Points Selection Cards (Scrollable) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-72 overflow-y-auto pr-1">
-          {filteredGrammar.map((g) => {
-            const isSelected = selectedGrammar?.id === g.id;
+        <div className="grid max-h-80 grid-cols-1 gap-2.5 overflow-y-auto pr-1 sm:grid-cols-2 md:grid-cols-3">
+          {filteredGrammar.map((grammar) => {
+            const isSelected = selectedGrammar?.id === grammar.id;
+            const count = exerciseCountByGrammar.get(grammar.id) || 0;
             return (
               <button
-                key={g.id}
-                onClick={() => handleSelectGrammar(g)}
-                className={`p-3.5 rounded-2xl border text-left transition flex flex-col justify-between touch-target ${
+                key={grammar.id}
+                onClick={() => {
+                  setSelectedGrammarId(grammar.id);
+                  setPractice(null);
+                  setActiveTab('mine');
+                }}
+                className={`flex flex-col justify-between rounded-2xl border p-3.5 text-left transition touch-target ${
                   isSelected
-                    ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/60 ring-2 ring-sky-400'
-                    : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 hover:border-slate-300'
+                    ? 'border-sky-500 bg-sky-50 ring-2 ring-sky-400 dark:bg-sky-950/60'
+                    : 'border-slate-200 bg-slate-50 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-800/40'
                 }`}
               >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-slate-900 dark:text-slate-100 font-sans">
-                      {g.title}
-                    </span>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-sky-100 dark:bg-sky-900 text-sky-700 dark:text-sky-300 shrink-0 ml-1">
-                      {g.jlpt}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
-                    {g.explanationVi}
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                    {grammar.title}
+                  </span>
+                  <span className="shrink-0 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700 dark:bg-sky-900 dark:text-sky-300">
+                    {grammar.jlpt || 'N3'}
+                  </span>
+                </div>
+                <div className="mt-1 flex items-center justify-between gap-2">
+                  <p className="line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
+                    {grammar.explanationVi}
                   </p>
+                  <span className="shrink-0 text-[10px] font-mono text-slate-400">
+                    {count > 0 ? `${count} bài` : 'Bài mẫu'}
+                  </span>
                 </div>
               </button>
             );
@@ -126,245 +523,200 @@ export function GrammarPracticeView() {
         </div>
       </div>
 
-      {/* Selected Grammar Details & Exercises */}
       {selectedGrammar && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-6 animate-in fade-in duration-200">
+        <div className="space-y-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div>
-            <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-50 font-sans">
+            <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-50">
               {selectedGrammar.title}
             </h3>
-            <p className="text-sm text-slate-600 dark:text-slate-300 mt-2 leading-relaxed">
+            <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
               {selectedGrammar.explanationVi}
             </p>
           </div>
 
-          {/* Example Sentences */}
           <div className="space-y-2">
-            <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              Ví dụ trong đề thi:
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              Ví dụ
             </h4>
             <div className="space-y-2">
-              {selectedGrammar.examples.map((ex, idx) => (
+              {selectedGrammar.examples.map((example, index) => (
                 <div
-                  key={idx}
-                  className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 space-y-1"
+                  key={`${selectedGrammar.id}_${index}`}
+                  className="space-y-1 rounded-xl border border-slate-100 bg-slate-50 p-3.5 dark:border-slate-800 dark:bg-slate-800/60"
                 >
-                  <div className="text-sm font-medium text-slate-800 dark:text-slate-100 font-sans leading-relaxed">
-                    {ex.jp}
+                  <div className="text-sm font-medium leading-relaxed text-slate-800 dark:text-slate-100">
+                    {example.jp}
                   </div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400">
-                    {ex.vi}
-                  </div>
+                  {example.vi && !example.vi.startsWith('Ví dụ minh họa cho mẫu câu') && (
+                    <div className="text-xs text-slate-500 dark:text-slate-400">{example.vi}</div>
+                  )}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Interactive Exercises Tabs */}
-          <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-1.5">
-                <Sparkles className="w-4 h-4 text-amber-500" />
-                <span>Luyện tập với cấu trúc này</span>
+          <div className="space-y-4 border-t border-slate-100 pt-4 dark:border-slate-800">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h4 className="flex items-center gap-1.5 text-base font-bold text-slate-800 dark:text-slate-100">
+                <Sparkles className="h-4 w-4 text-amber-500" />
+                Ngân hàng bài tập
               </h4>
-
-              <div className="flex items-center space-x-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-medium">
+              <div className="flex flex-wrap items-center gap-1.5">
                 <button
-                  onClick={() => setActiveExerciseType('fill_blank')}
-                  className={`px-3 py-1.5 rounded-lg transition ${
-                    activeExerciseType === 'fill_blank'
-                      ? 'bg-white dark:bg-slate-700 shadow-sm text-sky-600 dark:text-sky-300 font-bold'
-                      : 'text-slate-600 dark:text-slate-400'
-                  }`}
+                  type="button"
+                  onClick={() => startPractice(allExercisesForPractice, selectedGrammar.title)}
+                  disabled={allExercisesForPractice.length === 0}
+                  className="flex items-center gap-1 rounded-xl bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
                 >
-                  Điền chỗ trống
+                  <Play className="h-3 w-3 fill-current" />
+                  Luyện tất cả ({allExercisesForPractice.length})
                 </button>
                 <button
-                  onClick={() => setActiveExerciseType('order')}
-                  className={`px-3 py-1.5 rounded-lg transition ${
-                    activeExerciseType === 'order'
-                      ? 'bg-white dark:bg-slate-700 shadow-sm text-sky-600 dark:text-sky-300 font-bold'
-                      : 'text-slate-600 dark:text-slate-400'
-                  }`}
+                  type="button"
+                  onClick={openCreate}
+                  className="flex items-center gap-1 rounded-xl bg-sky-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-sky-700"
                 >
-                  Sắp xếp câu
+                  <Plus className="h-3.5 w-3.5" />
+                  Thêm bài
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsImportOpen(true)}
+                  className="flex items-center gap-1 rounded-xl border border-slate-300 px-3 py-1.5 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                >
+                  <FileJson className="h-3.5 w-3.5" />
+                  Nhập JSON
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsAiOpen(true)}
+                  className="flex items-center gap-1 rounded-xl border border-violet-300 px-3 py-1.5 text-[11px] font-semibold text-violet-700 hover:bg-violet-50 dark:border-violet-800 dark:text-violet-300 dark:hover:bg-violet-950"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  AI tạo
                 </button>
               </div>
             </div>
 
-            {/* Exercise 1: Fill blank */}
-            {activeExerciseType === 'fill_blank' && (
-              <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-4">
-                <div className="text-base font-medium text-slate-800 dark:text-slate-100 leading-relaxed font-sans text-center">
-                  {selectedGrammar.examples[0]?.jp
-                    ? selectedGrammar.examples[0].jp.replace(
-                        selectedGrammar.title.split(' ')[0] || '',
-                        '（　　　）'
-                      )
-                    : 'ご飯を（　　　）、薬を飲みます。'}
+            {practice ? (
+              <GrammarExercisePlayer
+                exercises={practice.exercises}
+                title={practice.title}
+                onExit={() => setPractice(null)}
+              />
+            ) : (
+              <>
+                <div className="flex flex-wrap items-center gap-1 rounded-xl bg-slate-100 p-1 text-xs font-semibold dark:bg-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('mine')}
+                    className={`rounded-lg px-3 py-1.5 transition ${
+                      activeTab === 'mine'
+                        ? 'bg-white font-bold text-sky-600 shadow-sm dark:bg-slate-700 dark:text-sky-300'
+                        : 'text-slate-600 dark:text-slate-400'
+                    }`}
+                  >
+                    Bài của tôi ({mineExercises.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('community')}
+                    className={`flex items-center gap-1 rounded-lg px-3 py-1.5 transition ${
+                      activeTab === 'community'
+                        ? 'bg-white font-bold text-sky-600 shadow-sm dark:bg-slate-700 dark:text-sky-300'
+                        : 'text-slate-600 dark:text-slate-400'
+                    }`}
+                  >
+                    <Users className="h-3 w-3" />
+                    Cộng đồng ({communityExercises.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('samples')}
+                    className={`rounded-lg px-3 py-1.5 transition ${
+                      activeTab === 'samples'
+                        ? 'bg-white font-bold text-sky-600 shadow-sm dark:bg-slate-700 dark:text-sky-300'
+                        : 'text-slate-600 dark:text-slate-400'
+                    }`}
+                  >
+                    Bài mẫu ({sampleExercises.length})
+                  </button>
                 </div>
-                <p className="text-xs text-slate-400 text-center">
-                  Chọn mẫu ngữ pháp phù hợp để hoàn thành câu trên:
-                </p>
 
-                {/* Choices */}
-                <div className="grid grid-cols-2 gap-2.5 max-w-md mx-auto">
-                  {[
-                    selectedGrammar.title.split(' ')[0] || 'うちに',
-                    'かわりに',
-                    'ついでに',
-                    'たびに'
-                  ].map((choice) => {
-                    const isSelected = fillAnswer === choice;
-                    return (
+                {isLoadingPublic && activeTab === 'community' ? (
+                  <p className="py-6 text-center text-xs text-slate-400">
+                    Đang tải bài tập cộng đồng...
+                  </p>
+                ) : activeExercises.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-slate-300 p-6 text-center dark:border-slate-700">
+                    <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+                      Chưa có bài tập trong mục này.
+                    </p>
+                    <p className="mt-1 text-xs text-slate-400">
+                      Thêm bài thủ công, nhập JSON hoặc lưu bài mẫu về bộ của bạn.
+                    </p>
+                    {activeTab === 'mine' && (
                       <button
-                        key={choice}
-                        disabled={fillSubmitted}
-                        onClick={() => setFillAnswer(choice)}
-                        className={`p-3.5 duo-chip text-sm transition touch-target ${
-                          isSelected ? 'duo-chip-selected' : ''
-                        }`}
+                        type="button"
+                        onClick={openCreate}
+                        className="mt-3 inline-flex items-center gap-1 rounded-xl bg-sky-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-sky-700"
                       >
-                        {choice}
+                        <Plus className="h-3.5 w-3.5" />
+                        Thêm bài tập đầu tiên
                       </button>
-                    );
-                  })}
-                </div>
-
-                {!fillSubmitted ? (
-                  <div className="text-center pt-2">
-                    <button
-                      disabled={!fillAnswer}
-                      onClick={() => setFillSubmitted(true)}
-                      className="px-8 py-3 duo-btn-3d duo-btn-sky text-xs rounded-xl shadow-sm touch-target"
-                    >
-                      Kiểm tra đáp án
-                    </button>
+                    )}
                   </div>
                 ) : (
-                  <div
-                    className={`p-4 rounded-2xl border-2 space-y-2 shadow-sm ${
-                      fillAnswer === (selectedGrammar.title.split(' ')[0] || 'うちに')
-                        ? 'bg-emerald-50 dark:bg-emerald-950/70 border-emerald-400 dark:border-emerald-700 animate-duo-pop'
-                        : 'bg-rose-50 dark:bg-rose-950/70 border-rose-300 dark:border-rose-700 animate-duo-shake'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-2 text-sm font-bold">
-                      {fillAnswer === (selectedGrammar.title.split(' ')[0] || 'うちに') ? (
-                        <div className="text-emerald-700 dark:text-emerald-300 flex items-center space-x-1.5">
-                          <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                          <span>Chính xác! Đáp án đúng là: {selectedGrammar.title.split(' ')[0]} 🎉</span>
-                        </div>
-                      ) : (
-                        <div className="text-rose-700 dark:text-rose-300 flex items-center space-x-1.5">
-                          <XCircle className="w-5 h-5 text-rose-600 dark:text-rose-400" />
-                          <span>Chưa chính xác! Đáp án đúng là: {selectedGrammar.title.split(' ')[0]}</span>
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-300">
-                      Giải thích: {selectedGrammar.explanationVi}
-                    </p>
+                  <div className="grid grid-cols-1 gap-2.5">
+                    {activeExercises.map((record) => renderExerciseCard(record, activeTab))}
                   </div>
                 )}
-              </div>
-            )}
-
-            {/* Exercise 2: Sentence Scramble / Order (Section 9.2) */}
-            {activeExerciseType === 'order' && (
-              <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-4">
-                <div className="text-xs text-slate-500 dark:text-slate-400 text-center">
-                  Chạm vào các mảnh ghép bên dưới để ghép thành câu đúng:
-                </div>
-
-                {/* Assembled tokens slot */}
-                <div className="min-h-[58px] p-3 rounded-2xl bg-white dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-600 flex flex-wrap gap-2 items-center justify-center transition-all">
-                  {assembledTokens.length === 0 ? (
-                    <span className="text-xs text-slate-400 italic">Câu ghép sẽ xuất hiện ở đây...</span>
-                  ) : (
-                    assembledTokens.map((token, idx) => (
-                      <button
-                        key={`${token}-${idx}`}
-                        disabled={orderSubmitted}
-                        onClick={() => {
-                          setAssembledTokens((prev) => prev.filter((_, i) => i !== idx));
-                        }}
-                        className="px-3.5 py-2 rounded-xl bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-200 text-xs font-bold shadow-sm hover:bg-rose-100 dark:hover:bg-rose-950 hover:text-rose-700 transition animate-duo-pop border border-sky-300 dark:border-sky-800"
-                        title="Bấm để gỡ mảnh ghép này"
-                      >
-                        {token} ✕
-                      </button>
-                    ))
-                  )}
-                </div>
-
-                {/* Available tokens pool */}
-                <div className="flex flex-wrap gap-2.5 justify-center pt-2">
-                  {shuffledTokens.map((token, idx) => {
-                    const isUsed = assembledTokens.includes(token);
-                    return (
-                      <button
-                        key={idx}
-                        disabled={isUsed || orderSubmitted}
-                        onClick={() => setAssembledTokens((prev) => [...prev, token])}
-                        className={`px-4 py-2.5 rounded-xl text-xs font-bold transition touch-target ${
-                          isUsed
-                            ? 'opacity-25 border-2 border-dashed border-slate-300 dark:border-slate-700 bg-transparent shadow-none cursor-default'
-                            : 'duo-chip'
-                        }`}
-                      >
-                        {token}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="flex items-center justify-center space-x-3 pt-2">
-                  <button
-                    disabled={orderSubmitted || assembledTokens.length === 0}
-                    onClick={() => setAssembledTokens([])}
-                    className="px-4 py-2.5 duo-btn-3d duo-btn-neutral text-xs rounded-xl flex items-center space-x-1.5"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Làm lại</span>
-                  </button>
-                  <button
-                    disabled={orderSubmitted || assembledTokens.length < sampleTokens.length}
-                    onClick={() => setOrderSubmitted(true)}
-                    className="px-6 py-2.5 duo-btn-3d duo-btn-sky text-xs rounded-xl flex items-center space-x-1.5"
-                  >
-                    <span>Kiểm tra câu ghép</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                {orderSubmitted && (
-                  <div
-                    className={`p-4 rounded-2xl border-2 space-y-1 shadow-sm ${
-                      isOrderCorrect
-                        ? 'bg-emerald-50 dark:bg-emerald-950/70 border-emerald-400 dark:border-emerald-700 animate-duo-pop'
-                        : 'bg-rose-50 dark:bg-rose-950/70 border-rose-300 dark:border-rose-700 animate-duo-shake'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-2 text-sm font-bold">
-                      {isOrderCorrect ? (
-                        <div className="text-emerald-700 dark:text-emerald-300 flex items-center space-x-1.5">
-                          <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                          <span>Xuất sắc! Bạn đã sắp xếp đúng câu hoàn chỉnh. 🎉</span>
-                        </div>
-                      ) : (
-                        <div className="text-rose-700 dark:text-rose-300 flex items-center space-x-1.5">
-                          <XCircle className="w-5 h-5 text-rose-600 dark:text-rose-400" />
-                          <span>Chưa chính xác! Câu đúng là: {sampleTokens.join('')}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
+              </>
             )}
           </div>
         </div>
+      )}
+
+      {selectedGrammar && (
+        <>
+          <GrammarExerciseFormModal
+            isOpen={isFormOpen}
+            grammar={selectedGrammar}
+            allGrammar={SEED_GRAMMAR}
+            ownerUid={ownerUid}
+            authorName={authorName}
+            canPublish={canPublish}
+            editing={editingExercise}
+            initialDraft={initialDraft}
+            onClose={() => {
+              setIsFormOpen(false);
+              setEditingExercise(null);
+              setInitialDraft(null);
+            }}
+            onSave={handleSaveExercise}
+          />
+
+          <GrammarExerciseImportModal
+            isOpen={isImportOpen}
+            grammar={selectedGrammar}
+            ownerUid={ownerUid}
+            authorName={authorName}
+            canPublish={canPublish}
+            onClose={() => setIsImportOpen(false)}
+            onImport={handleImport}
+          />
+
+          <GrammarAiGeneratorModal
+            isOpen={isAiOpen}
+            grammar={selectedGrammar}
+            ownerUid={ownerUid}
+            authorName={authorName}
+            onClose={() => setIsAiOpen(false)}
+            onSave={async (records) => {
+              await handleImport(records, { publish: false });
+            }}
+          />
+        </>
       )}
     </div>
   );

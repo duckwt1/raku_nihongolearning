@@ -36,4 +36,14 @@ describe('Worker API Routing & AI endpoints', () => {
     const res = await worker.fetch(req, fakeEnv, fakeCtx);
     expect(res.status).toBe(401);
   });
+
+  it('rejects /api/ai/grammar-exercises when no Authorization token is provided', async () => {
+    const req = new Request('http://localhost/api/ai/grammar-exercises', {
+      method: 'POST',
+      body: JSON.stringify({ grammar: { id: 'g1', title: 'test', explanationVi: 'test' } }),
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const res = await worker.fetch(req, fakeEnv, fakeCtx);
+    expect(res.status).toBe(401);
+  });
 });

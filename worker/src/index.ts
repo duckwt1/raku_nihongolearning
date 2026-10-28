@@ -6,6 +6,7 @@ import {
   ImportRecord,
   ImportRecordSchema,
   validateQuestion,
+  validateGrammarExercise,
   SEED_WORDS
 } from '@raku/core';
 
@@ -175,6 +176,220 @@ Từ điển tham khảo chuẩn: ${JSON.stringify(sampleDict)}`;
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : 'Lỗi khi gọi mô hình AI';
           return jsonResponse({ error: `Không thể tạo câu hỏi: ${msg}` }, 500);
+        }
+      }
+
+      // AI Grammar Exercise Generator
+      if (url.pathname === '/api/ai/grammar-exercises') {
+        if (request.method !== 'POST') {
+          return jsonResponse({ error: 'Method Not Allowed' }, 405);
+        }
+
+        const token = extractBearerToken(request.headers.get('Authorization'));
+        if (!token) {
+          return jsonResponse({ error: 'Cần đăng nhập (Firebase ID token) để sử dụng tính năng AI' }, 401);
+        }
+
+        const projectId = env.FIREBASE_PROJECT_ID || 'raku-nihongo-learning';
+        try {
+          await verifyFirebaseIdToken(token, projectId);
+        } catch {
+          return jsonResponse({ error: 'Token đăng nhập không hợp lệ hoặc đã hết hạn' }, 401);
+        }
+
+        const apiKey = env.GEMINI_API_KEY;
+        if (!apiKey) {
+          return jsonResponse(
+            { error: 'Chưa cấu hình GEMINI_API_KEY. Vui lòng thiết lập wrangler secret.' },
+            503
+          );
+        }
+
+        let body: {
+          grammar?: {
+            id?: string;
+            title?: string;
+            explanationVi?: string;
+            examples?: Array<{ jp?: string; vi?: string }>;
+            jlpt?: string;
+          };
+          template?: {
+            types?: string[];
+            count?: number;
+            difficulty?: number;
+          };
+          avoidPrompts?: string[];
+        };
+        try {
+          body = await request.json();
+        } catch {
+          return jsonResponse({ error: 'Dữ liệu JSON gửi lên không hợp lệ' }, 400);
+        }
+
+        const grammar = body.grammar;
+        if (!grammar?.id || !grammar.title || !grammar.explanationVi) {
+          return jsonResponse({ error: 'Thiếu thông tin grammar point.' }, 400);
+        }
+
+        const allowedTypes = [
+          'fill_blank',
+          'order',
+          'translate_jp_vi',
+          'translate_vi_jp',
+          'K7'
+        ] as const;
+        const requestedTypes = (body.template?.types || ['fill_blank', 'order']).filter(
+          (type): type is (typeof allowedTypes)[number] =>
+            allowedTypes.includes(type as (typeof allowedTypes)[number])
+        );
+        if (requestedTypes.length === 0) {
+          return jsonResponse({ error: 'Không có loại bài tập hợp lệ.' }, 400);
+        }
+
+        const count = Math.min(Math.max(body.template?.count || 3, 1), 10);
+        const difficulty = Math.min(Math.max(body.template?.difficulty || 2, 1), 5);
+        const examples = (grammar.examples || [])
+          .slice(0, 5)
+          .map((example) => ({ jp: String(example.jp || '').slice(0, 300), vi: String(example.vi || '').slice(0, 300) }))
+          .filter((example) => example.jp);
+        const avoidPrompts = (body.avoidPrompts || []).slice(0, 50).map((prompt) => String(prompt).slice(0, 500));
+
+        const model = env.AI_MODEL || 'gemini-1.5-flash';
+        const provider = new GeminiAiProvider(apiKey, model);
+
+        const responseSchema = {
+          type: 'OBJECT',
+          properties: {
+            questions: {
+              type: 'ARRAY',
+              items: {
+                type: 'OBJECT',
+                properties: {
+                  type: { type: 'STRING', enum: [...allowedTypes] },
+                  prompt: { type: 'STRING' },
+                  answer: { type: 'STRING' },
+                  choices: { type: 'ARRAY', items: { type: 'STRING' } },
+                  tokens: { type: 'ARRAY', items: { type: 'STRING' } },
+                  explanationVi: { type: 'STRING' },
+                  sourceExample: { type: 'STRING' },
+                  difficulty: { type: 'INTEGER' }
+                },
+                required: ['type', 'prompt', 'answer', 'explanationVi']
+              }
+            }
+          },
+          required: ['questions']
+        };
+
+        const systemPrompt = `Bạn là giáo viên tiếng Nhật tạo bài tập cho người Việt.
+QUY TẮC BẮT BUỘC:
+1. Chỉ tạo bài tập cho đúng mẫu ngữ pháp trong <<<GRAMMAR>>>.
+2. fill_blank: prompt phải chứa đúng một marker "{{blank}}"; answer là phần cần điền; câu sau khi điền phải khớp một trong các ví dụ gốc; phải có 3-4 lựa chọn trong choices, answer nằm trong choices.
+3. order: tokens là các mảnh ghép theo thứ tự đúng; answer là câu hoàn chỉnh; tokens.join('') phải bằng answer.
+4. translate_jp_vi / translate_vi_jp: prompt là câu nguồn, answer là bản dịch.
+5. K7: phải có đúng 4 lựa chọn trong choices, answer nằm trong choices.
+6. explanationVi luôn là tiếng Việt, ngắn gọn.
+7. Không bịa cách đọc, nghĩa hoặc ngữ pháp ngoài dữ liệu được cung cấp.
+8. Chỉ trả về JSON đúng schema, không thêm chữ ngoài JSON.
+9. Tránh trùng với các prompt trong avoidPrompts.`;
+
+        const userPrompt = `<<<GRAMMAR>>>
+${JSON.stringify({
+  id: grammar.id,
+  title: String(grammar.title).slice(0, 200),
+  explanationVi: String(grammar.explanationVi).slice(0, 2000),
+  jlpt: grammar.jlpt || 'N3',
+  examples
+})}
+<<<END_GRAMMAR>>>
+
+Hãy tạo ${count} bài tập thuộc các loại: ${requestedTypes.join(', ')}.
+Độ khó: ${difficulty}.
+Tránh các prompt sau: ${JSON.stringify(avoidPrompts)}`;
+
+        try {
+          const rawResult = await provider.generateText({
+            systemPrompt,
+            userPrompt,
+            temperature: 0.35,
+            responseSchema
+          });
+          const parsed = JSON.parse(rawResult) as unknown;
+          const record = parsed && typeof parsed === 'object' ? (parsed as { questions?: unknown[] }) : {};
+          const rawQuestions = Array.isArray(parsed)
+            ? parsed
+            : Array.isArray(record.questions)
+              ? record.questions
+              : [];
+
+          const validQuestions: Question[] = [];
+          const rejected: Array<{ index: number; reason: string }> = [];
+          const seenPrompts = new Set(avoidPrompts.map((prompt) => prompt.trim().toLowerCase()));
+
+          rawQuestions.forEach((item, index) => {
+            if (!item || typeof item !== 'object') {
+              rejected.push({ index, reason: 'Không phải object.' });
+              return;
+            }
+            const rawItem = item as Record<string, unknown>;
+            const type = String(rawItem.type || '');
+            if (!allowedTypes.includes(type as (typeof allowedTypes)[number])) {
+              rejected.push({ index, reason: `Loại bài không hợp lệ: ${type}` });
+              return;
+            }
+
+            const question: Question = {
+              id: `q_ai_grammar_${Date.now()}_${index}`,
+              type: type as Question['type'],
+              prompt: typeof rawItem.prompt === 'string' ? rawItem.prompt : '',
+              answer: typeof rawItem.answer === 'string' ? rawItem.answer : '',
+              choices: Array.isArray(rawItem.choices) ? rawItem.choices.map(String) : undefined,
+              tokens: Array.isArray(rawItem.tokens) ? rawItem.tokens.map(String) : undefined,
+              explanationVi:
+                typeof rawItem.explanationVi === 'string' ? rawItem.explanationVi : '',
+              kanjiRefs: [],
+              wordRefs: [],
+              grammarRefs: [String(grammar.id)],
+              grammarId: String(grammar.id),
+              sourceExample:
+                typeof rawItem.sourceExample === 'string' ? rawItem.sourceExample : examples[0]?.jp,
+              difficulty:
+                typeof rawItem.difficulty === 'number'
+                  ? Math.min(5, Math.max(1, Math.round(rawItem.difficulty)))
+                  : difficulty,
+              provenance: {
+                origin: 'ai',
+                model,
+                generatedAt: new Date().toISOString(),
+                verified: false
+              }
+            };
+
+            const promptKey = question.prompt.trim().toLowerCase();
+            if (seenPrompts.has(promptKey)) {
+              rejected.push({ index, reason: 'Trùng prompt đã có.' });
+              return;
+            }
+
+            const validation = validateGrammarExercise(question);
+            if (!validation.valid) {
+              rejected.push({ index, reason: validation.errors.join('; ') });
+              return;
+            }
+
+            seenPrompts.add(promptKey);
+            validQuestions.push(question);
+          });
+
+          return jsonResponse({
+            success: true,
+            totalGenerated: validQuestions.length,
+            questions: validQuestions.slice(0, count),
+            rejected
+          });
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : 'Lỗi khi gọi mô hình AI';
+          return jsonResponse({ error: `Không thể tạo bài tập: ${msg}` }, 500);
         }
       }
 

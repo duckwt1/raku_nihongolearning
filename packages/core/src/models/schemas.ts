@@ -110,10 +110,30 @@ export const QuestionSchema = z.object({
   kanjiRefs: z.array(z.string()).default([]),
   wordRefs: z.array(z.string()).default([]),
   grammarRefs: z.array(z.string()).default([]),
+  /** Grammar point mà bài tập này thuộc về */
+  grammarId: z.string().optional(),
+  /** Câu ví dụ gốc dùng để sinh/grounding bài tập */
+  sourceExample: z.string().optional(),
   difficulty: z.number().int().min(1).max(5).default(1),
   provenance: QuestionProvenanceSchema
 });
 export type Question = z.infer<typeof QuestionSchema>;
+
+/**
+ * Bài tập ngữ pháp được lưu trong ngân hàng cá nhân/cộng đồng.
+ * Kế thừa toàn bộ Question và thêm metadata sở hữu/chia sẻ.
+ */
+export const GrammarExerciseRecordSchema = QuestionSchema.extend({
+  grammarId: z.string().min(1),
+  ownerUid: z.string().min(1),
+  authorName: z.string().optional(),
+  visibility: z.enum(['private', 'public']).default('private'),
+  /** Id bài gốc nếu đây là bản copy từ người khác */
+  copyOf: z.string().optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional()
+});
+export type GrammarExerciseRecord = z.infer<typeof GrammarExerciseRecordSchema>;
 
 /**
  * Import Record Schema (Section 5B.4)

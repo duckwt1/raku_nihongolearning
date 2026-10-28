@@ -1635,7 +1635,9 @@ export function App() {
         )}
 
         {/* TAB 3: GRAMMAR & EXERCISES (G4) */}
-        {activeTab === 'grammar' && <GrammarPracticeView />}
+        {activeTab === 'grammar' && (
+          <GrammarPracticeView user={user} onNotify={showSyncToast} />
+        )}
 
         {/* TAB 4: IMPORT (G2b & G5b) */}
         {activeTab === 'import' && (

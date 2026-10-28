@@ -280,7 +280,7 @@ export function removeOfflineReviewItems(userId: string, itemIds: string[]): voi
  */
 export function clearUserDataFromBrowser(userId?: string | null): void {
   if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
-  const bases = ['cards', 'study_stats', 'folders', 'decks', 'offline_queue', 'deck_sync_prefs'];
+  const bases = ['cards', 'study_stats', 'folders', 'decks', 'offline_queue', 'deck_sync_prefs', 'grammar_exercises'];
   for (const b of bases) {
     localStorage.removeItem(getUserStorageKey(b, userId));
   }
