@@ -197,15 +197,16 @@ export function DeckFolderView({
     return (
       <div
         key={deck.id}
-        className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-2 py-3 pl-2 pr-3 hover:bg-slate-50/60 dark:hover:bg-slate-800/20 transition rounded-r-xl sm:flex sm:justify-between sm:gap-0 sm:pl-0 sm:pr-4"
+        className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-2.5 gap-y-2 px-3 py-3 transition hover:bg-slate-50/60 dark:hover:bg-slate-800/20 sm:flex sm:items-center sm:justify-between sm:gap-0 sm:rounded-r-xl sm:py-3 sm:pl-0 sm:pr-4"
       >
-        <div className="row-span-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 sm:mr-3">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 sm:mr-3 sm:h-7 sm:w-7">
           {getDeckIcon(deck.cardType)}
         </div>
-        <div className="col-start-2 row-start-1 min-w-0 sm:flex-1 sm:pr-2">
-          <div className="flex min-w-0 items-center gap-2">
+
+        <div className="min-w-0 sm:flex-1 sm:pr-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5 sm:gap-y-1">
             <span
-              className="min-w-0 flex-1 truncate text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100"
+              className="w-full min-w-0 break-words text-sm font-semibold leading-snug text-slate-800 dark:text-slate-100 sm:w-auto sm:flex-1"
               title={deck.name}
             >
               {deck.name}
@@ -237,6 +238,11 @@ export function DeckFolderView({
                     ? 'Đang chia sẻ cộng đồng (Bấm để chuyển về riêng tư)'
                     : 'Đang riêng tư trên máy (Bấm để chia sẻ lên cộng đồng)'
                 }
+                aria-label={
+                  deck.visibility === 'community'
+                    ? `Gỡ chia sẻ cộng đồng bộ thẻ ${deck.name}`
+                    : `Chia sẻ bộ thẻ ${deck.name} lên cộng đồng`
+                }
               >
                 {deck.visibility === 'community' ? (
                   <Globe className="w-2.5 h-2.5" />
@@ -253,73 +259,83 @@ export function DeckFolderView({
           </div>
         </div>
 
-        {/* Deck Anki counts */}
-        <div className="col-start-2 row-start-2 flex min-w-0 items-center gap-1.5 text-xs font-mono font-bold sm:order-2 sm:shrink-0 sm:gap-1.5">
-          <span
-            title="Thẻ mới hôm nay"
-            className="min-w-8 px-1 text-center py-0.5 rounded text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 text-xs tabular-nums"
-          >
-            {counts.newCount}
-          </span>
-          <span
-            title="Đang học lại"
-            className="min-w-8 px-1 text-center py-0.5 rounded text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 text-xs tabular-nums"
-          >
-            {counts.learnCount}
-          </span>
-          <span
-            title="Đến hạn ôn hôm nay"
-            className="min-w-8 px-1 text-center py-0.5 rounded text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 text-xs tabular-nums"
-          >
-            {counts.dueCount}
-          </span>
-        </div>
-
-        {/* Deck Actions */}
-        <div className="col-start-3 row-span-2 flex items-center gap-1 sm:order-3 sm:shrink-0 sm:gap-2">
-          {/* Quick Add Card to this deck */}
-          {onAddCard && (
-            <button
-              onClick={() => {
-                setCardTargetDeckId(deck.id);
-                setIsAddCardOpen(true);
-              }}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition"
-              title={`Thêm từ vựng vào deck ${deck.name}`}
+        <div className="col-span-2 flex flex-wrap items-center justify-between gap-2 sm:contents">
+          {/* Deck Anki counts */}
+          <div className="flex min-w-0 items-center gap-1.5 text-xs font-mono font-bold sm:order-2 sm:shrink-0 sm:gap-1.5">
+            <span
+              title="Thẻ mới hôm nay"
+              aria-label={`${counts.newCount} thẻ mới`}
+              className="min-w-7 px-1 text-center py-0.5 rounded text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 text-xs tabular-nums sm:min-w-8"
             >
-              <Plus className="w-3.5 h-3.5" />
-            </button>
-          )}
-
-          {/* Quick Jump to Import for this deck */}
-          {onNavigateToImport && (
-            <button
-              onClick={() => onNavigateToImport(deck.id, deck.folderId ?? undefined)}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-950/40 transition"
-              title={`Nhập danh sách từ vào deck ${deck.name}`}
+              {counts.newCount}
+            </span>
+            <span
+              title="Đang học lại"
+              aria-label={`${counts.learnCount} thẻ đang học lại`}
+              className="min-w-7 px-1 text-center py-0.5 rounded text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 text-xs tabular-nums sm:min-w-8"
             >
-              <FileUp className="w-3.5 h-3.5" />
-            </button>
-          )}
-
-          {/* Start Study */}
-          <button
-            onClick={() => onSelectDeckToStudy(deck)}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 shadow-xs transition hover:bg-sky-600 hover:text-white dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-sky-600 sm:h-auto sm:w-auto sm:space-x-1 sm:px-3 sm:py-1.5 sm:text-xs sm:font-bold touch-target"
-          >
-            <Play className="w-3 h-3 fill-current" />
-            <span className="hidden sm:inline">Học</span>
-          </button>
-
-          {showDelete && onDeleteDeck && (
-            <button
-              onClick={() => onDeleteDeck(deck.id)}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 sm:h-auto sm:w-auto sm:p-1.5"
-              title="Xoá deck"
+              {counts.learnCount}
+            </span>
+            <span
+              title="Đến hạn ôn hôm nay"
+              aria-label={`${counts.dueCount} thẻ đến hạn ôn`}
+              className="min-w-7 px-1 text-center py-0.5 rounded text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 text-xs tabular-nums sm:min-w-8"
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              {counts.dueCount}
+            </span>
+          </div>
+
+          {/* Deck Actions */}
+          <div className="ml-auto flex shrink-0 items-center gap-1 sm:order-3 sm:ml-0 sm:gap-2">
+            {/* Quick Add Card to this deck */}
+            {onAddCard && (
+              <button
+                onClick={() => {
+                  setCardTargetDeckId(deck.id);
+                  setIsAddCardOpen(true);
+                }}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition sm:h-auto sm:w-auto sm:p-1.5"
+                title={`Thêm từ vựng vào deck ${deck.name}`}
+                aria-label={`Thêm từ vựng vào deck ${deck.name}`}
+              >
+                <Plus className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+              </button>
+            )}
+
+            {/* Quick Jump to Import for this deck */}
+            {onNavigateToImport && (
+              <button
+                onClick={() => onNavigateToImport(deck.id, deck.folderId ?? undefined)}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-950/40 transition sm:h-auto sm:w-auto sm:p-1.5"
+                title={`Nhập danh sách từ vào deck ${deck.name}`}
+                aria-label={`Nhập danh sách từ vào deck ${deck.name}`}
+              >
+                <FileUp className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+              </button>
+            )}
+
+            {/* Start Study */}
+            <button
+              onClick={() => onSelectDeckToStudy(deck)}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 shadow-xs transition hover:bg-sky-600 hover:text-white dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-sky-600 sm:h-auto sm:w-auto sm:space-x-1 sm:px-3 sm:py-1.5 sm:text-xs sm:font-bold touch-target"
+              title={`Học deck ${deck.name}`}
+              aria-label={`Học deck ${deck.name}`}
+            >
+              <Play className="w-4 h-4 fill-current sm:w-3 sm:h-3" />
+              <span className="hidden sm:inline">Học</span>
             </button>
-          )}
+
+            {showDelete && onDeleteDeck && (
+              <button
+                onClick={() => onDeleteDeck(deck.id)}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 sm:h-auto sm:w-auto sm:p-1.5"
+                title="Xoá deck"
+                aria-label={`Xoá deck ${deck.name}`}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -328,7 +344,7 @@ export function DeckFolderView({
   return (
     <div className="space-y-4">
       {/* Top action buttons: Add Folder & Add Deck & Add Card */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-2.5">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-raku-accent">Chọn một chặng</p>
           <h2 className="mt-1 flex items-center gap-2 text-xl font-bold tracking-tight text-raku-ink">
@@ -340,7 +356,7 @@ export function DeckFolderView({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
           {/* Add Card Button */}
           {onAddCard && (
             <button
@@ -348,7 +364,7 @@ export function DeckFolderView({
                 setCardTargetDeckId(decks[0]?.id || '');
                 setIsAddCardOpen(true);
               }}
-              className="px-3 py-1.5 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-semibold hover:bg-emerald-100 transition flex items-center space-x-1.5 touch-target shadow-xs"
+              className="px-3 py-1.5 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-semibold hover:bg-emerald-100 transition flex items-center justify-center space-x-1.5 touch-target shadow-xs"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Thêm Thẻ Mới</span>
@@ -357,7 +373,7 @@ export function DeckFolderView({
 
           <button
             onClick={() => setIsNewFolderOpen(true)}
-            className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-50 transition flex items-center space-x-1.5 touch-target shadow-xs"
+            className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-50 transition flex items-center justify-center space-x-1.5 touch-target shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Thêm Thư Mục</span>
@@ -368,7 +384,9 @@ export function DeckFolderView({
               setDeckFolderId('');
               setIsNewDeckOpen(true);
             }}
-            className="px-3.5 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white text-xs font-semibold shadow-xs transition flex items-center space-x-1.5 touch-target"
+            className={`px-3.5 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white text-xs font-semibold shadow-xs transition flex items-center justify-center space-x-1.5 touch-target ${
+              onAddCard ? 'col-span-2 sm:col-span-1' : ''
+            }`}
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Thêm Deck Mới</span>
@@ -395,7 +413,9 @@ export function DeckFolderView({
                   className="col-start-1 row-start-1 flex min-w-0 items-center gap-2.5 cursor-pointer select-none sm:flex-1 sm:order-1"
                 >
                   <button
-                    aria-label="Toggle folder"
+                    type="button"
+                    aria-label={`${isCollapsed ? 'Mở' : 'Thu gọn'} thư mục ${folder.name}`}
+                    aria-expanded={!isCollapsed}
                     className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                   >
                     {isCollapsed ? (
@@ -417,8 +437,8 @@ export function DeckFolderView({
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                      <h3 className="min-w-0 flex-1 truncate text-sm font-bold text-slate-900 dark:text-slate-100" title={folder.name}>
+                    <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5 sm:gap-y-1">
+                      <h3 className="min-w-0 flex-1 break-words text-sm font-bold leading-snug text-slate-900 dark:text-slate-100" title={folder.name}>
                         {folder.name}
                       </h3>
                       <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium">
@@ -456,6 +476,7 @@ export function DeckFolderView({
                   <button
                     onClick={() => onSelectFolderToStudy(folder)}
                     title={`Học toàn bộ thư mục ${folder.name}`}
+                    aria-label={`Học toàn bộ thư mục ${folder.name}`}
                     className="p-2 rounded-xl bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white shadow-xs touch-target flex items-center space-x-1"
                   >
                     <Play className="w-3.5 h-3.5 fill-current" />
@@ -464,8 +485,9 @@ export function DeckFolderView({
                   {!folder.parentId && !folder.isDefault && onDeleteFolder && (
                     <button
                       onClick={() => onDeleteFolder(folder.id)}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg"
+                      className="flex items-center justify-center p-2 rounded-lg text-slate-400 hover:text-rose-600 touch-target sm:min-h-0 sm:min-w-0 sm:p-1.5"
                       title="Xoá thư mục"
+                      aria-label={`Xoá thư mục ${folder.name}`}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -498,7 +520,7 @@ export function DeckFolderView({
                   <FolderIcon className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">
+                  <h3 className="break-words text-sm font-bold leading-snug text-slate-900 dark:text-slate-100">
                     Chưa phân loại
                   </h3>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400">

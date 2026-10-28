@@ -1526,18 +1526,18 @@ export function App() {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+                <div className="flex items-center justify-between gap-2 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
                   <button
                     onClick={() => {
                       setStudySessionCards([]);
                       setIsStudying(false);
                     }}
-                    className="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center space-x-1"
+                    className="shrink-0 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center space-x-1"
                   >
                     <span>← Dừng phiên ôn tập</span>
                   </button>
 
-                  <span className="text-xs font-bold text-sky-700 dark:text-sky-300">
+                  <span className="min-w-0 flex-1 break-words text-right text-xs font-bold text-sky-700 dark:text-sky-300">
                     Đang học: {activeStudyTarget?.title || 'Tất cả thẻ'}
                   </span>
                 </div>
