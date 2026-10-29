@@ -257,7 +257,7 @@ export function GrammarExerciseView({
     const selected = pickPrioritized(pool, count, practiceStore.stats);
     startPractice(
       selected,
-      `Bài tập ${pool[0]?.grammarPattern || selected[0]?.grammarPattern || ''}`,
+      'Bài tập theo mẫu ngữ pháp',
       pool
     );
   };

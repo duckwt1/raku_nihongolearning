@@ -247,16 +247,8 @@ export function GrammarExercisePlayer({
             {typeLabel(exercise.type)}
           </span>
           <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-            {exercise.grammarPattern}
+            {exercise.jlpt}
           </span>
-          {exercise.tags.map((tag) => (
-            <span
-              key={tag}
-              className="rounded-full bg-white px-2 py-0.5 text-[10px] text-slate-400 dark:bg-slate-900"
-            >
-              #{tag}
-            </span>
-          ))}
         </div>
 
         <div className="whitespace-pre-line text-base font-medium leading-relaxed text-slate-800 dark:text-slate-100">
@@ -379,6 +371,19 @@ export function GrammarExercisePlayer({
                 {exercise.explanationVi}
               </p>
             )}
+            <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-current/15 pt-2 text-[11px]">
+              <span className="font-semibold">Ngữ pháp:</span>
+              <span className="font-mono font-bold">{exercise.grammarPattern}</span>
+              <span className="opacity-75">· {exercise.grammarTitle}</span>
+              {exercise.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full bg-white/60 px-2 py-0.5 dark:bg-slate-900/60"
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
           </div>
         )}
 
