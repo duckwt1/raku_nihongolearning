@@ -7,6 +7,9 @@ interface TodayStatsBarProps {
   totalNewToday: number;
   /** Số từ/mục mới thực sự được học lần đầu trong ngày */
   newItemsLearnedToday: number;
+  newWordGoal: number;
+  currentStreak: number;
+  longestStreak: number;
   onQuickStudy?: () => void;
   onStudyMoreNew?: () => void;
 }
@@ -16,6 +19,9 @@ export function TodayStatsBar({
   totalDueToday,
   totalNewToday,
   newItemsLearnedToday,
+  newWordGoal,
+  currentStreak,
+  longestStreak,
   onQuickStudy,
   onStudyMoreNew
 }: TodayStatsBarProps) {
@@ -26,7 +32,11 @@ export function TodayStatsBar({
     : studySeconds > 0
       ? 'Dưới 1 phút học'
       : 'Chưa học hôm nay';
-  const isDailyGoalFinished = reviewedCount > 0 && totalDueToday === 0 && totalNewToday === 0;
+  const isDailyGoalFinished =
+    newItemsLearnedToday >= newWordGoal &&
+    reviewedCount > 0 &&
+    totalDueToday === 0 &&
+    totalNewToday === 0;
   const hasWorkToday = totalDueToday > 0 || totalNewToday > 0;
   const totalToday = reviewedCount + totalDueToday + totalNewToday;
   const progress = totalToday > 0 ? Math.round((reviewedCount / totalToday) * 100) : 0;
@@ -132,14 +142,16 @@ export function TodayStatsBar({
           <span className="raku-daily-stat__icon raku-daily-stat__icon--gold"><BookOpen aria-hidden="true" /></span>
           <div>
             <span className="raku-daily-stat__label">Từ mới đã học</span>
-            <strong>{newItemsLearnedToday}<small> từ</small></strong>
+            <strong>{newItemsLearnedToday}<small>/{newWordGoal} từ</small></strong>
           </div>
         </div>
         <div className="raku-daily-stat">
           <span className="raku-daily-stat__icon raku-daily-stat__icon--ink"><Flame aria-hidden="true" /></span>
           <div>
             <span className="raku-daily-stat__label">Chuỗi ngày</span>
-            <strong>{stats.streakDays}<small> ngày</small></strong>
+            <strong title={`Chuỗi dài nhất: ${longestStreak} ngày`}>
+              {currentStreak}<small> ngày</small>
+            </strong>
           </div>
         </div>
       </div>

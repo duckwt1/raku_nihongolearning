@@ -5,6 +5,7 @@ export * from './models/schemas.js';
 export * from './questions/validation.js';
 export * from './data/index.js';
 export * from './fsrs/studySession.js';
+export * from './fsrs/studyCalendar.js';
 export * from './import/parser.js';
 export * from './quiz/generators.js';
 export * from './decks/deckManager.js';

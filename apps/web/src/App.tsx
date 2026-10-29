@@ -36,7 +36,8 @@ import {
   createInitialStudyStats,
   getTodayDateString,
   isCardLearnedToday,
-  countNewItemsLearnedToday,
+  getDailyNewWordCounts,
+  calculateStudyStreaks,
   canDeleteDeck,
   type JlptLevel
 } from '@raku/core';
@@ -65,6 +66,9 @@ import {
   saveUserDecks,
   loadDeckSyncPrefs,
   saveDeckSyncPrefs,
+  loadDailyNewWordGoal,
+  saveDailyNewWordGoal,
+  DAILY_NEW_WORD_GOAL_OPTIONS,
   clearOfflineReviewQueue,
   clearUserDataFromBrowser
 } from './services/firestoreSync';
@@ -88,6 +92,7 @@ import { AiQuizGeneratorModal } from './components/AiQuizGeneratorModal';
 import { AuthModal } from './components/AuthModal';
 import { KanjiModal } from './components/KanjiModal';
 import { TodayStatsBar } from './components/TodayStatsBar';
+import { StudyHeatmap } from './components/StudyHeatmap';
 import { DeckFolderView } from './components/DeckFolderView';
 import { CloudConflictModal } from './components/CloudConflictModal';
 
@@ -228,6 +233,13 @@ export function App() {
 
   // StudyCards state (Words and Grammar initialized for active flashcard review)
   const [allCards, setAllCards] = useState<StudyCard[]>(() => loadUserCards());
+  const [dailyNewWordGoal, setDailyNewWordGoal] = useState<number>(() =>
+    loadDailyNewWordGoal()
+  );
+
+  useEffect(() => {
+    setDailyNewWordGoal(loadDailyNewWordGoal(user?.uid || 'guest'));
+  }, [user?.uid]);
 
   // Refs cho debounced publisher: luôn đọc dữ liệu mới nhất khi timer chạy
   const decksRef = useRef<Deck[]>(decks);
@@ -469,7 +481,7 @@ export function App() {
   }, [kanjiSearch]);
 
   // Overall totals due and new across all cards
-  const { totalDueToday, totalNewToday, newItemsLearnedToday } = useMemo(() => {
+  const { totalDueToday, totalNewToday } = useMemo(() => {
     let due = 0;
     let nw = 0;
     const now = new Date();
@@ -496,10 +508,26 @@ export function App() {
     const remainingDailyNew = Math.max(0, 20 - learnedToday);
     return {
       totalDueToday: due,
-      totalNewToday: Math.min(nw, remainingDailyNew),
-      newItemsLearnedToday: countNewItemsLearnedToday(allCards, todayStr)
+      totalNewToday: Math.min(nw, remainingDailyNew)
     };
   }, [allCards]);
+
+  const todayKey = getTodayDateString();
+  const dailyNewWords = useMemo(() => getDailyNewWordCounts(allCards), [allCards]);
+  const streak = useMemo(
+    () => calculateStudyStreaks(dailyNewWords, todayKey, dailyNewWordGoal),
+    [dailyNewWords, todayKey, dailyNewWordGoal]
+  );
+  const newWordsToday = dailyNewWords.get(todayKey) || 0;
+
+  useEffect(() => {
+    setStudyStats((prev) => {
+      if (prev.streakDays === streak.currentStreak) return prev;
+      const next = { ...prev, streakDays: streak.currentStreak };
+      saveUserStudyStats(user?.uid, next);
+      return next;
+    });
+  }, [streak.currentStreak, user?.uid]);
 
   const getCardsForTarget = useCallback(
     (target: StudyTarget | null) => {
@@ -596,6 +624,12 @@ export function App() {
     const queue = buildReviewQueue(allCards, 20, 50, new Date(), 20).queue;
     setStudySessionCards(queue);
     setIsStudying(true);
+  };
+
+  const handleDailyNewWordGoalChange = (goal: number) => {
+    saveDailyNewWordGoal(user?.uid || 'guest', goal);
+    setDailyNewWordGoal(goal);
+    showSyncToast(`✓ Đã đặt mục tiêu ${goal} từ mới/ngày.`, 'success');
   };
 
   const handleCreateFolder = (name: string, description?: string, color?: string) => {
@@ -1518,9 +1552,19 @@ export function App() {
                   stats={studyStats}
                   totalDueToday={totalDueToday}
                   totalNewToday={totalNewToday}
-                  newItemsLearnedToday={newItemsLearnedToday}
+                  newItemsLearnedToday={newWordsToday}
+                  newWordGoal={dailyNewWordGoal}
+                  currentStreak={streak.currentStreak}
+                  longestStreak={streak.longestStreak}
                   onQuickStudy={handleQuickStudyToday}
                   onStudyMoreNew={handleQuickStudyMoreNew}
+                />
+
+                <StudyHeatmap
+                  counts={dailyNewWords}
+                  goal={dailyNewWordGoal}
+                  currentStreak={streak.currentStreak}
+                  longestStreak={streak.longestStreak}
                 />
 
                 {/* 2. Hierarchical Decks & Folders View (Anki style) */}
@@ -1968,6 +2012,39 @@ export function App() {
                 </section>
               </div>
             </div>
+
+            <section
+              aria-labelledby="study-goal-title"
+              className="rounded-2xl border border-raku-line bg-raku-surface p-4 sm:p-5"
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 id="study-goal-title" className="flex items-center gap-2 text-base font-bold text-raku-ink">
+                    <Sparkles className="h-4 w-4 text-amber-500" aria-hidden="true" />
+                    Mục tiêu từ mới mỗi ngày
+                  </h3>
+                  <p className="mt-1 text-sm leading-5 text-raku-muted">
+                    Chuỗi ngày chỉ được tính khi bạn học đủ số từ mới này trong ngày.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {DAILY_NEW_WORD_GOAL_OPTIONS.map((goal) => (
+                    <button
+                      key={goal}
+                      type="button"
+                      onClick={() => handleDailyNewWordGoalChange(goal)}
+                      className={`min-h-10 rounded-xl border px-3.5 text-xs font-semibold transition ${
+                        dailyNewWordGoal === goal
+                          ? 'border-emerald-400 bg-emerald-50 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-200'
+                          : 'border-raku-line bg-white text-raku-muted hover:bg-raku-subtle dark:bg-slate-800'
+                      }`}
+                    >
+                      {goal} từ/ngày
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </section>
 
             <GrammarAdminPanel user={user} onNotify={showSyncToast} />
           </div>

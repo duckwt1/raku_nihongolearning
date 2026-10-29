@@ -70,7 +70,10 @@ export {
   loadUserDecks,
   saveUserDecks,
   loadDeckSyncPrefs,
-  saveDeckSyncPrefs
+  saveDeckSyncPrefs,
+  loadDailyNewWordGoal,
+  saveDailyNewWordGoal,
+  DAILY_NEW_WORD_GOAL_OPTIONS
 } from './userStorage';
 import {
   getOfflineReviewQueue,

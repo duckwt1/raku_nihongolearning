@@ -286,7 +286,7 @@ export function removeOfflineReviewItems(userId: string, itemIds: string[]): voi
  */
 export function clearUserDataFromBrowser(userId?: string | null): void {
   if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
-  const bases = ['cards', 'study_stats', 'folders', 'decks', 'offline_queue', 'deck_sync_prefs', 'grammar_exercises', 'grammar_practice_stats'];
+  const bases = ['cards', 'study_stats', 'folders', 'decks', 'offline_queue', 'deck_sync_prefs', 'grammar_exercises', 'grammar_practice_stats', 'daily_new_word_goal'];
   for (const b of bases) {
     localStorage.removeItem(getUserStorageKey(b, userId));
   }
@@ -336,4 +336,30 @@ export function saveDeckSyncPrefs(
       })
     );
   } catch {}
+}
+
+export const DAILY_NEW_WORD_GOAL_OPTIONS = [10, 15, 20] as const;
+
+export function loadDailyNewWordGoal(userId?: string | null): number {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return 10;
+  try {
+    const raw = localStorage.getItem(getUserStorageKey('daily_new_word_goal', userId));
+    const parsed = Number(raw);
+    return DAILY_NEW_WORD_GOAL_OPTIONS.includes(parsed as 10 | 15 | 20) ? parsed : 10;
+  } catch {
+    return 10;
+  }
+}
+
+export function saveDailyNewWordGoal(
+  userId: string | null | undefined,
+  goal: number
+): void {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
+  if (!DAILY_NEW_WORD_GOAL_OPTIONS.includes(goal as 10 | 15 | 20)) return;
+  try {
+    localStorage.setItem(getUserStorageKey('daily_new_word_goal', userId), String(goal));
+  } catch {
+    // ignore
+  }
 }
