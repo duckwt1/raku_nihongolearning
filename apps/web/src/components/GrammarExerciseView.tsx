@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  FileText,
   ListChecks,
   Pencil,
   Play,
@@ -16,8 +17,16 @@ import {
 import {
   deleteGrammarExercise,
   fetchGrammarExercises,
-  saveGrammarExercise
+  saveGrammarExercise,
+  saveGrammarExercises
 } from '../services/grammarExerciseStore';
+import {
+  exerciseAccuracy,
+  loadGrammarPracticeStore,
+  recordGrammarPracticeSession,
+  type GrammarPracticeSession,
+  type GrammarPracticeStore
+} from '../services/grammarPracticeStatsStore';
 import type { User } from '../services/firebase';
 import type {
   Grammar,
@@ -27,6 +36,7 @@ import type {
 } from '@raku/core';
 import { GrammarExerciseFormModal } from './GrammarExerciseFormModal';
 import { GrammarExercisePlayer } from './GrammarExercisePlayer';
+import { GrammarExerciseImportModal } from './GrammarExerciseImportModal';
 
 interface GrammarExerciseViewProps {
   user: User | null;
@@ -71,12 +81,18 @@ export function GrammarExerciseView({
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingExercise, setEditingExercise] = useState<GrammarExercise | null>(null);
   const [practice, setPractice] = useState<{
     title: string;
     exercises: GrammarExercise[];
     pool: GrammarExercise[];
+    startedAt: string;
   } | null>(null);
+  const [practiceStore, setPracticeStore] = useState<GrammarPracticeStore>({
+    stats: {},
+    sessions: []
+  });
   const [error, setError] = useState<string | null>(null);
 
   const notify = (message: string, type: 'success' | 'info' | 'warning' = 'info') => {
@@ -121,6 +137,10 @@ export function GrammarExerciseView({
       cancelled = true;
     };
   }, [level]);
+
+  useEffect(() => {
+    setPracticeStore(loadGrammarPracticeStore(user?.uid || 'guest'));
+  }, [user?.uid]);
 
   useEffect(() => {
     if (!initialTarget) return;
@@ -168,9 +188,56 @@ export function GrammarExerciseView({
       ? 'Bài tập'
       : grammarPoints.find((grammar) => grammar.id === grammarFilter)?.pattern || 'Bài tập';
 
+  const levelStats = Object.values(practiceStore.stats).filter(
+    (stat) => stat.jlpt === level
+  );
+  const totalAttempts = levelStats.reduce((sum, stat) => sum + stat.attempts, 0);
+  const totalCorrect = levelStats.reduce((sum, stat) => sum + stat.correct, 0);
+  const overallAccuracy =
+    totalAttempts > 0 ? Math.round((totalCorrect / totalAttempts) * 100) : 0;
+  const recentSessions = practiceStore.sessions
+    .filter((session) => session.level === level)
+    .slice(0, 5);
+
   const startPractice = (items: GrammarExercise[], title: string) => {
     if (items.length === 0) return;
-    setPractice({ title, exercises: items, pool: items });
+    setPractice({
+      title,
+      exercises: items,
+      pool: items,
+      startedAt: new Date().toISOString()
+    });
+  };
+
+  const handleComplete = (
+    results: Array<{
+      exerciseId: string;
+      grammarId: string;
+      jlpt: JlptLevel;
+      correct: boolean;
+    }>
+  ) => {
+    if (!practice || results.length === 0) return;
+    const session: GrammarPracticeSession = {
+      id: `gps_${Date.now()}`,
+      startedAt: practice.startedAt,
+      completedAt: new Date().toISOString(),
+      level: results[0]?.jlpt || level,
+      grammarIds: Array.from(new Set(results.map((result) => result.grammarId))),
+      exerciseIds: results.map((result) => result.exerciseId),
+      total: results.length,
+      correct: results.filter((result) => result.correct).length
+    };
+    const next = recordGrammarPracticeSession(
+      user?.uid || 'guest',
+      session,
+      results
+    );
+    setPracticeStore(next);
+    notify(
+      `✓ Đã lưu kết quả: đúng ${session.correct}/${session.total} câu.`,
+      'success'
+    );
   };
 
   const startRandom = () => {
@@ -211,6 +278,12 @@ export function GrammarExerciseView({
     }
   };
 
+  const handleImport = async (items: GrammarExercise[]) => {
+    await saveGrammarExercises(items);
+    await loadExercises();
+    notify(`✓ Đã import ${items.length} bài tập.`, 'success');
+  };
+
   const openCreate = () => {
     if (grammarPoints.length === 0) {
       setError(`Chưa có grammar point ${level}. Import grammar trước.`);
@@ -225,6 +298,7 @@ export function GrammarExerciseView({
       exercise.type === 'fill_blank'
         ? exercise.prompt.replace(/\{\{blank\}\}/g, '（　　　）')
         : exercise.prompt;
+    const stat = practiceStore.stats[exercise.id];
 
     return (
       <div
@@ -239,6 +313,17 @@ export function GrammarExerciseView({
             {exercise.grammarPattern}
           </span>
           <span className="text-[10px] text-slate-400">Độ khó {exercise.difficulty}</span>
+          {stat && (
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                stat.lastCorrect
+                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                  : 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+              }`}
+            >
+              {stat.correct}/{stat.attempts} · {exerciseAccuracy(stat)}%
+            </span>
+          )}
           {exercise.tags.map((tag) => (
             <span
               key={tag}
@@ -313,14 +398,24 @@ export function GrammarExerciseView({
               Làm mới
             </button>
             {isAdmin && (
-              <button
-                type="button"
-                onClick={openCreate}
-                className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-emerald-700"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Tạo bài tập
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => setIsImportOpen(true)}
+                  className="flex items-center gap-1.5 rounded-xl border border-emerald-300 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950"
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  Nhập CSV
+                </button>
+                <button
+                  type="button"
+                  onClick={openCreate}
+                  className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-emerald-700"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Tạo bài tập
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -422,6 +517,33 @@ export function GrammarExerciseView({
             {error}
           </p>
         )}
+
+        {levelStats.length > 0 && (
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3.5 dark:border-slate-800 dark:bg-slate-800/40">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+              <span className="font-semibold text-slate-600 dark:text-slate-300">
+                Đã luyện {totalAttempts} lượt · Đúng {overallAccuracy}%
+              </span>
+              {recentSessions.length > 0 && (
+                <details className="text-[11px] text-slate-500 dark:text-slate-400">
+                  <summary className="cursor-pointer font-semibold text-sky-600 dark:text-sky-400">
+                    Lịch sử gần đây
+                  </summary>
+                  <div className="mt-2 space-y-1">
+                    {recentSessions.map((session) => (
+                      <div key={session.id} className="flex items-center justify-between gap-3">
+                        <span>{new Date(session.completedAt).toLocaleString('vi-VN')}</span>
+                        <span className="font-mono">
+                          {session.correct}/{session.total}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {practice ? (
@@ -432,6 +554,7 @@ export function GrammarExerciseView({
             canLoadMore={practice.pool.length > practice.exercises.length}
             onLoadMore={loadMore}
             onExit={() => setPractice(null)}
+            onComplete={handleComplete}
           />
         </div>
       ) : isLoading ? (
@@ -472,6 +595,15 @@ export function GrammarExerciseView({
           onSave={handleSave}
         />
       )}
+
+      <GrammarExerciseImportModal
+        isOpen={isImportOpen}
+        grammarPoints={grammarPoints}
+        createdByUid={user?.uid || ''}
+        createdByName={user?.displayName || user?.email?.split('@')[0]}
+        onClose={() => setIsImportOpen(false)}
+        onImport={handleImport}
+      />
     </div>
   );
 }

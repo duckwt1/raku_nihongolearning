@@ -1,4 +1,11 @@
-import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore';
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  setDoc,
+  writeBatch
+} from 'firebase/firestore';
 import {
   GrammarExerciseSchema,
   validateGrammarExercise,
@@ -75,6 +82,20 @@ export async function saveGrammarExercise(exercise: GrammarExercise): Promise<vo
     sanitizeFirestoreData({ ...exercise, visibility: 'public' }),
     { merge: true }
   );
+}
+
+export async function saveGrammarExercises(exercises: GrammarExercise[]): Promise<void> {
+  for (let i = 0; i < exercises.length; i += 400) {
+    const batch = writeBatch(db);
+    for (const exercise of exercises.slice(i, i + 400)) {
+      batch.set(
+        doc(db, 'grammarExercises', exercise.id),
+        sanitizeFirestoreData({ ...exercise, visibility: 'public' }),
+        { merge: true }
+      );
+    }
+    await batch.commit();
+  }
 }
 
 export async function deleteGrammarExercise(exerciseId: string): Promise<void> {

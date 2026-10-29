@@ -8,6 +8,14 @@ interface GrammarExercisePlayerProps {
   onExit: () => void;
   onLoadMore?: () => void;
   canLoadMore?: boolean;
+  onComplete?: (
+    results: Array<{
+      exerciseId: string;
+      grammarId: string;
+      jlpt: GrammarExercise['jlpt'];
+      correct: boolean;
+    }>
+  ) => void;
 }
 
 function normalizeAnswer(text: string): string {
@@ -55,13 +63,23 @@ export function GrammarExercisePlayer({
   title,
   onExit,
   onLoadMore,
-  canLoadMore
+  canLoadMore,
+  onComplete
 }: GrammarExercisePlayerProps) {
   const [index, setIndex] = useState(0);
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
   const [assembledKeys, setAssembledKeys] = useState<number[]>([]);
   const [translateInput, setTranslateInput] = useState('');
   const [checked, setChecked] = useState(false);
+  const [isSessionComplete, setIsSessionComplete] = useState(false);
+  const [results, setResults] = useState<
+    Array<{
+      exerciseId: string;
+      grammarId: string;
+      jlpt: GrammarExercise['jlpt'];
+      correct: boolean;
+    }>
+  >([]);
 
   const exercise = exercises[index];
   const shuffledChoices = useMemo(() => {
@@ -112,15 +130,43 @@ export function GrammarExercisePlayer({
     setChecked(false);
   };
 
+  const retryCurrent = () => {
+    setResults((prev) => prev.filter((result) => result.exerciseId !== exercise.id));
+    reset();
+  };
+
+  const handleCheck = () => {
+    if (checked) return;
+    setResults((prev) => [
+      ...prev.filter((result) => result.exerciseId !== exercise.id),
+      {
+        exerciseId: exercise.id,
+        grammarId: exercise.grammarId,
+        jlpt: exercise.jlpt,
+        correct: isCorrect
+      }
+    ]);
+    setChecked(true);
+  };
+
   const handleNext = () => {
     if (index + 1 >= exercises.length) {
-      reset();
-      setIndex(0);
+      onComplete?.(results);
+      setIsSessionComplete(true);
       return;
     }
     setIndex((prev) => prev + 1);
     reset();
   };
+
+  const restartSession = () => {
+    setResults([]);
+    setIndex(0);
+    reset();
+    setIsSessionComplete(false);
+  };
+
+  const correctCount = results.filter((result) => result.correct).length;
 
   const canCheck =
     exercise.type === 'fill_blank' || exercise.type === 'K7'
@@ -128,6 +174,40 @@ export function GrammarExercisePlayer({
       : exercise.type === 'order'
         ? assembledTokens.length > 0
         : translateInput.trim().length > 0;
+
+  if (isSessionComplete) {
+    const total = results.length;
+    const percentage = total > 0 ? Math.round((correctCount / total) * 100) : 0;
+    return (
+      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center dark:border-emerald-800 dark:bg-emerald-950/40">
+        <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600 dark:text-emerald-400" />
+        <h3 className="mt-3 text-lg font-bold text-slate-900 dark:text-slate-100">
+          Hoàn thành phiên luyện tập!
+        </h3>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          Đúng <strong>{correctCount}</strong> / {total} câu · {percentage}%
+        </p>
+        <p className="mt-1 text-xs text-slate-400">{title}</p>
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={restartSession}
+            className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            Làm lại từ đầu
+          </button>
+          <button
+            type="button"
+            onClick={onExit}
+            className="rounded-xl border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+          >
+            Thoát
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -305,7 +385,7 @@ export function GrammarExercisePlayer({
         <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
           <button
             type="button"
-            onClick={reset}
+            onClick={retryCurrent}
             className="flex items-center gap-1.5 rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             <RotateCcw className="h-3.5 w-3.5" />
@@ -315,7 +395,7 @@ export function GrammarExercisePlayer({
             <button
               type="button"
               disabled={!canCheck}
-              onClick={() => setChecked(true)}
+              onClick={handleCheck}
               className="rounded-xl bg-sky-600 px-5 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-sky-700 disabled:opacity-50"
             >
               Kiểm tra đáp án
