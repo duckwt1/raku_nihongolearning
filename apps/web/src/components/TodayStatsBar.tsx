@@ -145,10 +145,10 @@ export function TodayStatsBar({
             <strong>{newItemsLearnedToday}<small>/{newWordGoal} từ</small></strong>
           </div>
         </div>
-        <div className="raku-daily-stat">
-          <span className="raku-daily-stat__icon raku-daily-stat__icon--ink"><Flame aria-hidden="true" /></span>
+        <div className="raku-daily-stat raku-daily-stat--streak">
+          <span className="raku-daily-stat__icon raku-daily-stat__icon--fire"><Flame aria-hidden="true" /></span>
           <div>
-            <span className="raku-daily-stat__label">Chuỗi ngày</span>
+            <span className="raku-daily-stat__label">Chuỗi hiện tại</span>
             <strong title={`Chuỗi dài nhất: ${longestStreak} ngày`}>
               {currentStreak}<small> ngày</small>
             </strong>

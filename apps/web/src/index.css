@@ -361,6 +361,15 @@
     color: rgb(var(--raku-ink));
   }
 
+  .raku-daily-stat__icon--fire {
+    background: rgb(var(--raku-signal) / 0.12);
+    color: rgb(var(--raku-signal));
+  }
+
+  .raku-daily-stat--streak {
+    background: rgb(var(--raku-signal) / 0.045);
+  }
+
   .raku-daily-stat__label {
     display: block;
     color: rgb(var(--raku-muted));
