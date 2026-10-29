@@ -17,7 +17,8 @@ import {
   CheckCircle2,
   Cloud,
   ChevronDown,
-  Download
+  Download,
+  ListChecks
   // Lock // Khi cần bật lại mật khẩu Firestore: uncomment Lock
 } from 'lucide-react';
 import {
@@ -36,7 +37,8 @@ import {
   getTodayDateString,
   isCardLearnedToday,
   countNewItemsLearnedToday,
-  canDeleteDeck
+  canDeleteDeck,
+  type JlptLevel
 } from '@raku/core';
 import { auth, signInAnonymously, onAuthStateChanged, signOut, type User } from './services/firebase';
 import {
@@ -80,6 +82,7 @@ import { DataLicensesModal } from './components/DataLicensesModal';
 import { FlashcardStudyView } from './components/FlashcardStudyView';
 import { ImportView } from './components/ImportView';
 import { GrammarPracticeView } from './components/GrammarPracticeView';
+import { GrammarExerciseView } from './components/GrammarExerciseView';
 import { GrammarAdminPanel } from './components/GrammarAdminPanel';
 import { AiQuizGeneratorModal } from './components/AiQuizGeneratorModal';
 import { AuthModal } from './components/AuthModal';
@@ -88,7 +91,7 @@ import { TodayStatsBar } from './components/TodayStatsBar';
 import { DeckFolderView } from './components/DeckFolderView';
 import { CloudConflictModal } from './components/CloudConflictModal';
 
-type AppTab = 'study' | 'kanji' | 'grammar' | 'import' | 'settings';
+type AppTab = 'study' | 'kanji' | 'grammar' | 'exercises' | 'import' | 'settings';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -114,6 +117,10 @@ export function App() {
   // Target folder & deck for Import navigation
   const [importTargetFolderId, setImportTargetFolderId] = useState<string>('');
   const [importTargetDeckId, setImportTargetDeckId] = useState<string>('');
+  const [exerciseTarget, setExerciseTarget] = useState<{
+    grammarId: string;
+    level: 'N5' | 'N4' | 'N3' | 'N2' | 'N1';
+  } | null>(null);
 
   // Khi cần bật lại kiểm tra mật khẩu Firestore:
   // const [isSyncPasswordModalOpen, setIsSyncPasswordModalOpen] = useState(false);
@@ -143,6 +150,7 @@ export function App() {
     { id: 'study' as const, label: 'Ôn từ', icon: BookOpen },
     { id: 'kanji' as const, label: 'Kanji', icon: Layers },
     { id: 'grammar' as const, label: 'Ngữ pháp', icon: Sparkles },
+    { id: 'exercises' as const, label: 'Bài tập', icon: ListChecks },
     { id: 'import' as const, label: 'Nhập từ', icon: FileUp },
     { id: 'settings' as const, label: 'Cài đặt', icon: Settings }
   ];
@@ -296,6 +304,7 @@ export function App() {
   const selectTab = (tab: AppTab) => {
     setStudySessionCards([]);
     setIsStudying(false);
+    if (tab === 'exercises') setExerciseTarget(null);
     setActiveTab(tab);
   };
 
@@ -1239,6 +1248,11 @@ export function App() {
     setActiveTab('study');
   };
 
+  const handleOpenExercises = (grammarId: string, level: JlptLevel) => {
+    setExerciseTarget({ grammarId, level });
+    setActiveTab('exercises');
+  };
+
   const handlePullFromFirestore = async () => {
     if (!user) {
       setPullResult('Bạn cần đăng nhập hoặc bấm Dùng thử ẩn danh trước khi đồng bộ.');
@@ -1638,7 +1652,19 @@ export function App() {
 
         {/* TAB 3: GRAMMAR & EXERCISES (G4) */}
         {activeTab === 'grammar' && (
-          <GrammarPracticeView user={user} onNotify={showSyncToast} />
+          <GrammarPracticeView
+            user={user}
+            onNotify={showSyncToast}
+            onOpenExercises={handleOpenExercises}
+          />
+        )}
+
+        {activeTab === 'exercises' && (
+          <GrammarExerciseView
+            user={user}
+            onNotify={showSyncToast}
+            initialTarget={exerciseTarget}
+          />
         )}
 
         {/* TAB 4: IMPORT (G2b & G5b) */}
@@ -2013,7 +2039,7 @@ export function App() {
         aria-label="Thanh điều hướng chính"
         className="fixed inset-x-0 bottom-0 z-30 border-t border-raku-line bg-raku-surface px-1 pt-1 pb-[calc(0.25rem+env(safe-area-inset-bottom,0px))] lg:hidden"
       >
-        <div className="mx-auto grid max-w-lg grid-cols-5">
+        <div className="mx-auto grid max-w-lg grid-cols-6">
           {navigationItems.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
@@ -2022,7 +2048,7 @@ export function App() {
               className={`flex min-h-14 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 transition-colors ${activeTab === id ? 'bg-raku-accent-soft font-semibold text-raku-accent' : 'text-raku-muted hover:bg-raku-subtle hover:text-raku-ink'}`}
             >
               <Icon className="h-5 w-5 shrink-0" />
-              <span className="max-w-full truncate text-[13px] leading-tight">{label}</span>
+              <span className="max-w-full truncate text-[10px] leading-tight sm:text-[12px]">{label}</span>
             </button>
           ))}
         </div>

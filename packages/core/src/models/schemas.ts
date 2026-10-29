@@ -137,6 +137,42 @@ export const GrammarLevelSchema = z.object({
 });
 export type GrammarLevel = z.infer<typeof GrammarLevelSchema>;
 
+export const GrammarExerciseTypeSchema = z.enum([
+  'fill_blank',
+  'order',
+  'translate_jp_vi',
+  'translate_vi_jp',
+  'K7'
+]);
+export type GrammarExerciseType = z.infer<typeof GrammarExerciseTypeSchema>;
+
+export const GrammarExerciseSchema = z.object({
+  id: z.string().min(1),
+  grammarId: z.string().min(1),
+  grammarPattern: z.string().min(1),
+  grammarTitle: z.string().min(1),
+  jlpt: JlptLevelSchema,
+
+  type: GrammarExerciseTypeSchema,
+  prompt: z.string().min(1),
+  answer: z.union([z.string(), z.array(z.string())]),
+  choices: z.array(z.string()).optional(),
+  tokens: z.array(z.string()).optional(),
+  explanationVi: z.string().default(''),
+  difficulty: z.number().int().min(1).max(5).default(2),
+
+  tags: z.array(z.string()).default([]),
+  sourceExampleId: z.string().optional(),
+
+  createdByUid: z.string().min(1),
+  createdByName: z.string().optional(),
+  origin: z.enum(['admin', 'ai', 'user', 'seed']).default('admin'),
+  visibility: z.enum(['public', 'private']).default('public'),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional()
+});
+export type GrammarExercise = z.infer<typeof GrammarExerciseSchema>;
+
 /**
  * Question Schema (Section 8.2)
  * Types: K1..K7, fill_blank, order, translate_jp_vi, translate_vi_jp

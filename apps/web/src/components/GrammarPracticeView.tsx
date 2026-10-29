@@ -3,6 +3,7 @@ import {
   BookOpen,
   ChevronDown,
   ChevronRight,
+  ListChecks,
   RefreshCw,
   Search
 } from 'lucide-react';
@@ -17,6 +18,7 @@ import {
 interface GrammarPracticeViewProps {
   user: User | null;
   onNotify?: (message: string, type?: 'success' | 'info' | 'warning') => void;
+  onOpenExercises?: (grammarId: string, level: JlptLevel) => void;
 }
 
 function Section({
@@ -51,7 +53,7 @@ function Section({
   );
 }
 
-export function GrammarPracticeView({ user, onNotify }: GrammarPracticeViewProps) {
+export function GrammarPracticeView({ user, onNotify, onOpenExercises }: GrammarPracticeViewProps) {
   const [levels, setLevels] = useState<GrammarLevel[]>([]);
   const [level, setLevel] = useState<JlptLevel>('N3');
   const [points, setPoints] = useState<Grammar[]>([]);
@@ -268,6 +270,17 @@ export function GrammarPracticeView({ user, onNotify }: GrammarPracticeViewProps
               </span>
             ))}
           </div>
+
+          {onOpenExercises && (
+            <button
+              type="button"
+              onClick={() => onOpenExercises(selected.id, selected.jlpt)}
+              className="inline-flex w-fit items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700"
+            >
+              <ListChecks className="h-3.5 w-3.5" />
+              Luyện bài tập của mẫu này
+            </button>
+          )}
 
           <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
             {selected.explanationVi}
