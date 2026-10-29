@@ -37,6 +37,7 @@ import type {
 import { GrammarExerciseFormModal } from './GrammarExerciseFormModal';
 import { GrammarExercisePlayer } from './GrammarExercisePlayer';
 import { GrammarExerciseImportModal } from './GrammarExerciseImportModal';
+import { GrammarExerciseSetsView } from './GrammarExerciseSetsView';
 
 interface GrammarExerciseViewProps {
   user: User | null;
@@ -66,6 +67,27 @@ function shuffle<T>(items: T[]): T[] {
   return result;
 }
 
+function pickPrioritized(
+  pool: GrammarExercise[],
+  count: number,
+  stats: Record<string, { attempts: number; lastPracticedAt: string }>,
+  excludeIds: Set<string> = new Set()
+): GrammarExercise[] {
+  const candidates = pool.filter((exercise) => !excludeIds.has(exercise.id));
+  const unseen = shuffle(candidates.filter((exercise) => !stats[exercise.id]));
+  const seen = shuffle(candidates.filter((exercise) => Boolean(stats[exercise.id]))).sort(
+    (a, b) => {
+      const statA = stats[a.id];
+      const statB = stats[b.id];
+      const attemptsDiff = (statA?.attempts || 0) - (statB?.attempts || 0);
+      if (attemptsDiff !== 0) return attemptsDiff;
+      return (statA?.lastPracticedAt || '').localeCompare(statB?.lastPracticedAt || '');
+    }
+  );
+  const ordered = [...unseen, ...seen];
+  return count >= ordered.length ? ordered : ordered.slice(0, Math.max(0, count));
+}
+
 export function GrammarExerciseView({
   user,
   onNotify,
@@ -80,6 +102,7 @@ export function GrammarExerciseView({
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isManaging, setIsManaging] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingExercise, setEditingExercise] = useState<GrammarExercise | null>(null);
@@ -188,6 +211,11 @@ export function GrammarExerciseView({
       ? 'Bài tập'
       : grammarPoints.find((grammar) => grammar.id === grammarFilter)?.pattern || 'Bài tập';
 
+  const targetExercises = initialTarget
+    ? exercises.filter((exercise) => exercise.grammarId === initialTarget.grammarId)
+    : [];
+  const targetPattern = targetExercises[0]?.grammarPattern || '';
+
   const levelStats = Object.values(practiceStore.stats).filter(
     (stat) => stat.jlpt === level
   );
@@ -199,14 +227,39 @@ export function GrammarExerciseView({
     .filter((session) => session.level === level)
     .slice(0, 5);
 
-  const startPractice = (items: GrammarExercise[], title: string) => {
+  const startPractice = (items: GrammarExercise[], title: string, pool = items) => {
     if (items.length === 0) return;
     setPractice({
       title,
       exercises: items,
-      pool: items,
+      pool,
       startedAt: new Date().toISOString()
     });
+  };
+
+  const startLevelPractice = (targetLevel: JlptLevel, count: number) => {
+    const pool = exercises.filter((exercise) => exercise.jlpt === targetLevel);
+    if (pool.length === 0) return;
+    const selected = pickPrioritized(pool, count, practiceStore.stats);
+    startPractice(
+      selected,
+      `Bộ bài tập ngữ pháp ${targetLevel}`,
+      pool
+    );
+  };
+
+  const startTargetPractice = (count: number) => {
+    if (!initialTarget) return;
+    const pool = exercises.filter(
+      (exercise) => exercise.grammarId === initialTarget.grammarId
+    );
+    if (pool.length === 0) return;
+    const selected = pickPrioritized(pool, count, practiceStore.stats);
+    startPractice(
+      selected,
+      `Bài tập ${pool[0]?.grammarPattern || selected[0]?.grammarPattern || ''}`,
+      pool
+    );
   };
 
   const handleComplete = (
@@ -241,18 +294,16 @@ export function GrammarExerciseView({
   };
 
   const startRandom = () => {
-    const selected = shuffle(filtered).slice(0, 10);
-    startPractice(selected, `${level} · 10 câu ngẫu nhiên`);
+    const selected = pickPrioritized(filtered, 10, practiceStore.stats);
+    startPractice(selected, `${level} · 10 câu ngẫu nhiên`, filtered);
   };
 
   const loadMore = () => {
     if (!practice) return;
     const existing = new Set(practice.exercises.map((exercise) => exercise.id));
-    const next = practice.pool
-      .filter((exercise) => !existing.has(exercise.id))
-      .slice(0, 10);
+    const next = pickPrioritized(practice.pool, 10, practiceStore.stats, existing);
     if (next.length === 0) {
-      notify('Đã hết bài trong bộ lọc hiện tại.', 'info');
+      notify('Đã hết bài trong bộ hiện tại.', 'info');
       return;
     }
     setPractice({
@@ -375,6 +426,48 @@ export function GrammarExerciseView({
     );
   };
 
+  if (practice) {
+    return (
+      <div className="space-y-5">
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
+          <GrammarExercisePlayer
+            exercises={practice.exercises}
+            title={practice.title}
+            canLoadMore={practice.pool.length > practice.exercises.length}
+            onLoadMore={loadMore}
+            onExit={() => setPractice(null)}
+            onComplete={handleComplete}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (!isManaging) {
+    return (
+      <GrammarExerciseSetsView
+        exercises={exercises}
+        stats={practiceStore.stats}
+        sessions={practiceStore.sessions}
+        isAdmin={isAdmin}
+        isLoading={isLoading}
+        target={
+          initialTarget && targetExercises.length > 0
+            ? {
+                level: initialTarget.level,
+                pattern: targetPattern,
+                exercises: targetExercises
+              }
+            : null
+        }
+        onStartLevel={startLevelPractice}
+        onStartTarget={startTargetPractice}
+        onManage={() => setIsManaging(true)}
+        onRefresh={() => void loadExercises()}
+      />
+    );
+  }
+
   return (
     <div className="space-y-5">
       <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
@@ -382,13 +475,20 @@ export function GrammarExerciseView({
           <div>
             <h2 className="flex items-center gap-2 text-xl font-bold text-slate-800 dark:text-slate-100">
               <ListChecks className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-              <span>Bài tập ngữ pháp</span>
+              <span>Quản lý bài tập ngữ pháp</span>
             </h2>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Luyện theo cấp độ, grammar point, loại bài hoặc tag.
+              Tạo, sửa, xoá hoặc import CSV bài tập cho từng level.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsManaging(false)}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+            >
+              ← Về bộ bài tập
+            </button>
             <button
               type="button"
               onClick={() => void loadExercises()}
@@ -546,18 +646,7 @@ export function GrammarExerciseView({
         )}
       </div>
 
-      {practice ? (
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
-          <GrammarExercisePlayer
-            exercises={practice.exercises}
-            title={practice.title}
-            canLoadMore={practice.pool.length > practice.exercises.length}
-            onLoadMore={loadMore}
-            onExit={() => setPractice(null)}
-            onComplete={handleComplete}
-          />
-        </div>
-      ) : isLoading ? (
+      {isLoading ? (
         <div className="flex items-center justify-center gap-2 rounded-3xl border border-slate-200 bg-white py-12 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900">
           <RefreshCw className="h-4 w-4 animate-spin" />
           Đang tải bài tập...
