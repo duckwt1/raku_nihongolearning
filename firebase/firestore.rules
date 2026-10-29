@@ -83,6 +83,306 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Real-time Arena. Public question snapshots never contain answer keys.
+    function arenaRoomExists(roomId) {
+      return exists(/databases/$(database)/documents/arenaRooms/$(roomId));
+    }
+
+    function arenaRoomIsHost(roomId) {
+      return isAuthenticated()
+        && arenaRoomExists(roomId)
+        && get(/databases/$(database)/documents/arenaRooms/$(roomId)).data.hostUid == request.auth.uid;
+    }
+
+    function arenaRoomIsHostAfter(roomId) {
+      return isAuthenticated()
+        && existsAfter(/databases/$(database)/documents/arenaRooms/$(roomId))
+        && getAfter(/databases/$(database)/documents/arenaRooms/$(roomId)).data.hostUid == request.auth.uid;
+    }
+
+    function arenaRoomIsMember(roomId) {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/arenaRooms/$(roomId)/players/$(request.auth.uid))
+        && get(/databases/$(database)/documents/arenaRooms/$(roomId)/players/$(request.auth.uid)).data.status == 'active';
+    }
+
+    function validArenaJoinRoomUpdate(roomId) {
+      let roomPath = /databases/$(database)/documents/arenaRooms/$(roomId);
+      let playerPath = /databases/$(database)/documents/arenaRooms/$(roomId)/players/$(request.auth.uid);
+      let previousRoom = get(roomPath).data;
+      let nextRoom = getAfter(roomPath).data;
+      return isAuthenticated()
+        && previousRoom.status == 'lobby'
+        && previousRoom.expiresAt > request.time
+        && previousRoom.playerCount < 8
+        && nextRoom.hasHadGuest == true
+        && nextRoom.playerCount == previousRoom.playerCount + 1
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['playerCount', 'hasHadGuest'])
+        && !exists(playerPath)
+        && existsAfter(playerPath)
+        && getAfter(playerPath).data.uid == request.auth.uid
+        && getAfter(playerPath).data.status == 'active';
+    }
+
+    function validArenaLeaveRoomUpdate(roomId) {
+      let roomPath = /databases/$(database)/documents/arenaRooms/$(roomId);
+      let playerPath = /databases/$(database)/documents/arenaRooms/$(roomId)/players/$(request.auth.uid);
+      let previousRoom = get(roomPath).data;
+      let nextRoom = getAfter(roomPath).data;
+      return isAuthenticated()
+        && previousRoom.status in ['lobby', 'countdown', 'question', 'reveal']
+        && previousRoom.playerCount > 1
+        && nextRoom.playerCount == previousRoom.playerCount - 1
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['playerCount'])
+        && exists(playerPath)
+        && get(playerPath).data.status == 'active'
+        && existsAfter(playerPath)
+        && getAfter(playerPath).data.status == 'left';
+    }
+
+    function validArenaHostTransition() {
+      return request.resource.data.status == resource.data.status
+        || (resource.data.status == 'preparing'
+          && request.resource.data.status in ['lobby', 'closed'])
+        || (resource.data.status == 'lobby'
+          && request.resource.data.status in ['countdown', 'closed'])
+        || (resource.data.status == 'countdown'
+          && request.resource.data.status in ['question', 'closed'])
+        || (resource.data.status == 'question'
+          && request.resource.data.status in ['reveal', 'closed'])
+        || (resource.data.status == 'reveal'
+          && request.resource.data.status in ['countdown', 'question', 'finished', 'closed'])
+        || (resource.data.status == 'finished' && request.resource.data.status == 'closed');
+    }
+
+    function validArenaRoomCreation(roomId) {
+      let room = request.resource.data;
+      let codePath = /databases/$(database)/documents/arenaRoomCodes/$(room.roomCode);
+      let hostPlayerPath = /databases/$(database)/documents/arenaRooms/$(roomId)/players/$(request.auth.uid);
+      return isAuthenticated()
+        && room.keys().hasOnly([
+          'roomCode', 'hostUid', 'hostNickname', 'status', 'settings', 'questionCount',
+          'playerCount', 'hasHadGuest', 'activeQuestionIndex', 'activeQuestionId', 'answeredCount',
+          'hostHeartbeatAt', 'createdAt', 'expiresAt'
+        ])
+        && room.roomCode.matches('^[2-9A-HJ-NP-Z]{6}$')
+        && room.hostUid == request.auth.uid
+        && room.hostNickname is string
+        && room.hostNickname.size() > 0
+        && room.status == 'preparing'
+        && room.playerCount == 1
+        && room.hasHadGuest == false
+        && room.questionCount is int
+        && room.questionCount > 0
+        && room.questionCount <= 30
+        && room.activeQuestionIndex == -1
+        && room.activeQuestionId == null
+        && room.answeredCount == 0
+        && room.createdAt == request.time
+        && room.hostHeartbeatAt == request.time
+        && room.expiresAt > request.time
+        && room.settings.keys().hasOnly(['source', 'jlptLevel', 'questionCount', 'timeLimitSeconds', 'questionMode'])
+        && room.settings.source in ['owned', 'community', 'all', 'jlpt']
+        && room.settings.questionCount is int
+        && room.settings.questionCount == room.questionCount
+        && room.settings.timeLimitSeconds in [10, 15, 20, 30]
+        && room.settings.questionMode in ['mixed', 'vi-to-jp', 'jp-to-reading', 'jp-to-meaning']
+        && (room.settings.source != 'jlpt' || room.settings.jlptLevel in ['N5', 'N4', 'N3', 'N2', 'N1'])
+        && existsAfter(codePath)
+        && getAfter(codePath).data.roomId == roomId
+        && getAfter(codePath).data.hostUid == request.auth.uid
+        && existsAfter(hostPlayerPath)
+        && getAfter(hostPlayerPath).data.status == 'active';
+    }
+
+    function validArenaPlayerCreate(roomId, uid) {
+      let roomPath = /databases/$(database)/documents/arenaRooms/$(roomId);
+      let player = request.resource.data;
+      return isAuthenticated()
+        && uid == request.auth.uid
+        && player.keys().hasOnly([
+          'uid', 'nickname', 'status', 'score', 'correctCount',
+          'totalCorrectResponseMs', 'answeredQuestionId', 'joinedAt', 'lastSeenAt', 'expiresAt'
+        ])
+        && player.uid == uid
+        && player.nickname is string
+        && player.nickname.size() > 0
+        && player.nickname.size() <= 20
+        && player.status == 'active'
+        && player.score == 0
+        && player.correctCount == 0
+        && player.totalCorrectResponseMs == 0
+        && player.answeredQuestionId == null
+        && player.joinedAt == request.time
+        && player.lastSeenAt == request.time
+        && getAfter(roomPath).data.expiresAt == player.expiresAt
+        && (
+          arenaRoomIsHostAfter(roomId)
+          || (
+            get(roomPath).data.status == 'lobby'
+            && get(roomPath).data.expiresAt > request.time
+            && getAfter(roomPath).data.playerCount == get(roomPath).data.playerCount + 1
+          )
+        );
+    }
+
+    function validArenaPlayerLeave(roomId) {
+      let roomPath = /databases/$(database)/documents/arenaRooms/$(roomId);
+      return isAuthenticated()
+        && resource.data.status == 'active'
+        && request.resource.data.status == 'left'
+        && request.resource.data.leftAt == request.time
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'leftAt'])
+        && getAfter(roomPath).data.playerCount == get(roomPath).data.playerCount - 1;
+    }
+
+    function validArenaPlayerHeartbeat(roomId) {
+      let roomPath = /databases/$(database)/documents/arenaRooms/$(roomId);
+      let room = get(roomPath).data;
+      return isAuthenticated()
+        && resource.data.status == 'active'
+        && request.resource.data.status == 'active'
+        && room.status in ['lobby', 'countdown', 'question', 'reveal']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastSeenAt'])
+        && request.resource.data.lastSeenAt == request.time;
+    }
+
+    match /arenaRoomCodes/{roomCode} {
+      allow get: if isAuthenticated();
+      allow list: if false;
+      allow create: if isAuthenticated()
+        && roomCode.matches('^[2-9A-HJ-NP-Z]{6}$')
+        && request.resource.data.keys().hasOnly(['roomId', 'hostUid', 'expiresAt'])
+        && request.resource.data.hostUid == request.auth.uid
+        && request.resource.data.expiresAt > request.time
+        && existsAfter(/databases/$(database)/documents/arenaRooms/$(request.resource.data.roomId))
+        && getAfter(/databases/$(database)/documents/arenaRooms/$(request.resource.data.roomId)).data.hostUid == request.auth.uid
+        && getAfter(/databases/$(database)/documents/arenaRooms/$(request.resource.data.roomId)).data.roomCode == roomCode;
+      allow update, delete: if false;
+    }
+
+    match /arenaRooms/{roomId} {
+      allow get: if isAuthenticated()
+        && (resource.data.status != 'preparing' || arenaRoomIsHost(roomId) || arenaRoomIsMember(roomId));
+      allow list: if false;
+      allow create: if validArenaRoomCreation(roomId);
+      allow update: if (
+          arenaRoomIsHost(roomId)
+          && request.resource.data.hostUid == resource.data.hostUid
+          && request.resource.data.roomCode == resource.data.roomCode
+          && request.resource.data.settings == resource.data.settings
+          && request.resource.data.questionCount == resource.data.questionCount
+          && request.resource.data.hasHadGuest == resource.data.hasHadGuest
+          && request.resource.data.expiresAt == resource.data.expiresAt
+          && request.resource.data.status in ['preparing', 'lobby', 'countdown', 'question', 'reveal', 'finished', 'closed']
+          && validArenaHostTransition()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status', 'playerCount', 'activeQuestionIndex', 'activeQuestionId', 'answeredCount',
+            'countdownStartedAt', 'questionStartedAt', 'hostHeartbeatAt', 'revealedAt',
+            'finishedAt', 'closedAt', 'closedReason'
+          ])
+          && (!('hostHeartbeatAt' in request.resource.data.diff(resource.data).affectedKeys())
+            || request.resource.data.hostHeartbeatAt == request.time)
+          && (request.resource.data.status != 'countdown' || request.resource.data.playerCount >= 2)
+        )
+        || validArenaJoinRoomUpdate(roomId)
+        || validArenaLeaveRoomUpdate(roomId);
+      allow delete: if false;
+
+      match /players/{uid} {
+        allow get, list: if isAuthenticated()
+          && (uid == request.auth.uid || arenaRoomIsHost(roomId) || arenaRoomIsMember(roomId));
+        allow create: if validArenaPlayerCreate(roomId, uid);
+        allow update: if arenaRoomIsHost(roomId)
+          || (isAuthenticated() && uid == request.auth.uid && validArenaPlayerLeave(roomId))
+          || (isAuthenticated() && uid == request.auth.uid && validArenaPlayerHeartbeat(roomId));
+        allow delete: if false;
+      }
+
+      match /questions/{questionId} {
+        allow get: if arenaRoomIsHost(roomId)
+          || (arenaRoomIsMember(roomId)
+            && get(/databases/$(database)/documents/arenaRooms/$(roomId)).data.activeQuestionId == questionId);
+        allow list: if false;
+        allow create: if arenaRoomIsHost(roomId)
+          && get(/databases/$(database)/documents/arenaRooms/$(roomId)).data.status == 'preparing'
+          && request.resource.data.keys().hasOnly(['id', 'index', 'type', 'prompt', 'choices', 'expiresAt'])
+          && request.resource.data.id == questionId
+          && request.resource.data.index is int
+          && request.resource.data.type in ['vi-to-jp', 'jp-to-reading', 'jp-to-meaning']
+          && request.resource.data.prompt is string
+          && request.resource.data.expiresAt == get(/databases/$(database)/documents/arenaRooms/$(roomId)).data.expiresAt
+          && (request.resource.data.type != 'vi-to-jp'
+            || (request.resource.data.choices is list && request.resource.data.choices.size() == 4));
+        allow update, delete: if false;
+
+        match /answers/{uid} {
+          function answerRoom() {
+            return get(/databases/$(database)/documents/arenaRooms/$(roomId)).data;
+          }
+
+          allow get: if isAuthenticated()
+            && (arenaRoomIsHost(roomId)
+              || (uid == request.auth.uid && arenaRoomIsMember(roomId))
+              || (arenaRoomIsMember(roomId)
+                && (answerRoom().status == 'finished'
+                  || (answerRoom().status == 'reveal' && answerRoom().activeQuestionId == questionId))));
+          allow list: if arenaRoomIsHost(roomId)
+            || (arenaRoomIsMember(roomId)
+              && (answerRoom().status == 'finished'
+                || (answerRoom().status == 'reveal' && answerRoom().activeQuestionId == questionId)));
+          allow create: if isAuthenticated()
+            && uid == request.auth.uid
+            && arenaRoomIsMember(roomId)
+            && answerRoom().status == 'question'
+            && answerRoom().activeQuestionId == questionId
+            && answerRoom().expiresAt > request.time
+            && answerRoom().questionStartedAt is timestamp
+            && request.time <= answerRoom().questionStartedAt
+              + duration.value(answerRoom().settings.timeLimitSeconds, 's')
+              + duration.value(1, 's')
+            && request.resource.data.keys().hasOnly(['answer', 'submittedAt', 'expiresAt'])
+            && request.resource.data.answer is string
+            && request.resource.data.answer.size() > 0
+            && request.resource.data.answer.size() <= 240
+            && request.resource.data.submittedAt == request.time
+            && request.resource.data.expiresAt == answerRoom().expiresAt;
+          allow update, delete: if false;
+        }
+      }
+
+      match /answerKeys/{questionId} {
+        allow get, list: if arenaRoomIsHost(roomId);
+        allow create: if arenaRoomIsHost(roomId)
+          && get(/databases/$(database)/documents/arenaRooms/$(roomId)).data.status == 'preparing'
+          && request.resource.data.keys().hasOnly([
+            'answer', 'acceptedAnswers', 'correctChoiceId', 'readings', 'meanings', 'explanationVi', 'expiresAt'
+          ])
+          && request.resource.data.answer is string
+          && request.resource.data.acceptedAnswers is list
+          && request.resource.data.expiresAt == get(/databases/$(database)/documents/arenaRooms/$(roomId)).data.expiresAt;
+        allow update, delete: if false;
+      }
+
+      match /reveals/{questionId} {
+        function revealIsVisible() {
+          let room = get(/databases/$(database)/documents/arenaRooms/$(roomId)).data;
+          return arenaRoomIsMember(roomId)
+            && (room.status == 'finished' || (room.status == 'reveal' && room.activeQuestionId == questionId));
+        }
+
+        allow get, list: if arenaRoomIsHost(roomId) || revealIsVisible();
+        allow create: if arenaRoomIsHost(roomId)
+          && getAfter(/databases/$(database)/documents/arenaRooms/$(roomId)).data.status == 'reveal'
+          && getAfter(/databases/$(database)/documents/arenaRooms/$(roomId)).data.activeQuestionId == questionId
+          && request.resource.data.keys().hasOnly([
+            'questionId', 'questionIndex', 'questionType', 'correctAnswer', 'correctChoiceId',
+            'acceptedAnswers', 'readings', 'meanings', 'explanationVi', 'results', 'rankings', 'expiresAt'
+          ]);
+        allow update, delete: if false;
+      }
+    }
+
     // User-specific data partition
     match /users/{uid} {
       // User profile / settings

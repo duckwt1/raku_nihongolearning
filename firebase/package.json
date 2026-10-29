@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test:rules": "vitest run"
+    "test:rules": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^4.0.1",

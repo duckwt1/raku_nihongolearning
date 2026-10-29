@@ -16,5 +16,13 @@
       ]
     }
   ],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    { "collectionGroup": "arenaRooms", "fieldPath": "expiresAt", "ttl": true, "indexes": [] },
+    { "collectionGroup": "arenaRoomCodes", "fieldPath": "expiresAt", "ttl": true, "indexes": [] },
+    { "collectionGroup": "players", "fieldPath": "expiresAt", "ttl": true, "indexes": [] },
+    { "collectionGroup": "questions", "fieldPath": "expiresAt", "ttl": true, "indexes": [] },
+    { "collectionGroup": "answerKeys", "fieldPath": "expiresAt", "ttl": true, "indexes": [] },
+    { "collectionGroup": "answers", "fieldPath": "expiresAt", "ttl": true, "indexes": [] },
+    { "collectionGroup": "reveals", "fieldPath": "expiresAt", "ttl": true, "indexes": [] }
+  ]
 }

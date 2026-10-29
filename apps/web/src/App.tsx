@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
 import {
   BookOpen,
   Layers,
@@ -18,7 +18,8 @@ import {
   Cloud,
   ChevronDown,
   Download,
-  ListChecks
+  ListChecks,
+  Swords
   // Lock // Khi cần bật lại mật khẩu Firestore: uncomment Lock
 } from 'lucide-react';
 import {
@@ -96,7 +97,9 @@ import { StudyHeatmap } from './components/StudyHeatmap';
 import { DeckFolderView } from './components/DeckFolderView';
 import { CloudConflictModal } from './components/CloudConflictModal';
 
-type AppTab = 'study' | 'kanji' | 'grammar' | 'exercises' | 'import' | 'settings';
+const ArenaView = lazy(() => import('./components/ArenaView').then(({ ArenaView: View }) => ({ default: View })));
+
+type AppTab = 'study' | 'kanji' | 'grammar' | 'exercises' | 'arena' | 'import' | 'settings';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -144,7 +147,12 @@ export function App() {
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
-  const [activeTab, setActiveTab] = useState<AppTab>('study');
+  const [activeTab, setActiveTab] = useState<AppTab>(() =>
+    new URLSearchParams(window.location.search).has('arena') ? 'arena' : 'study'
+  );
+  const [hasVisitedArena, setHasVisitedArena] = useState(() =>
+    new URLSearchParams(window.location.search).has('arena')
+  );
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isAppInstalled, setIsAppInstalled] = useState<boolean>(() =>
     typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches
@@ -156,6 +164,7 @@ export function App() {
     { id: 'kanji' as const, label: 'Kanji', icon: Layers },
     { id: 'grammar' as const, label: 'Ngữ pháp', icon: Sparkles },
     { id: 'exercises' as const, label: 'Bài tập', icon: ListChecks },
+    { id: 'arena' as const, label: 'Đấu trường', icon: Swords },
     { id: 'import' as const, label: 'Nhập từ', icon: FileUp },
     { id: 'settings' as const, label: 'Cài đặt', icon: Settings }
   ];
@@ -317,6 +326,7 @@ export function App() {
     setStudySessionCards([]);
     setIsStudying(false);
     if (tab === 'exercises') setExerciseTarget(null);
+    if (tab === 'arena') setHasVisitedArena(true);
     setActiveTab(tab);
   };
 
@@ -1711,6 +1721,14 @@ export function App() {
           />
         )}
 
+        {hasVisitedArena && (
+          <Suspense fallback={<div className="rounded-2xl border border-raku-line bg-raku-surface px-4 py-6 text-center text-sm text-raku-muted" role="status">Đang mở Đấu trường…</div>}>
+            <div className={activeTab === 'arena' ? 'block' : 'hidden'}>
+              <ArenaView cards={allCards} decks={decks} />
+            </div>
+          </Suspense>
+        )}
+
         {/* TAB 4: IMPORT (G2b & G5b) */}
         {activeTab === 'import' && (
           <ImportView
@@ -2116,16 +2134,19 @@ export function App() {
         aria-label="Thanh điều hướng chính"
         className="fixed inset-x-0 bottom-0 z-30 border-t border-raku-line bg-raku-surface px-1 pt-1 pb-[calc(0.25rem+env(safe-area-inset-bottom,0px))] lg:hidden"
       >
-        <div className="mx-auto grid max-w-lg grid-cols-6">
+        <div className="mx-auto grid max-w-xl grid-cols-7">
           {navigationItems.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => selectTab(id)}
               aria-current={activeTab === id ? 'page' : undefined}
+              aria-label={label}
               className={`flex min-h-14 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 transition-colors ${activeTab === id ? 'bg-raku-accent-soft font-semibold text-raku-accent' : 'text-raku-muted hover:bg-raku-subtle hover:text-raku-ink'}`}
             >
               <Icon className="h-5 w-5 shrink-0" />
-              <span className="max-w-full truncate text-[10px] leading-tight sm:text-[12px]">{label}</span>
+              <span className="max-w-full truncate text-[10px] leading-tight sm:text-[12px]">
+                {id === 'arena' ? <><span className="sm:hidden">Đấu</span><span className="hidden sm:inline">{label}</span></> : label}
+              </span>
             </button>
           ))}
         </div>
