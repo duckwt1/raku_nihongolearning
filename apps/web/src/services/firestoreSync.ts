@@ -23,7 +23,6 @@ import {
   getTodayDateString,
   SEED_KANJI,
   SEED_WORDS,
-  SEED_GRAMMAR,
   SEED_SENTENCES
 } from '@raku/core';
 import { db } from './firebase';
@@ -239,7 +238,7 @@ export async function saveCardProgress(userId: string, card: StudyCard, rating: 
 }
 
 /**
- * Xuất toàn bộ cơ sở dữ liệu N3 (Kanji, Từ vựng, Ngữ pháp, Câu ví dụ) lên Cloud Firestore
+ * Xuất cơ sở dữ liệu N3 (Kanji, Từ vựng, Câu ví dụ) lên Cloud Firestore
  * Sử dụng writeBatch phân đoạn tối đa 450 bản ghi/lần (giới hạn Firestore: 500)
  */
 export async function seedAllN3DataToFirestore(
@@ -247,7 +246,6 @@ export async function seedAllN3DataToFirestore(
 ): Promise<{
   kanjiCount: number;
   wordsCount: number;
-  grammarCount: number;
   sentencesCount: number;
 }> {
   const BATCH_SIZE = 450;
@@ -282,20 +280,7 @@ export async function seedAllN3DataToFirestore(
     );
   }
 
-  // 3. Xuất 97 mẫu ngữ pháp N3
-  onProgress?.('Ngữ pháp N3', 0, SEED_GRAMMAR.length);
-  for (let i = 0; i < SEED_GRAMMAR.length; i += BATCH_SIZE) {
-    const chunk = SEED_GRAMMAR.slice(i, i + BATCH_SIZE);
-    const batch = writeBatch(db);
-    for (const g of chunk) {
-      const ref = doc(db, 'grammar', g.id);
-      batch.set(ref, g);
-    }
-    await batch.commit();
-    onProgress?.('Ngữ pháp N3', Math.min(i + BATCH_SIZE, SEED_GRAMMAR.length), SEED_GRAMMAR.length);
-  }
-
-  // 4. Xuất 880 câu ví dụ
+  // 3. Xuất 880 câu ví dụ
   onProgress?.('Câu ví dụ minh họa', 0, SEED_SENTENCES.length);
   for (let i = 0; i < SEED_SENTENCES.length; i += BATCH_SIZE) {
     const chunk = SEED_SENTENCES.slice(i, i + BATCH_SIZE);
@@ -315,7 +300,6 @@ export async function seedAllN3DataToFirestore(
   return {
     kanjiCount: SEED_KANJI.length,
     wordsCount: SEED_WORDS.length,
-    grammarCount: SEED_GRAMMAR.length,
     sentencesCount: SEED_SENTENCES.length
   };
 }

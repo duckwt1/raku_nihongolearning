@@ -53,23 +53,89 @@ export const SentenceSchema = z.object({
 export type Sentence = z.infer<typeof SentenceSchema>;
 
 /**
- * Grammar point document schema
+ * Grammar point document schema (detailed, level-based)
  */
+export const GrammarExampleSchema = z.object({
+  id: z.string().min(1),
+  jp: z.string().min(1),
+  vi: z.string().min(1),
+  highlight: z.string().optional(),
+  breakdown: z.string().optional(),
+  note: z.string().optional()
+});
+export type GrammarExample = z.infer<typeof GrammarExampleSchema>;
+
+export const GrammarFormationSchema = z.object({
+  rule: z.string().min(1),
+  example: z.string().optional(),
+  note: z.string().optional()
+});
+export type GrammarFormation = z.infer<typeof GrammarFormationSchema>;
+
+export const GrammarUsageSchema = z.object({
+  situation: z.string().min(1),
+  explanationVi: z.string().min(1),
+  exampleIds: z.array(z.string()).default([])
+});
+export type GrammarUsage = z.infer<typeof GrammarUsageSchema>;
+
+export const GrammarMistakeSchema = z.object({
+  mistake: z.string().min(1),
+  correction: z.string().min(1),
+  explanationVi: z.string().optional()
+});
+export type GrammarMistake = z.infer<typeof GrammarMistakeSchema>;
+
+export const GrammarComparisonSchema = z.object({
+  grammarId: z.string().optional(),
+  pattern: z.string().min(1),
+  differenceVi: z.string().min(1),
+  example: z
+    .object({
+      jp: z.string().min(1),
+      vi: z.string().min(1)
+    })
+    .optional()
+});
+export type GrammarComparison = z.infer<typeof GrammarComparisonSchema>;
+
 export const GrammarSchema = z.object({
   id: z.string().min(1),
+  jlpt: JlptLevelSchema,
+  lesson: z.number().int().positive().optional(),
+  order: z.number().int().positive().optional(),
+
+  /** Dạng ngữ pháp tiếng Nhật, ví dụ 〜うちに */
+  pattern: z.string().min(1),
+  /** Tiêu đề hiển thị, ví dụ 〜うちに (Trong lúc / Trước khi) */
   title: z.string().min(1),
+  meaningVi: z.array(z.string().min(1)).min(1),
+
   explanationVi: z.string().min(1),
-  examples: z
-    .array(
-      z.object({
-        jp: z.string(),
-        vi: z.string()
-      })
-    )
-    .default([]),
-  jlpt: JlptLevelSchema.optional()
+
+  formation: z.array(GrammarFormationSchema).min(1),
+  usage: z.array(GrammarUsageSchema).default([]),
+  nuanceVi: z.string().optional(),
+  notes: z.array(z.string()).default([]),
+  commonMistakes: z.array(GrammarMistakeSchema).default([]),
+  comparisons: z.array(GrammarComparisonSchema).default([]),
+
+  examples: z.array(GrammarExampleSchema).min(1),
+  tags: z.array(z.string()).default([]),
+  relatedIds: z.array(z.string()).default([]),
+  schemaVersion: z.number().int().positive().default(1),
+  updatedAt: z.string().optional()
 });
 export type Grammar = z.infer<typeof GrammarSchema>;
+
+export const GrammarLevelSchema = z.object({
+  level: JlptLevelSchema,
+  name: z.string().min(1),
+  pointCount: z.number().int().nonnegative().default(0),
+  contentVersion: z.number().int().positive().default(1),
+  updatedAt: z.string().optional()
+});
+export type GrammarLevel = z.infer<typeof GrammarLevelSchema>;
 
 /**
  * Question Schema (Section 8.2)
@@ -110,30 +176,10 @@ export const QuestionSchema = z.object({
   kanjiRefs: z.array(z.string()).default([]),
   wordRefs: z.array(z.string()).default([]),
   grammarRefs: z.array(z.string()).default([]),
-  /** Grammar point mà bài tập này thuộc về */
-  grammarId: z.string().optional(),
-  /** Câu ví dụ gốc dùng để sinh/grounding bài tập */
-  sourceExample: z.string().optional(),
   difficulty: z.number().int().min(1).max(5).default(1),
   provenance: QuestionProvenanceSchema
 });
 export type Question = z.infer<typeof QuestionSchema>;
-
-/**
- * Bài tập ngữ pháp được lưu trong ngân hàng cá nhân/cộng đồng.
- * Kế thừa toàn bộ Question và thêm metadata sở hữu/chia sẻ.
- */
-export const GrammarExerciseRecordSchema = QuestionSchema.extend({
-  grammarId: z.string().min(1),
-  ownerUid: z.string().min(1),
-  authorName: z.string().optional(),
-  visibility: z.enum(['private', 'public']).default('private'),
-  /** Id bài gốc nếu đây là bản copy từ người khác */
-  copyOf: z.string().optional(),
-  createdAt: z.string().optional(),
-  updatedAt: z.string().optional()
-});
-export type GrammarExerciseRecord = z.infer<typeof GrammarExerciseRecordSchema>;
 
 /**
  * Import Record Schema (Section 5B.4)

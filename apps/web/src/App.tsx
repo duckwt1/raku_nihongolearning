@@ -80,6 +80,7 @@ import { DataLicensesModal } from './components/DataLicensesModal';
 import { FlashcardStudyView } from './components/FlashcardStudyView';
 import { ImportView } from './components/ImportView';
 import { GrammarPracticeView } from './components/GrammarPracticeView';
+import { GrammarAdminPanel } from './components/GrammarAdminPanel';
 import { AiQuizGeneratorModal } from './components/AiQuizGeneratorModal';
 import { AuthModal } from './components/AuthModal';
 import { KanjiModal } from './components/KanjiModal';
@@ -991,7 +992,7 @@ export function App() {
         const mergedCards = mergeFirestoreCardProgress(
           remoteProgress.legacyUpdatedCards || allCards,
           remoteProgress.cards
-        );
+        ).filter((card) => card.type !== 'grammar' && card.deckId !== 'deck_n3_grammar');
         if (Object.keys(remoteProgress.cards).length > 0 || remoteProgress.legacyUpdatedCards) {
           setAllCards(mergedCards);
           saveUserCards(currentUid, mergedCards);
@@ -1076,7 +1077,7 @@ export function App() {
         setSeedProgress({ stage, current, total });
       });
       setSeedResult(
-        `✓ Đã xuất thành công: ${res.kanjiCount} Kanji, ${res.wordsCount} Từ vựng, ${res.grammarCount} Ngữ pháp, ${res.sentencesCount} Câu ví dụ lên Cloud Firestore!`
+        `✓ Đã xuất thành công: ${res.kanjiCount} Kanji, ${res.wordsCount} Từ vựng, ${res.sentencesCount} Câu ví dụ lên Cloud Firestore!`
       );
     } catch (err: any) {
       setSeedResult(`❌ Lỗi xuất dữ liệu: ${err.message || err}`);
@@ -1089,7 +1090,7 @@ export function App() {
     // Tạm thời bỏ qua hỏi mật khẩu để bạn bè dùng tiện lợi:
     void executeSeedAllN3();
     // Khi cần bật lại mật khẩu:
-    // requireSyncPassword('Nạp lại 2.466 bản ghi dữ liệu N3 lên Cloud Firestore', () => {
+    // requireSyncPassword('Nạp lại 2.369 bản ghi dữ liệu N3 lên Cloud Firestore', () => {
     //   void executeSeedAllN3();
     // });
   };
@@ -1275,7 +1276,7 @@ export function App() {
       const cardsWithCloudProgress = mergeFirestoreCardProgress(
         data.legacyUpdatedCards || allCards,
         data.cards
-      );
+      ).filter((card) => card.type !== 'grammar' && card.deckId !== 'deck_n3_grammar');
       if (cardCount > 0 || data.legacyUpdatedCards) {
         setAllCards(cardsWithCloudProgress);
         saveUserCards(currentUid, cardsWithCloudProgress);
@@ -1287,8 +1288,9 @@ export function App() {
       }
 
       if (data.decks) {
-        setDecks(data.decks);
-        saveUserDecks(currentUid, data.decks);
+        const filteredDecks = data.decks.filter((deck) => deck.id !== 'deck_n3_grammar');
+        setDecks(filteredDecks);
+        saveUserDecks(currentUid, filteredDecks);
       }
 
       setStudyStats(data.stats);
@@ -1824,14 +1826,14 @@ export function App() {
                     <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-lg text-sm font-semibold text-raku-muted hover:text-raku-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-raku-accent">
                       <span className="flex min-w-0 items-center gap-2">
                         <CloudUpload className="h-4 w-4 shrink-0" aria-hidden="true" />
-                        <span className="truncate">Kho dữ liệu N3 · 2.466 bản ghi</span>
+                        <span className="truncate">Kho dữ liệu N3 · 2.369 bản ghi</span>
                       </span>
                       <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" aria-hidden="true" />
                     </summary>
 
                     <div className="space-y-3 pb-1 pt-2">
                       <p className="text-sm leading-6 text-raku-muted">
-                        Kho gồm 609 Kanji, 880 từ vựng Mimikara, 97 cấu trúc ngữ pháp và 880 câu ví dụ. Nạp lại có thể ghi đè dữ liệu gốc trên Firestore.
+                        Kho gồm 609 Kanji, 880 từ vựng Mimikara và 880 câu ví dụ. Ngữ pháp được import riêng trong Quản trị ngữ pháp.
                       </p>
                       <button
                         onClick={handleSeedAllN3}
@@ -1940,6 +1942,8 @@ export function App() {
                 </section>
               </div>
             </div>
+
+            <GrammarAdminPanel user={user} onNotify={showSyncToast} />
           </div>
         )}
       </main>

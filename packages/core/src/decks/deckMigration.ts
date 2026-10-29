@@ -7,7 +7,7 @@ import type { Deck, Folder } from '../models/schemas.js';
 export const USER_DECKS_FOLDER_ID = 'folder_my_decks';
 export const LEGACY_CUSTOM_FOLDER_ID = 'folder_custom';
 
-const BUILTIN_DECK_IDS = new Set(['deck_n3_words', 'deck_n3_grammar']);
+const BUILTIN_DECK_IDS = new Set(['deck_n3_words']);
 const BUILTIN_FOLDER_IDS = new Set(['folder_jlpt_n3']);
 
 /**

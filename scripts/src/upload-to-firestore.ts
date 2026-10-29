@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 import { getFirestore, doc, writeBatch } from 'firebase/firestore';
-import { SEED_KANJI, SEED_WORDS, SEED_GRAMMAR, SEED_SENTENCES } from '@raku/core';
+import { SEED_KANJI, SEED_WORDS, SEED_SENTENCES } from '@raku/core';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -92,20 +92,8 @@ async function main() {
     console.log(`  ✓ Đã ghi ${Math.min(i + BATCH_SIZE, SEED_WORDS.length)} / ${SEED_WORDS.length} Từ vựng`);
   }
 
-  // 3. Upload Grammar
-  console.log(`\n[3/4] Đang nạp ${SEED_GRAMMAR.length} mẫu ngữ pháp N3 vào collection "grammar"...`);
-  for (let i = 0; i < SEED_GRAMMAR.length; i += BATCH_SIZE) {
-    const chunk = SEED_GRAMMAR.slice(i, i + BATCH_SIZE);
-    const batch = writeBatch(db);
-    for (const g of chunk) {
-      batch.set(doc(db, 'grammar', g.id), g);
-    }
-    await batch.commit();
-    console.log(`  ✓ Đã ghi ${Math.min(i + BATCH_SIZE, SEED_GRAMMAR.length)} / ${SEED_GRAMMAR.length} Ngữ pháp`);
-  }
-
-  // 4. Upload Sentences
-  console.log(`\n[4/4] Đang nạp ${SEED_SENTENCES.length} câu ví dụ vào collection "sentences"...`);
+  // 3. Upload Sentences
+  console.log(`\n[3/3] Đang nạp ${SEED_SENTENCES.length} câu ví dụ vào collection "sentences"...`);
   for (let i = 0; i < SEED_SENTENCES.length; i += BATCH_SIZE) {
     const chunk = SEED_SENTENCES.slice(i, i + BATCH_SIZE);
     const batch = writeBatch(db);
@@ -120,9 +108,8 @@ async function main() {
   console.log('🎉 XUẤT DỮ LIỆU HOÀN TẤT THÀNH CÔNG!');
   console.log(`- 609 Kanji đã được nạp vào /kanji`);
   console.log(`- 880 Từ vựng đã được nạp vào /words`);
-  console.log(`- 97 Ngữ pháp đã được nạp vào /grammar`);
   console.log(`- 880 Câu ví dụ đã được nạp vào /sentences`);
-  console.log('Tổng cộng: 2,466 bản ghi đã sẵn sàng trên Firebase Cloud Firestore!');
+  console.log('Tổng cộng: 2,369 bản ghi đã sẵn sàng trên Firebase Cloud Firestore!');
   console.log('═══════════════════════════════════════════════════════════════\n');
   process.exit(0);
 }

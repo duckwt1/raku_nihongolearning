@@ -12,6 +12,17 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == uid;
     }
 
+    function isAdmin() {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // Admin accounts are created manually in Firebase Console.
+    match /admins/{uid} {
+      allow read: if isAuthenticated() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
     // Shared dictionaries: Đã nạp xong toàn bộ N3, chuyển sang chế độ CHỈ ĐỌC để bảo vệ dữ liệu
     match /kanji/{char} {
       allow read: if true;
@@ -30,7 +41,22 @@ service cloud.firestore {
 
     match /grammar/{grammarId} {
       allow read: if true;
-      allow write: if false;
+      allow write: if isAdmin();
+    }
+
+    // New grammar data by JLPT level (imported by admin via CSV)
+    match /grammarPoints/{grammarId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /grammarLevels/{level} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /grammarImports/{importId} {
+      allow read, write: if isAdmin();
     }
 
     // Community Decks: mọi người được đọc, nhưng chỉ chủ sở hữu được sửa/xoá
@@ -54,11 +80,12 @@ service cloud.firestore {
     // Grammar exercise bank: ai cũng đọc bài public, chỉ tác giả sửa/xoá bài của mình
     match /grammarExercises/{exerciseId} {
       allow read: if resource.data.visibility == 'public'
-        || (isAuthenticated() && resource.data.ownerUid == request.auth.uid);
+        || (isAuthenticated() && resource.data.ownerUid == request.auth.uid)
+        || isAdmin();
       allow create: if isAuthenticated()
         && request.resource.data.ownerUid == request.auth.uid;
       allow update, delete: if isAuthenticated()
-        && resource.data.ownerUid == request.auth.uid;
+        && (resource.data.ownerUid == request.auth.uid || isAdmin());
     }
 
     // User-specific data partition

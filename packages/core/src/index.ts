@@ -7,7 +7,6 @@ export * from './data/index.js';
 export * from './fsrs/studySession.js';
 export * from './import/parser.js';
 export * from './quiz/generators.js';
-export * from './quiz/grammarGenerators.js';
 export * from './decks/deckManager.js';
 export * from './decks/deckMigration.js';
 export * from './decks/deckOwnership.js';

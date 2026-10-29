@@ -67,7 +67,13 @@ export function loadUserCards(userId?: string | null): StudyCard[] {
     if (saved) {
       const parsed: StudyCard[] = JSON.parse(saved);
       return parsed
-        .filter((c) => c.type !== 'kanji' && c.deckId !== 'deck_n3_kanji')
+        .filter(
+          (c) =>
+            c.type !== 'kanji' &&
+            c.type !== 'grammar' &&
+            c.deckId !== 'deck_n3_kanji' &&
+            c.deckId !== 'deck_n3_grammar'
+        )
         .map((c) => {
           const reps = c.fsrsCard?.reps ?? 0;
           const hasReviewed = reps > 0 || Boolean(c.fsrsCard?.last_review);
@@ -186,7 +192,7 @@ export function loadUserDecks(userId?: string | null): Deck[] {
     if (saved) {
       const parsed: Deck[] = JSON.parse(saved);
       return migrateDecks(
-        parsed.filter((d) => d.id !== 'deck_n3_kanji'),
+        parsed.filter((d) => d.id !== 'deck_n3_kanji' && d.id !== 'deck_n3_grammar'),
         userId
       );
     }

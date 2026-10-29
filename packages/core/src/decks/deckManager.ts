@@ -6,7 +6,7 @@ import {
   isCardLearnedToday
 } from '../fsrs/studySession.js';
 import { createNewCard } from '../fsrs/scheduler.js';
-import { SEED_WORDS, SEED_GRAMMAR } from '../data/index.js';
+import { SEED_WORDS } from '../data/index.js';
 
 export interface DeckCounts {
   newCount: number;
@@ -42,27 +42,12 @@ export const DEFAULT_DECKS: Deck[] = [
     origin: 'builtin',
     visibility: 'private',
     createdAt: new Date().toISOString()
-  },
-  {
-    id: 'deck_n3_grammar',
-    folderId: 'folder_jlpt_n3',
-    name: 'N3 Ngữ Pháp Cốt Lõi (97 Cấu Trúc)',
-    description: '97 mẫu câu ngữ pháp N3 hay xuất hiện trong các đề thi',
-    color: '#d97706',
-    cardType: 'grammar',
-    cardIds: [],
-    newCardsPerDay: 10,
-    maxReviewsPerDay: 30,
-    isDefault: true,
-    origin: 'builtin',
-    visibility: 'private',
-    createdAt: new Date().toISOString()
   }
 ];
 
 /**
- * Builds standard default StudyCards for N3 Words and Grammar.
- * (Kanji is used as interactive lookup/reference and network links rather than isolated flashcards)
+ * Builds standard default StudyCards for N3 Words.
+ * Grammar is managed separately in the grammar section (Firestore-based).
  */
 export function buildDefaultCards(): StudyCard[] {
   const cards: StudyCard[] = [];
@@ -77,22 +62,6 @@ export function buildDefaultCards(): StudyCard[] {
       refId: w.id,
       word: w,
       deckId: 'deck_n3_words',
-      fsrsCard: createNewCard(),
-      isNew: true,
-      isDue: false
-    });
-  }
-
-  // 3. N3 Grammar
-  for (let idx = 0; idx < SEED_GRAMMAR.length; idx++) {
-    const g = SEED_GRAMMAR[idx];
-    if (!g) continue;
-    cards.push({
-      id: `c_grammar_${g.id}`,
-      type: 'grammar',
-      refId: g.id,
-      grammar: g,
-      deckId: 'deck_n3_grammar',
       fsrsCard: createNewCard(),
       isNew: true,
       isDue: false
