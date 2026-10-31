@@ -45,12 +45,10 @@ import {
   arenaQuestionEndsAt,
   arenaRevealEndsAt,
   closeArenaRoom,
-  closeArenaRoomIfOnlyHostRemains,
   createArenaRoom,
   getArenaSubmissionState,
   joinArenaRoom,
   leaveArenaRoom,
-  removeStaleArenaPlayers,
   sendArenaHeartbeat,
   sendArenaPlayerHeartbeat,
   settleArenaQuestion,
@@ -173,7 +171,11 @@ function ArenaSelect({
   );
 }
 
-function ArenaPlayerList({ players, hostUid }: { players: ArenaPlayer[]; hostUid: string }) {
+function ArenaPlayerList({ players, hostUid, unresponsiveUids }: {
+  players: ArenaPlayer[];
+  hostUid: string;
+  unresponsiveUids: Set<string>;
+}) {
   return (
     <ul className="space-y-2">
       {players.map((player) => (
@@ -185,8 +187,8 @@ function ArenaPlayerList({ players, hostUid }: { players: ArenaPlayer[]; hostUid
             <span className="truncate text-sm font-semibold text-raku-ink">{player.nickname}</span>
             {player.uid === hostUid && <Crown className="h-4 w-4 shrink-0 text-raku-signal" aria-label="Chủ phòng" />}
           </div>
-          <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${player.status === 'active' ? 'bg-raku-accent-soft text-raku-accent' : 'bg-raku-subtle text-raku-muted'}`}>
-            {player.status === 'active' ? 'Đang chơi' : 'Đã rời'}
+          <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${player.status !== 'active' ? 'bg-raku-subtle text-raku-muted' : unresponsiveUids.has(player.uid) ? 'bg-raku-signal/10 text-raku-signal' : 'bg-raku-accent-soft text-raku-accent'}`}>
+            {player.status !== 'active' ? 'Đã rời' : unresponsiveUids.has(player.uid) ? 'Mất tín hiệu' : 'Đang chơi'}
           </span>
         </li>
       ))}
@@ -218,11 +220,12 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
   const [notice, setNotice] = useState('');
   const [sessionEnded, setSessionEnded] = useState('');
   const [copied, setCopied] = useState(false);
+  const [connectionIssue, setConnectionIssue] = useState(false);
+  const [connectionRevision, setConnectionRevision] = useState(0);
   const settlingQuestionIds = useRef(new Set<string>());
   const submitLockRef = useRef<string | null>(null);
   const countdownFallbackRef = useRef<{ key: string; endsAt: number } | null>(null);
   const playerHeartbeatObservationsRef = useRef(new Map<string, { timestamp: number; receivedAt: number }>());
-  const stalePlayerCleanupAttemptsRef = useRef(new Map<string, { observedAt: number; attemptedAt: number }>());
   const selectedWords = useMemo(
     () => selectArenaWords(cards, decks, settings.source, settings.jlptLevel),
     [cards, decks, settings.source, settings.jlptLevel]
@@ -235,6 +238,12 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
   const isHost = Boolean(room && sessionUid && room.hostUid === sessionUid);
   const localPlayer = players.find((player) => player.uid === sessionUid);
   const activePlayers = players.filter((player) => player.status === 'active');
+  const unresponsiveUids = new Set(players.flatMap((player) => {
+    if (player.uid === room?.hostUid || player.status !== 'active') return [];
+    const observation = playerHeartbeatObservationsRef.current.get(player.uid);
+    return observation && now - observation.receivedAt > ARENA_PLAYER_TIMEOUT_MS ? [player.uid] : [];
+  }));
+  const unresponsivePlayers = players.filter((player) => unresponsiveUids.has(player.uid));
   const activeAnsweredCount = answers.filter((answer) => activePlayers.some((player) => player.uid === answer.uid)).length;
   const inviteLink = room
     ? `${window.location.origin}${window.location.pathname}?arena=${room.roomCode}`
@@ -251,8 +260,8 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
   const ownResult = reveal?.results.find((result) => result.uid === sessionUid);
   const handleSubscriptionError = useCallback((error: { code?: string; message: string }) => {
     if (isPermissionDenied(error)) {
-      setSessionEnded('Bạn không còn quyền truy cập phiên này. Hãy vào lại phòng bằng cùng tài khoản nếu phiên còn hoạt động.');
-      setRoomId(null);
+      setConnectionIssue(true);
+      setNotice('Tạm mất quyền đọc phiên. Phòng vẫn được giữ; hãy thử kết nối lại. Nếu vẫn lỗi, cần cập nhật Firestore Rules trên Firebase.');
       return;
     }
     setNotice(error.message);
@@ -295,9 +304,8 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
       unsubscribeRoom();
       unsubscribePlayers();
       playerHeartbeatObservationsRef.current.clear();
-      stalePlayerCleanupAttemptsRef.current.clear();
     };
-  }, [roomId, handleSubscriptionError]);
+  }, [roomId, connectionRevision, handleSubscriptionError]);
 
   useEffect(() => {
     if (!roomId || !room?.activeQuestionId) {
@@ -306,7 +314,7 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
     }
     const unsubscribe = subscribeArenaQuestion(roomId, room.activeQuestionId, setQuestion, handleSubscriptionError);
     return unsubscribe;
-  }, [roomId, room?.activeQuestionId, handleSubscriptionError]);
+  }, [roomId, room?.activeQuestionId, connectionRevision, handleSubscriptionError]);
 
   useEffect(() => {
     setOwnAnswer(null);
@@ -317,7 +325,7 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
     if (!roomId || !room?.activeQuestionId || !sessionUid) return;
     const unsubscribe = subscribeArenaOwnAnswer(roomId, room.activeQuestionId, sessionUid, setOwnAnswer, handleSubscriptionError);
     return unsubscribe;
-  }, [roomId, room?.activeQuestionId, sessionUid, handleSubscriptionError]);
+  }, [roomId, room?.activeQuestionId, sessionUid, connectionRevision, handleSubscriptionError]);
 
   useEffect(() => {
     if (!roomId || !room?.activeQuestionId || room.status !== 'reveal' || !sessionUid) {
@@ -326,7 +334,7 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
     }
     const unsubscribe = subscribeArenaReveal(roomId, room.activeQuestionId, setReveal, handleSubscriptionError);
     return unsubscribe;
-  }, [roomId, room?.activeQuestionId, room?.status, sessionUid, handleSubscriptionError]);
+  }, [roomId, room?.activeQuestionId, room?.status, sessionUid, connectionRevision, handleSubscriptionError]);
 
   useEffect(() => {
     if (!roomId || !isHost || room?.status !== 'question' || !room.activeQuestionId) {
@@ -338,22 +346,34 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
     setAnswersForQuestionId(room.activeQuestionId);
     const unsubscribe = subscribeArenaQuestionAnswers(roomId, room.activeQuestionId, setAnswers, handleSubscriptionError);
     return unsubscribe;
-  }, [roomId, room?.activeQuestionId, room?.status, isHost, handleSubscriptionError]);
+  }, [roomId, room?.activeQuestionId, room?.status, isHost, connectionRevision, handleSubscriptionError]);
 
   useEffect(() => {
     if (!roomId || !room || !sessionUid || localPlayer?.status !== 'active' || ['closed', 'finished'].includes(room.status)) return;
     const heartbeat = () => {
       void sendArenaPlayerHeartbeat(roomId, sessionUid).catch((error) => {
-        if (!isPermissionDenied(error)) setNotice(errorText(error));
+        if (isPermissionDenied(error)) {
+          setConnectionIssue(true);
+          setNotice('Không cập nhật được tín hiệu kết nối. Hãy thử kết nối lại; nếu vẫn lỗi, cần cập nhật Firestore Rules trên Firebase.');
+        } else {
+          setNotice(errorText(error));
+        }
       });
       if (isHost) {
-        void sendArenaHeartbeat(roomId, room.hostUid).catch((error) => setNotice(errorText(error)));
+        void sendArenaHeartbeat(roomId, room.hostUid).catch((error) => {
+          if (isPermissionDenied(error)) {
+            setConnectionIssue(true);
+            setNotice('Không cập nhật được tín hiệu của chủ phòng. Hãy thử kết nối lại; nếu vẫn lỗi, cần cập nhật Firestore Rules trên Firebase.');
+          } else {
+            setNotice(errorText(error));
+          }
+        });
       }
     };
     heartbeat();
     const timer = window.setInterval(heartbeat, isHost ? ARENA_HOST_HEARTBEAT_MS : ARENA_PLAYER_HEARTBEAT_MS);
     return () => window.clearInterval(timer);
-  }, [roomId, room?.hostUid, room?.status, sessionUid, isHost, localPlayer?.status]);
+  }, [roomId, room?.hostUid, room?.status, sessionUid, isHost, localPlayer?.status, connectionRevision]);
 
   useEffect(() => {
     if (isHost || !room || !roomId || room.status === 'closed' || room.status === 'finished' || !room.hostHeartbeatAt) return;
@@ -375,36 +395,9 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
 
   useEffect(() => {
     if (!roomId || localPlayer?.status !== 'left') return;
-    setSessionEnded('Bạn đã mất kết nối khỏi phòng. Vào lại bằng cùng tài khoản nếu phiên còn hoạt động.');
-    setRoomId(null);
+    setConnectionIssue(true);
+    setNotice('Bạn đã bị ngắt khỏi danh sách người chơi. Nếu phòng vẫn hoạt động, hãy kết nối lại để tiếp tục.');
   }, [roomId, localPlayer?.status]);
-
-  useEffect(() => {
-    if (!roomId || !isHost || !room || !['lobby', 'reveal'].includes(room.status)) return;
-    if (room.status === 'lobby' && !room.hasHadGuest) return;
-    if (!players.some((player) => player.uid === room.hostUid && player.status === 'active')) return;
-    if (activePlayers.length > 1) return;
-    if (activePlayers.length !== room.playerCount) return;
-    void closeArenaRoomIfOnlyHostRemains(roomId, room.hostUid, players).catch((error) => setNotice(errorText(error)));
-  }, [roomId, room?.status, room?.hostUid, isHost, activePlayers.length, players]);
-
-  useEffect(() => {
-    if (!roomId || !isHost || !room || !['lobby', 'countdown', 'question', 'reveal'].includes(room.status)) return;
-    const stalePlayers = players.flatMap((player) => {
-      if (player.uid === room.hostUid || player.status !== 'active') return [];
-      const observation = playerHeartbeatObservationsRef.current.get(player.uid);
-      if (!observation || now - observation.receivedAt <= ARENA_PLAYER_TIMEOUT_MS) return [];
-      const previousAttempt = stalePlayerCleanupAttemptsRef.current.get(player.uid);
-      if (previousAttempt?.observedAt === observation.receivedAt && now - previousAttempt.attemptedAt < 5_000) return [];
-      return [{ uid: player.uid, lastSeenAtMillis: observation.timestamp, observedAt: observation.receivedAt }];
-    });
-    if (stalePlayers.length === 0) return;
-    for (const player of stalePlayers) stalePlayerCleanupAttemptsRef.current.set(player.uid, { observedAt: player.observedAt, attemptedAt: now });
-    void removeStaleArenaPlayers(roomId, room.hostUid, stalePlayers)
-      .catch((error) => {
-        setNotice(errorText(error));
-      });
-  }, [roomId, room?.status, room?.hostUid, isHost, players, now]);
 
   useEffect(() => {
     if (!roomId || !isHost || !room || room.status !== 'countdown') {
@@ -493,6 +486,7 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
       setRoomCodeInput(result.roomCode);
       setRoomId(result.roomId);
       setSessionEnded('');
+      setConnectionIssue(false);
     } catch (error) {
       setNotice(errorText(error));
     } finally {
@@ -515,7 +509,32 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
       const joinedRoomId = await joinArenaRoom(roomCodeInput, uid, cleanName);
       setRoomId(joinedRoomId);
       setSessionEnded('');
+      setConnectionIssue(false);
     } catch (error) {
+      setNotice(errorText(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const reconnectRoom = async () => {
+    const roomCode = room?.roomCode || roomCodeInput;
+    if (!roomCode || !sessionUid) return;
+    if (auth.currentUser?.uid !== sessionUid) {
+      setSessionEnded('Phiên đăng nhập đã thay đổi. Hãy tải lại trang rồi vào lại phòng.');
+      setRoomId(null);
+      return;
+    }
+    setBusy(true);
+    setNotice('');
+    try {
+      const reconnectedRoomId = await joinArenaRoom(roomCode, sessionUid, localPlayer?.nickname || nickname);
+      setRoomId(reconnectedRoomId);
+      setConnectionRevision((revision) => revision + 1);
+      setConnectionIssue(false);
+      setSessionEnded('');
+    } catch (error) {
+      setConnectionIssue(true);
       setNotice(errorText(error));
     } finally {
       setBusy(false);
@@ -525,6 +544,7 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
   const returnHome = () => {
     setRoomId(null);
     setSessionEnded('');
+    setConnectionIssue(false);
     setNotice('');
     setRoomCodeInput('');
     const url = new URL(window.location.href);
@@ -584,18 +604,21 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
       await submitArenaAnswer(roomId, questionId, sessionUid, answer);
     } catch (error) {
       if (isPermissionDenied(error)) {
+        setConnectionIssue(true);
         try {
           const submissionState = await getArenaSubmissionState(roomId, questionId, sessionUid);
           if (submissionState.answer) {
+            setConnectionIssue(false);
             setNotice('Đáp án đã được ghi nhận.');
             return;
           }
           if (submissionState.playerStatus !== 'active') {
-            setSessionEnded('Bạn đã mất kết nối khỏi phòng. Vào lại bằng cùng tài khoản nếu phiên còn hoạt động.');
-            setRoomId(null);
+            setConnectionIssue(true);
+            setNotice('Bạn đã bị ngắt khỏi phòng. Hãy kết nối lại bằng cùng tài khoản nếu phòng vẫn hoạt động.');
             return;
           }
           if (submissionState.roomStatus !== 'question' || submissionState.activeQuestionId !== questionId) {
+            setConnectionIssue(false);
             setNotice('Câu hỏi đã kết thúc. Đáp án chưa được ghi nhận.');
             return;
           }
@@ -731,7 +754,22 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
           <ArenaButton onClick={() => void exitRoom()} disabled={busy} variant="secondary" className="min-h-11 shrink-0 px-3 py-2 text-xs"><DoorOpen className="h-4 w-4" />{isHost ? 'Đóng phòng' : 'Rời phòng'}</ArenaButton>
         </div>
 
-        {notice && <p role="alert" className="rounded-xl border border-raku-signal/25 bg-raku-signal/5 px-4 py-3 text-sm text-raku-signal">{notice}</p>}
+        {notice && (
+          <div role="alert" className="rounded-xl border border-raku-signal/25 bg-raku-signal/5 px-4 py-3 text-sm text-raku-signal">
+            <p>{notice}</p>
+            {connectionIssue && roomId && (
+              <ArenaButton onClick={() => void reconnectRoom()} disabled={busy} variant="secondary" className="mt-3 w-full sm:w-auto">
+                {busy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+                Kết nối lại
+              </ArenaButton>
+            )}
+          </div>
+        )}
+        {isHost && unresponsivePlayers.length > 0 && (
+          <p role="status" className="rounded-xl border border-raku-signal/25 bg-raku-signal/5 px-4 py-3 text-sm leading-5 text-raku-signal">
+            Không nhận được tín hiệu từ {unresponsivePlayers.map((player) => player.nickname).join(', ')} trong hơn {Math.ceil(ARENA_PLAYER_TIMEOUT_MS / 1_000)} giây. Có thể tab của họ đang chạy nền; phòng vẫn mở để họ kết nối lại. Bạn có thể chờ hoặc tự đóng phòng.
+          </p>
+        )}
         {isHost && ['countdown', 'question', 'reveal'].includes(room.status) && (
           <p className="rounded-xl border border-raku-accent/20 bg-raku-accent-soft/60 px-4 py-3 text-sm leading-5 text-raku-accent">
             Giữ tab Đấu trường mở trong suốt trận để đồng hồ và kết quả được cập nhật ổn định.
@@ -760,7 +798,7 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
             </section>
             <section className="min-w-0 rounded-3xl border border-raku-line bg-raku-surface p-4 sm:p-5" aria-labelledby="arena-lobby-player-title">
               <div className="mb-4 flex items-center justify-between"><h3 id="arena-lobby-player-title" className="font-bold text-raku-ink">Người chơi</h3><span className="rounded-full bg-raku-accent-soft px-3 py-1 text-xs font-semibold text-raku-accent">{activePlayers.length} đang chờ</span></div>
-              <ArenaPlayerList players={players} hostUid={room.hostUid} />
+              <ArenaPlayerList players={players} hostUid={room.hostUid} unresponsiveUids={unresponsiveUids} />
             </section>
           </div>
         )}

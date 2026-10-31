@@ -124,6 +124,28 @@ service cloud.firestore {
         && getAfter(playerPath).data.status == 'active';
     }
 
+    function validArenaReconnectRoomUpdate(roomId) {
+      let roomPath = /databases/$(database)/documents/arenaRooms/$(roomId);
+      let playerPath = /databases/$(database)/documents/arenaRooms/$(roomId)/players/$(request.auth.uid);
+      let previousRoom = get(roomPath).data;
+      let nextRoom = getAfter(roomPath).data;
+      return isAuthenticated()
+        && previousRoom.status in ['lobby', 'countdown', 'question', 'reveal']
+        && previousRoom.expiresAt > request.time
+        && previousRoom.playerCount < 8
+        && nextRoom.status == previousRoom.status
+        && nextRoom.expiresAt == previousRoom.expiresAt
+        && nextRoom.hasHadGuest == true
+        && nextRoom.playerCount == previousRoom.playerCount + 1
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['playerCount'])
+        && exists(playerPath)
+        && get(playerPath).data.uid == request.auth.uid
+        && get(playerPath).data.status == 'left'
+        && existsAfter(playerPath)
+        && getAfter(playerPath).data.uid == request.auth.uid
+        && getAfter(playerPath).data.status == 'active';
+    }
+
     function validArenaLeaveRoomUpdate(roomId) {
       let roomPath = /databases/$(database)/documents/arenaRooms/$(roomId);
       let playerPath = /databases/$(database)/documents/arenaRooms/$(roomId)/players/$(request.auth.uid);
@@ -247,6 +269,28 @@ service cloud.firestore {
         && request.resource.data.lastSeenAt == request.time;
     }
 
+    function validArenaPlayerReconnect(roomId, uid) {
+      let roomPath = /databases/$(database)/documents/arenaRooms/$(roomId);
+      let room = get(roomPath).data;
+      let nextRoom = getAfter(roomPath).data;
+      return isAuthenticated()
+        && uid == request.auth.uid
+        && resource.data.uid == uid
+        && resource.data.status == 'left'
+        && request.resource.data.uid == uid
+        && request.resource.data.status == 'active'
+        && request.resource.data.lastSeenAt == request.time
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'lastSeenAt', 'leftAt'])
+        && !('leftAt' in request.resource.data)
+        && room.status in ['lobby', 'countdown', 'question', 'reveal']
+        && room.expiresAt > request.time
+        && room.playerCount < 8
+        && nextRoom.status == room.status
+        && nextRoom.expiresAt == room.expiresAt
+        && nextRoom.hasHadGuest == true
+        && nextRoom.playerCount == room.playerCount + 1;
+    }
+
     match /arenaRoomCodes/{roomCode} {
       allow get: if isAuthenticated();
       allow list: if false;
@@ -286,6 +330,7 @@ service cloud.firestore {
           && (request.resource.data.status != 'countdown' || request.resource.data.playerCount >= 2)
         )
         || validArenaJoinRoomUpdate(roomId)
+        || validArenaReconnectRoomUpdate(roomId)
         || validArenaLeaveRoomUpdate(roomId);
       allow delete: if false;
 
@@ -295,6 +340,7 @@ service cloud.firestore {
         allow create: if validArenaPlayerCreate(roomId, uid);
         allow update: if arenaRoomIsHost(roomId)
           || (isAuthenticated() && uid == request.auth.uid && validArenaPlayerLeave(roomId))
+          || validArenaPlayerReconnect(roomId, uid)
           || (isAuthenticated() && uid == request.auth.uid && validArenaPlayerHeartbeat(roomId));
         allow delete: if false;
       }

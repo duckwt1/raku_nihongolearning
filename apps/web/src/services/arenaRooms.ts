@@ -1,6 +1,7 @@
 import {
   Timestamp,
   collection,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -324,7 +325,17 @@ export async function joinArenaRoom(roomCodeInput: string, uid: string, nickname
     if (ownPlayer.exists()) {
       const player = ownPlayer.data() as ArenaPlayer;
       if (player.status !== 'active') {
-        throw new Error('Bạn đã rời phiên này nên không thể vào lại phòng.');
+        if (room.playerCount >= ARENA_MAX_PLAYERS) throw new Error('Phòng đã đủ 8 người.');
+        transaction.update(playerRef(roomId, uid), {
+          status: 'active',
+          lastSeenAt: serverTimestamp(),
+          leftAt: deleteField()
+        });
+        transaction.update(roomRef(roomId), {
+          playerCount: room.playerCount + 1,
+          hasHadGuest: true
+        });
+        return;
       }
       transaction.update(playerRef(roomId, uid), { lastSeenAt: serverTimestamp() });
       return;
@@ -686,45 +697,6 @@ export async function sendArenaHeartbeat(roomId: string, hostUid: string): Promi
   });
 }
 
-export interface ArenaStalePlayerCandidate {
-  uid: string;
-  lastSeenAtMillis: number;
-}
-
-/** Marks players offline only if their heartbeat has not changed since the host observed it. */
-export async function removeStaleArenaPlayers(
-  roomId: string,
-  hostUid: string,
-  candidates: ArenaStalePlayerCandidate[]
-): Promise<void> {
-  if (candidates.length === 0) return;
-  await runTransaction(db, async (transaction) => {
-    const currentRoomRef = roomRef(roomId);
-    const roomSnapshot = await transaction.get(currentRoomRef);
-    if (!roomSnapshot.exists()) return;
-    const room = roomSnapshot.data() as ArenaRoom;
-    if (room.hostUid !== hostUid || !['lobby', 'reveal'].includes(room.status)) return;
-
-    const snapshots = await Promise.all(candidates.map((candidate) =>
-      transaction.get(playerRef(roomId, candidate.uid))
-    ));
-    const staleRefs = snapshots.flatMap((snapshot, index) => {
-      if (!snapshot.exists()) return [];
-      const player = snapshot.data() as ArenaPlayer;
-      const candidate = candidates[index]!;
-      const lastSeenAtMillis = player.lastSeenAt?.toMillis() ?? player.joinedAt?.toMillis() ?? 0;
-      return player.status === 'active' && lastSeenAtMillis === candidate.lastSeenAtMillis
-        ? [playerRef(roomId, player.uid)]
-        : [];
-    });
-    if (staleRefs.length === 0) return;
-
-    const leftAt = serverTimestamp();
-    for (const ref of staleRefs) transaction.update(ref, { status: 'left', leftAt });
-    transaction.update(currentRoomRef, { playerCount: Math.max(1, room.playerCount - staleRefs.length) });
-  });
-}
-
 export async function sendArenaPlayerHeartbeat(roomId: string, uid: string): Promise<void> {
   await updateDoc(playerRef(roomId, uid), { lastSeenAt: serverTimestamp() });
 }
@@ -755,15 +727,6 @@ export async function leaveArenaRoom(roomId: string, uid: string): Promise<void>
       playerCount: Math.max(1, room.playerCount - 1)
     });
   });
-}
-
-export async function closeArenaRoomIfOnlyHostRemains(
-  roomId: string,
-  hostUid: string,
-  activePlayers: ArenaPlayer[]
-): Promise<void> {
-  if (activePlayers.filter((player) => player.status === 'active').length > 1) return;
-  await closeArenaRoom(roomId, hostUid, 'all_guests_left');
 }
 
 export function arenaCountdownEndsAt(room: ArenaRoom): number | null {
