@@ -9,7 +9,8 @@ import {
   gradeArenaAnswer,
   normalizeArenaReading,
   rankArenaPlayers,
-  selectArenaWords
+  selectArenaWords,
+  splitMeaningAlternatives
 } from './arenaQuiz.js';
 
 function word(id: string, surface: string, meaningVi = `nghĩa ${id}`, reading = `よみ${id}`): Word {
@@ -133,6 +134,7 @@ describe('arena answer grading and scoring', () => {
     expect(gradeArenaAnswer('jp-to-reading', key, 'べんきよう')).toBe(false);
     expect(gradeArenaAnswer('jp-to-reading', key, 'へんきょう')).toBe(false);
     expect(normalizeArenaReading(' コーヒー ')).toBe('こーひー');
+    expect(normalizeArenaReading('べん\u3000きょう\u200B')).toBe('べんきょう');
   });
 
   it('accepts listed Vietnamese meanings after Unicode, whitespace, and case normalization', () => {
@@ -145,6 +147,19 @@ describe('arena answer grading and scoring', () => {
     };
     expect(gradeArenaAnswer('jp-to-meaning', key, '  HỌC   ĐƯỜNG  ')).toBe(true);
     expect(gradeArenaAnswer('jp-to-meaning', key, 'truong hoc')).toBe(false);
+    expect(gradeArenaAnswer('jp-to-meaning', key, 'học đường.')).toBe(true);
+    expect(gradeArenaAnswer('jp-to-meaning', key, 'học đường!')).toBe(true);
+  });
+
+  it('splits meaning alternatives by commas, ideographic commas, and slashes', () => {
+    const alternatives = splitMeaningAlternatives('trường học、học đường / viện đào tạo; cơ sở giáo dục');
+    expect(alternatives).toEqual([
+      'trường học、học đường / viện đào tạo; cơ sở giáo dục',
+      'trường học',
+      'học đường',
+      'viện đào tạo',
+      'cơ sở giáo dục'
+    ]);
   });
 
   it.each([

@@ -76,20 +76,23 @@ export class ArenaQuestionGenerationError extends Error {
 }
 
 export function normalizeArenaReading(value: string): string {
-  const trimmed = normalizeNfc(value).trim();
-  return katakanaToHiragana(halfWidthKatakanaToFullWidth(trimmed));
+  const compact = normalizeNfc(value).replace(/[\s\u3000\u200B-\u200D\uFEFF]+/gu, '');
+  return katakanaToHiragana(halfWidthKatakanaToFullWidth(compact));
 }
 
 export function normalizeArenaMeaning(value: string): string {
   return normalizeNfc(value)
+    .replace(/[\u200B-\u200D\uFEFF]/gu, '')
     .trim()
     .replace(/\s+/gu, ' ')
+    .replace(/[.,!?。！？]+$/u, '')
+    .trim()
     .toLocaleLowerCase('vi-VN');
 }
 
 export function splitMeaningAlternatives(value: string): string[] {
   const fullMeaning = value.trim();
-  const parts = value.split(/[;,，；|\n\r]+/u).map((part) => part.trim()).filter(Boolean);
+  const parts = value.split(/[;,，；、/／|\n\r]+/u).map((part) => part.trim()).filter(Boolean);
   const seen = new Set<string>();
   return [fullMeaning, ...parts].filter((meaning) => {
     const normalized = normalizeArenaMeaning(meaning);
