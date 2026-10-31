@@ -657,11 +657,11 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
 
   if (sessionEnded) {
     return (
-      <section className="mx-auto max-w-xl rounded-3xl border border-raku-line bg-raku-surface p-6 text-center shadow-sm sm:p-8" aria-live="polite">
+      <section className="mx-auto w-full min-w-0 max-w-xl rounded-3xl border border-raku-line bg-raku-surface p-4 text-center shadow-sm sm:p-8" aria-live="polite">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-raku-signal/10 text-raku-signal">
           <DoorOpen className="h-8 w-8" />
         </div>
-        <h2 className="mt-5 text-3xl font-bold tracking-tight text-raku-ink">Phòng đã kết thúc</h2>
+        <h2 className="mt-5 text-[clamp(1.5rem,6vw,1.875rem)] font-bold tracking-tight text-raku-ink">Phòng đã kết thúc</h2>
         <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-raku-muted">{sessionEnded}</p>
         <ArenaButton onClick={returnHome} className="mt-6 w-full">Về trang Đấu trường</ArenaButton>
       </section>
@@ -679,19 +679,19 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
     if (room.status === 'finished') {
       const winner = rankablePlayers[0];
       return (
-        <section className="mx-auto max-w-3xl space-y-5" aria-live="polite">
-          <div className="relative overflow-hidden rounded-3xl border border-raku-line bg-raku-surface p-6 shadow-sm sm:p-8">
+        <section className="mx-auto w-full min-w-0 max-w-3xl space-y-5" aria-live="polite">
+          <div className="relative min-w-0 overflow-hidden rounded-3xl border border-raku-line bg-raku-surface p-4 shadow-sm sm:p-8">
             <div className="absolute -right-10 -top-12 h-44 w-44 rounded-full bg-raku-signal/5" />
             <div className="relative mx-auto max-w-xl text-center">
               <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-raku-accent-soft text-raku-accent"><Trophy className="h-8 w-8" /></span>
               <p className="mt-5 text-xs font-bold uppercase tracking-[0.18em] text-raku-accent">Trận đấu đã khép lại</p>
-              <h2 className="mt-2 text-3xl font-bold tracking-tight text-raku-ink">{winner ? `${winner.nickname} dẫn đầu!` : 'Cảm ơn đã tham gia!'}</h2>
+              <h2 className="mt-2 text-[clamp(1.5rem,6vw,1.875rem)] font-bold tracking-tight text-raku-ink">{winner ? `${winner.nickname} dẫn đầu!` : 'Cảm ơn đã tham gia!'}</h2>
               <p className="mt-2 text-sm leading-6 text-raku-muted">Mỗi câu trả lời đúng là một bước tiến. Hẹn gặp lại bạn ở ván tiếp theo.</p>
             </div>
           </div>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid min-w-0 gap-4 sm:grid-cols-3">
             {rankablePlayers.slice(0, 3).map((player, index) => (
-              <div key={player.uid} className={`rounded-2xl border p-4 ${index === 0 ? 'border-raku-signal/30 bg-raku-signal/5 sm:-translate-y-1' : 'border-raku-line bg-raku-surface'}`}>
+              <div key={player.uid} className={`min-w-0 rounded-2xl border p-4 ${index === 0 ? 'border-raku-signal/30 bg-raku-signal/5 sm:-translate-y-1' : 'border-raku-line bg-raku-surface'}`}>
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-bold uppercase tracking-wide text-raku-muted">Hạng {index + 1}</span>
                   {index === 0 && <Crown className="h-4 w-4 text-raku-signal" />}
@@ -722,7 +722,7 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
     }
 
     return (
-      <section className="mx-auto max-w-3xl space-y-4">
+      <section className="mx-auto w-full min-w-0 max-w-3xl space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-raku-accent-soft text-raku-accent"><Swords className="h-5 w-5" /></span>
@@ -739,8 +739,8 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
         )}
 
         {room.status === 'lobby' && (
-          <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-            <section className="rounded-3xl bg-[#243430] p-5 text-[#FFFCF5] shadow-sm sm:p-7">
+          <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+            <section className="min-w-0 rounded-3xl bg-[#243430] p-4 text-[#FFFCF5] shadow-sm sm:p-7">
               <div className="flex items-center gap-2 text-sm font-semibold text-[#DCEBE0]"><Users className="h-4 w-4" /> Mời mọi người vào phòng</div>
               <p className="mt-5 text-xs font-semibold uppercase tracking-[0.16em] text-[#BCC7BC]">Mã phòng</p>
               <div className="mt-2 flex items-center justify-between gap-3">
@@ -758,7 +758,7 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
                 </ArenaButton>
               ) : <p className="mt-4 rounded-xl bg-white/10 px-4 py-3 text-center text-sm text-[#DCEBE0]">Đã vào phòng. Chủ phòng sẽ bắt đầu ngay.</p>}
             </section>
-            <section className="rounded-3xl border border-raku-line bg-raku-surface p-4 sm:p-5" aria-labelledby="arena-lobby-player-title">
+            <section className="min-w-0 rounded-3xl border border-raku-line bg-raku-surface p-4 sm:p-5" aria-labelledby="arena-lobby-player-title">
               <div className="mb-4 flex items-center justify-between"><h3 id="arena-lobby-player-title" className="font-bold text-raku-ink">Người chơi</h3><span className="rounded-full bg-raku-accent-soft px-3 py-1 text-xs font-semibold text-raku-accent">{activePlayers.length} đang chờ</span></div>
               <ArenaPlayerList players={players} hostUid={room.hostUid} />
             </section>
@@ -766,10 +766,10 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
         )}
 
         {room.status === 'countdown' && (
-          <section className="rounded-3xl border border-raku-line bg-raku-surface px-5 py-12 text-center shadow-sm sm:py-16">
+          <section className="min-w-0 rounded-3xl border border-raku-line bg-raku-surface px-4 py-[clamp(2rem,8vh,4rem)] text-center shadow-sm sm:px-5">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-raku-accent">Câu {currentQuestionIndex} sắp bắt đầu</p>
-            <div className="mx-auto mt-5 flex h-36 w-36 items-center justify-center rounded-full border-[6px] border-raku-accent/20 bg-raku-accent-soft sm:h-44 sm:w-44">
-              <span key={countdownNumber} aria-live="polite" aria-atomic="true" className="font-mono text-7xl font-bold text-raku-accent sm:text-8xl">{countdownNumber}</span>
+            <div className="mx-auto mt-5 flex h-[clamp(7rem,38vw,11rem)] w-[clamp(7rem,38vw,11rem)] items-center justify-center rounded-full border-[6px] border-raku-accent/20 bg-raku-accent-soft">
+              <span key={countdownNumber} aria-live="polite" aria-atomic="true" className="font-mono text-[clamp(4.5rem,18vw,6rem)] font-bold leading-none text-raku-accent">{countdownNumber}</span>
             </div>
             <p className="mt-5 text-sm text-raku-muted">Cùng nhìn màn hình — câu hỏi sẽ xuất hiện cho tất cả người chơi.</p>
           </section>
@@ -777,23 +777,23 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
 
         {room.status === 'question' && (
           <div className="space-y-4">
-            <section className="rounded-3xl border border-raku-line bg-raku-surface p-4 shadow-sm sm:p-6">
+            <section className="min-w-0 rounded-3xl border border-raku-line bg-raku-surface p-[clamp(0.75rem,4vw,1.5rem)] shadow-sm">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2 text-xs font-semibold text-raku-muted"><span className="rounded-full bg-raku-accent-soft px-3 py-1 text-raku-accent">Câu {currentQuestionIndex}/{room.questionCount}</span><span className="hidden sm:inline">{question?.type === 'vi-to-jp' ? 'Tiếng Việt → từ vựng' : question?.type === 'jp-to-reading' ? 'Từ vựng → cách đọc' : 'Từ vựng → nghĩa'}</span></div>
                 <div className={`flex h-12 min-w-16 items-center justify-center gap-1 rounded-xl px-3 font-mono text-lg font-bold ${timeLeft <= 5 ? 'bg-raku-signal/10 text-raku-signal' : 'bg-raku-canvas text-raku-ink'}`} aria-label={`Còn ${timeLeft} giây`} aria-live="off"><Clock3 className="h-4 w-4" />{timeLeft}<span className="font-sans text-xs">s</span></div>
               </div>
               <div className="mt-4 h-2 overflow-hidden rounded-full bg-raku-subtle"><div className={`h-full rounded-full transition-[width] duration-200 ${timeLeft <= 5 ? 'bg-raku-signal' : 'bg-raku-accent'}`} style={{ width: `${timeProgress}%` }} /></div>
-              <div className="px-1 py-8 text-center sm:py-10">
+              <div className="min-w-0 px-1 py-[clamp(1rem,5vh,2.5rem)] text-center">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-raku-muted">{question?.type === 'vi-to-jp' ? 'Chọn từ tiếng Nhật đúng' : 'Hãy nhập đáp án của bạn'}</p>
-                <h3 className="mx-auto mt-3 max-w-2xl text-3xl font-bold tracking-tight text-raku-ink">{question?.prompt || 'Đang tải câu hỏi…'}</h3>
+                <h3 className="mx-auto mt-3 max-w-2xl break-words text-[clamp(1.5rem,6vw,1.875rem)] font-bold leading-tight tracking-tight text-raku-ink">{question?.prompt || 'Đang tải câu hỏi…'}</h3>
               </div>
               {!question ? <div className="flex justify-center py-5"><LoaderCircle className="h-6 w-6 animate-spin text-raku-accent" /></div> : question.type === 'vi-to-jp' ? (
                 <div className="grid gap-2.5 sm:grid-cols-2">
                   {question.choices?.map((choice, index) => {
                     const isCorrect = reveal?.correctChoiceId === choice.id;
                     const isOwnWrong = ownAnswer?.answer === choice.id && reveal && !isCorrect;
-                    return <button key={choice.id} disabled={hasSubmitted || submitPending || timeLeft <= 0} onClick={() => void submitAnswer(choice.id)} className={`flex min-h-[4.25rem] items-center gap-3 rounded-2xl border px-4 py-3 text-left transition disabled:cursor-default disabled:opacity-75 ${reveal && isCorrect ? 'border-raku-accent bg-raku-accent-soft ring-2 ring-raku-accent/20' : isOwnWrong ? 'border-raku-signal bg-raku-signal/5' : 'border-raku-line bg-raku-canvas hover:border-raku-accent/50 hover:bg-raku-accent-soft/50'}`}>
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-raku-line bg-raku-surface font-mono text-sm font-bold text-raku-muted">{String.fromCharCode(65 + index)}</span><span className="min-w-0 flex-1 text-lg font-semibold text-raku-ink">{choice.text}</span>{reveal && isCorrect && <Check className="h-5 w-5 text-raku-accent" />}
+                    return <button key={choice.id} disabled={hasSubmitted || submitPending || timeLeft <= 0} onClick={() => void submitAnswer(choice.id)} className={`flex min-h-[clamp(3.5rem,10vh,4.25rem)] min-w-0 items-center gap-3 rounded-2xl border px-3 py-3 text-left transition sm:px-4 disabled:cursor-default disabled:opacity-75 ${reveal && isCorrect ? 'border-raku-accent bg-raku-accent-soft ring-2 ring-raku-accent/20' : isOwnWrong ? 'border-raku-signal bg-raku-signal/5' : 'border-raku-line bg-raku-canvas hover:border-raku-accent/50 hover:bg-raku-accent-soft/50'}`}>
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-raku-line bg-raku-surface font-mono text-sm font-bold text-raku-muted">{String.fromCharCode(65 + index)}</span><span className="min-w-0 flex-1 break-words text-[clamp(1rem,4vw,1.125rem)] font-semibold text-raku-ink">{choice.text}</span>{reveal && isCorrect && <Check className="h-5 w-5 shrink-0 text-raku-accent" />}
                     </button>;
                   })}
                 </div>
@@ -809,7 +809,7 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
                       disabled={hasSubmitted || submitPending || timeLeft <= 0}
                       maxLength={240}
                       placeholder={question.type === 'jp-to-reading' ? 'Ví dụ: べんきょう' : 'Nhập nghĩa của từ'}
-                      className="min-h-14 scroll-mt-28 rounded-2xl border border-raku-line bg-raku-canvas px-4 text-lg text-raku-ink placeholder:text-raku-muted/70 disabled:opacity-60"
+                      className="min-h-14 w-full min-w-0 scroll-mt-28 rounded-2xl border border-raku-line bg-raku-canvas px-4 text-[clamp(1rem,4vw,1.125rem)] text-raku-ink placeholder:text-raku-muted/70 disabled:opacity-60"
                     />
                   </ArenaField>
                   <ArenaButton type="submit" disabled={!draftAnswer.trim() || hasSubmitted || submitPending || timeLeft <= 0} className="w-full sm:w-auto sm:min-w-48">
@@ -828,10 +828,10 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
 
         {room.status === 'reveal' && reveal?.questionId === room.activeQuestionId && (
           <section className="space-y-4" aria-live="polite">
-            <div className="rounded-3xl border border-raku-accent/25 bg-raku-accent-soft/50 p-5 sm:p-7">
+            <div className="min-w-0 rounded-3xl border border-raku-accent/25 bg-raku-accent-soft/50 p-4 sm:p-7">
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-raku-accent"><Check className="h-4 w-4" /> Đáp án đã được chốt</div>
-              <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-                <div><p className="text-xs font-semibold text-raku-muted">Đáp án đúng</p><p className="mt-1 text-3xl font-bold text-raku-ink">{reveal.correctAnswer}</p><p className="mt-2 text-sm leading-6 text-raku-muted">{reveal.explanationVi}</p></div>
+              <div className="mt-4 grid min-w-0 gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                <div className="min-w-0"><p className="text-xs font-semibold text-raku-muted">Đáp án đúng</p><p className="mt-1 break-words text-[clamp(1.5rem,6vw,1.875rem)] font-bold text-raku-ink">{reveal.correctAnswer}</p><p className="mt-2 text-sm leading-6 text-raku-muted">{reveal.explanationVi}</p></div>
                 <div className="rounded-2xl bg-raku-surface px-5 py-4 sm:min-w-36 sm:text-right"><p className="text-xs font-semibold text-raku-muted">Điểm câu này</p><p className="mt-1 font-mono text-3xl font-bold text-raku-accent">+{ownResult?.points ?? 0}</p></div>
               </div>
               {ownResult?.submittedAnswer && <p className="mt-4 rounded-xl bg-raku-surface/70 px-4 py-3 text-sm text-raku-muted">Bạn trả lời: <span className="font-semibold text-raku-ink">{question?.type === 'vi-to-jp' ? displayOption(ownResult.submittedAnswer) : ownResult.submittedAnswer}</span>{ownResult.isCorrect ? ' · Chính xác' : ' · Chưa đúng'}</p>}
@@ -850,13 +850,13 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
   }
 
   return (
-    <section className="mx-auto max-w-5xl space-y-5 sm:space-y-6">
-      <div className="relative overflow-hidden rounded-3xl bg-[#243430] p-5 text-[#FFFCF5] shadow-sm sm:p-8 lg:p-10">
+    <section className="mx-auto w-full min-w-0 max-w-5xl space-y-5 sm:space-y-6">
+      <div className="relative min-w-0 overflow-hidden rounded-3xl bg-[#243430] p-4 text-[#FFFCF5] shadow-sm sm:p-8 lg:p-10">
         <div className="absolute -right-12 -top-16 h-52 w-52 rounded-full border-[28px] border-white/5" />
         <div className="relative grid gap-6 sm:grid-cols-[1fr_auto] sm:items-end">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-[#DCEBE0]"><Swords className="h-4 w-4" /> HỌC CÙNG NHAU · TIẾN BỘ CÙNG NHAU</div>
-            <h2 className="mt-5 text-3xl font-bold tracking-tight">Đấu trường từ vựng</h2>
+            <div className="inline-flex max-w-full flex-wrap items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-[#DCEBE0]"><Swords className="h-4 w-4 shrink-0" /><span className="min-w-0 break-words">HỌC CÙNG NHAU · TIẾN BỘ CÙNG NHAU</span></div>
+            <h2 className="mt-5 text-[clamp(1.5rem,6vw,1.875rem)] font-bold tracking-tight">Đấu trường từ vựng</h2>
             <p className="mt-3 max-w-xl text-sm leading-6 text-[#DCEBE0]">Tạo phòng, mời bạn bè và cùng ôn từ tiếng Nhật theo thời gian thực. Mỗi phòng tối đa 8 người.</p>
           </div>
           <div className="hidden h-24 w-24 items-center justify-center rounded-3xl border border-white/10 bg-white/5 text-[#DCEBE0] sm:flex"><Trophy className="h-11 w-11" /></div>
@@ -866,14 +866,14 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
       {notice && <p role="alert" className="rounded-xl border border-raku-signal/25 bg-raku-signal/5 px-4 py-3 text-sm text-raku-signal">{notice}</p>}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded-3xl border border-raku-line bg-raku-surface p-5 shadow-sm sm:p-6">
-          <div className="flex items-start gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-raku-accent-soft text-raku-accent"><Crown className="h-5 w-5" /></span><div><h3 className="text-lg font-bold text-raku-ink">Tạo phòng mới</h3><p className="mt-1 text-sm leading-5 text-raku-muted">Chọn bộ từ, cài thời gian rồi gửi mã mời cho nhóm.</p></div></div>
+        <section className="min-w-0 rounded-3xl border border-raku-line bg-raku-surface p-4 shadow-sm sm:p-6">
+          <div className="flex min-w-0 items-start gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-raku-accent-soft text-raku-accent"><Crown className="h-5 w-5" /></span><div className="min-w-0"><h3 className="text-lg font-bold text-raku-ink">Tạo phòng mới</h3><p className="mt-1 text-sm leading-5 text-raku-muted">Chọn bộ từ, cài thời gian rồi gửi mã mời cho nhóm.</p></div></div>
           {!showCreate ? <ArenaButton onClick={() => setShowCreate(true)} className="mt-5 w-full">Thiết lập phòng</ArenaButton> : (
-            <form onSubmit={(event) => void createRoom(event)} className="mt-5 space-y-4">
-              <ArenaField label="Nickname"><input required maxLength={20} value={nickname} onChange={(event) => setNickname(event.target.value)} placeholder="Tên mọi người sẽ thấy" className="min-h-12 rounded-xl border border-raku-line bg-raku-canvas px-3 text-sm text-raku-ink placeholder:text-raku-muted/70" /></ArenaField>
+            <form onSubmit={(event) => void createRoom(event)} className="mt-5 min-w-0 space-y-4">
+              <ArenaField label="Nickname"><input required maxLength={20} value={nickname} onChange={(event) => setNickname(event.target.value)} placeholder="Tên mọi người sẽ thấy" className="min-h-12 w-full min-w-0 rounded-xl border border-raku-line bg-raku-canvas px-3 text-sm text-raku-ink placeholder:text-raku-muted/70" /></ArenaField>
               <ArenaField label="Nguồn từ vựng"><ArenaSelect value={settings.source} onChange={(value) => setSettings((current) => ({ ...current, source: value as ArenaWordSource, jlptLevel: value === 'jlpt' ? current.jlptLevel || 'N5' : current.jlptLevel }))}>{sourceOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</ArenaSelect></ArenaField>
               {settings.source === 'jlpt' && <ArenaField label="Cấp độ"><ArenaSelect value={settings.jlptLevel || 'N5'} onChange={(value) => setSettings((current) => ({ ...current, jlptLevel: value as JlptLevel }))}>{(['N5', 'N4', 'N3', 'N2', 'N1'] as const).map((level) => <option key={level} value={level}>{level}</option>)}</ArenaSelect></ArenaField>}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
                 <ArenaField label={`Số câu (tối đa ${ARENA_MAX_QUESTIONS})`}><input type="number" min={1} max={Math.max(1, maxQuestionCount)} step={1} value={settings.questionCount} onChange={(event) => setSettings((current) => ({ ...current, questionCount: Number(event.target.value) }))} className="min-h-12 w-full rounded-xl border border-raku-line bg-raku-canvas px-3 text-sm text-raku-ink" /></ArenaField>
                 <ArenaField label="Thời gian"><ArenaSelect value={String(settings.timeLimitSeconds)} onChange={(value) => setSettings((current) => ({ ...current, timeLimitSeconds: Number(value) as ArenaSettings['timeLimitSeconds'] }))}>{ARENA_TIME_LIMITS.map((seconds) => <option key={seconds} value={seconds}>{seconds} giây</option>)}</ArenaSelect></ArenaField>
               </div>
@@ -886,18 +886,18 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
           )}
         </section>
 
-        <section className="rounded-3xl border border-raku-line bg-raku-surface p-5 shadow-sm sm:p-6">
-          <div className="flex items-start gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-raku-signal/10 text-raku-signal"><Users className="h-5 w-5" /></span><div><h3 className="text-lg font-bold text-raku-ink">Vào phòng bạn bè</h3><p className="mt-1 text-sm leading-5 text-raku-muted">Nhập mã 6 ký tự hoặc mở link mời để tham gia.</p></div></div>
-          <form onSubmit={(event) => void enterRoom(event)} className="mt-5 space-y-4">
-            <ArenaField label="Nickname"><input required maxLength={20} value={nickname} onChange={(event) => setNickname(event.target.value)} placeholder="Tên mọi người sẽ thấy" className="min-h-12 rounded-xl border border-raku-line bg-raku-canvas px-3 text-sm text-raku-ink placeholder:text-raku-muted/70" /></ArenaField>
-            <ArenaField label="Mã phòng"><input required minLength={6} maxLength={6} value={roomCodeInput} onChange={(event) => setRoomCodeInput(event.target.value.toUpperCase().replace(/\s/gu, ''))} placeholder="VD: 7K2MP9" autoCapitalize="characters" className="min-h-14 rounded-xl border border-raku-line bg-raku-canvas px-4 font-mono text-3xl font-bold tracking-[0.18em] text-raku-ink placeholder:text-raku-muted/50" /></ArenaField>
+        <section className="min-w-0 rounded-3xl border border-raku-line bg-raku-surface p-4 shadow-sm sm:p-6">
+          <div className="flex min-w-0 items-start gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-raku-signal/10 text-raku-signal"><Users className="h-5 w-5" /></span><div className="min-w-0"><h3 className="text-lg font-bold text-raku-ink">Vào phòng bạn bè</h3><p className="mt-1 text-sm leading-5 text-raku-muted">Nhập mã 6 ký tự hoặc mở link mời để tham gia.</p></div></div>
+          <form onSubmit={(event) => void enterRoom(event)} className="mt-5 min-w-0 space-y-4">
+            <ArenaField label="Nickname"><input required maxLength={20} value={nickname} onChange={(event) => setNickname(event.target.value)} placeholder="Tên mọi người sẽ thấy" className="min-h-12 w-full min-w-0 rounded-xl border border-raku-line bg-raku-canvas px-3 text-sm text-raku-ink placeholder:text-raku-muted/70" /></ArenaField>
+            <ArenaField label="Mã phòng"><input required minLength={6} maxLength={6} value={roomCodeInput} onChange={(event) => setRoomCodeInput(event.target.value.toUpperCase().replace(/\s/gu, ''))} placeholder="VD: 7K2MP9" autoCapitalize="characters" className="min-h-14 w-full min-w-0 rounded-xl border border-raku-line bg-raku-canvas px-3 font-mono text-[clamp(1.5rem,8vw,1.875rem)] font-bold tracking-[clamp(0.1em,2vw,0.18em)] text-raku-ink placeholder:text-raku-muted/50" /></ArenaField>
             <ArenaButton type="submit" disabled={busy || roomCodeInput.trim().length !== 6} variant="secondary" className="w-full">{busy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <ArrowLeft className="h-4 w-4 rotate-180" />}Vào phòng</ArenaButton>
           </form>
           <p className="mt-4 flex items-start gap-2 border-t border-raku-line pt-4 text-xs leading-5 text-raku-muted"><Clock3 className="mt-0.5 h-4 w-4 shrink-0" />Không cần đăng nhập Google. Dùng nickname để chơi cùng nhóm.</p>
         </section>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid min-w-0 gap-3 sm:grid-cols-3">
         {[['2–8', 'người mỗi phòng'], ['4 dạng', 'trắc nghiệm và tự nhập'], ['10 giây', 'mặc định mỗi câu']].map(([value, label]) => <div key={label} className="rounded-2xl border border-raku-line bg-raku-surface px-4 py-4"><p className="font-mono text-lg font-bold text-raku-accent">{value}</p><p className="mt-1 text-xs text-raku-muted">{label}</p></div>)}
       </div>
       <p className="px-1 text-center text-xs text-raku-muted">Mỗi đáp án bị khóa ngay sau khi gửi. Kết quả chỉ hiện khi cả nhóm đã trả lời hoặc hết giờ.</p>
