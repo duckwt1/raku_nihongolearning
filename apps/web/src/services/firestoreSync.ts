@@ -616,8 +616,14 @@ export function mergeFirestoreCardProgress(
       last_review: lastReview
     };
     const isNew = fsrsCard.reps === 0 && !lastReview && fsrsCard.state === 0;
+    const firstLearnedAt =
+      (typeof cloud.firstLearnedAt === 'string' && cloud.firstLearnedAt.trim()) ||
+      card.firstLearnedAt ||
+      undefined;
+
     return {
       ...card,
+      firstLearnedAt,
       learnedAt: cloud.learnedAt || card.learnedAt,
       fsrsCard,
       isNew,
