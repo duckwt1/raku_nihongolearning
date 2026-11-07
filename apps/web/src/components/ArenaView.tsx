@@ -400,12 +400,17 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
   }, [roomId, room?.hostUid, room?.status, sessionUid, isHost, localPlayer?.status, connectionRevision]);
 
   useEffect(() => {
-    // Trong phòng chờ ('lobby'), không ngắt kết nối vì chủ phòng có thể đang chia sẻ link hoặc chờ nhóm
-    if (isHost || !room || !roomId || ['lobby', 'closed', 'finished'].includes(room.status)) return;
+    if (isHost || !room || !roomId || ['closed', 'finished'].includes(room.status)) return;
     const observation = hostHeartbeatObservationRef.current;
     if (!observation) return;
-    if (now - observation.receivedAt <= ARENA_HOST_TIMEOUT_MS) return;
-    setSessionEnded('Không nhận được tín hiệu từ chủ phòng trong thời gian dài. Trận đấu đã dừng.');
+    // Lobby dùng timeout dài hơn (3×) vì host có thể đang chia sẻ link hoặc chờ nhóm chuẩn bị.
+    const threshold = room.status === 'lobby' ? ARENA_HOST_TIMEOUT_MS * 3 : ARENA_HOST_TIMEOUT_MS;
+    if (now - observation.receivedAt <= threshold) return;
+    setSessionEnded(
+      room.status === 'lobby'
+        ? 'Không nhận được tín hiệu từ chủ phòng. Có thể chủ phòng đã đóng tab.'
+        : 'Không nhận được tín hiệu từ chủ phòng trong thời gian dài. Trận đấu đã dừng.'
+    );
     setRoomId(null);
   }, [isHost, room?.status, roomId, now]);
 

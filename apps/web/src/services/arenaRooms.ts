@@ -10,6 +10,7 @@ import {
   runTransaction,
   serverTimestamp,
   updateDoc,
+  where,
   writeBatch,
   type DocumentData,
   type FirestoreError,
@@ -543,9 +544,10 @@ export async function settleArenaQuestion(
   force = false
 ): Promise<ArenaReveal | null> {
   // Membership is fixed once the lobby starts, so a bounded pre-read gives us
-  // the player IDs. The transaction then reads each participant document and
-  // their answer individually (the Web SDK transaction API does not read queries).
-  const participantIds = (await getDocs(query(playersCollection(roomId)))).docs.map((snapshot) => snapshot.id);
+  // the player IDs. Only fetch active players to reduce transaction size.
+  // The transaction then reads each participant document and their answer individually
+  // (the Web SDK transaction API does not support queries).
+  const participantIds = (await getDocs(query(playersCollection(roomId), where('status', '==', 'active')))).docs.map((snapshot) => snapshot.id);
   return runTransaction(db, async (transaction) => {
     const roomSnapshot = await transaction.get(roomRef(roomId));
     if (!roomSnapshot.exists()) return null;

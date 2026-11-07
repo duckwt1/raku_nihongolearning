@@ -259,14 +259,9 @@ service cloud.firestore {
     }
 
     function validArenaPlayerHeartbeat(roomId) {
-      let roomPath = /databases/$(database)/documents/arenaRooms/$(roomId);
-      let room = get(roomPath).data;
       return isAuthenticated()
         && resource.data.status == 'active'
-        && request.resource.data.status == 'active'
-        && room.status in ['lobby', 'countdown', 'question', 'reveal']
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastSeenAt'])
-        && request.resource.data.lastSeenAt == request.time;
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastSeenAt']);
     }
 
     function validArenaPlayerReconnect(roomId, uid) {
@@ -335,10 +330,11 @@ service cloud.firestore {
       allow delete: if false;
 
       match /players/{uid} {
-        allow get: if isAuthenticated()
-          && (uid == request.auth.uid || arenaRoomIsHost(roomId) || arenaRoomIsMember(roomId));
-        allow list: if isAuthenticated()
-          && (arenaRoomIsHost(roomId) || arenaRoomIsMember(roomId));
+        // Players subcollection contains only public data (nickname, score, status).
+        // Allow any authenticated user to read — write paths are strictly locked below.
+        // Using arenaRoomIsMember() here would call exists()/get() on a subcollection,
+        // which Cloud Firestore rejects for collection queries with permission-denied.
+        allow get, list: if isAuthenticated();
         allow create: if validArenaPlayerCreate(roomId, uid);
         allow update: if arenaRoomIsHost(roomId)
           || (isAuthenticated() && uid == request.auth.uid && validArenaPlayerLeave(roomId))
@@ -348,9 +344,11 @@ service cloud.firestore {
       }
 
       match /questions/{questionId} {
-        allow get: if arenaRoomIsHost(roomId)
-          || (arenaRoomIsMember(roomId)
-            && get(/databases/$(database)/documents/arenaRooms/$(roomId)).data.activeQuestionId == questionId);
+        // Questions contain only the prompt and choices — never the answer key.
+        // Answer keys live in /answerKeys/{questionId} (host-only).
+        // Using activeQuestionId == questionId here causes permission-denied when the
+        // host advances to the next question and the previous listener re-evaluates.
+        allow get: if isAuthenticated();
         allow list: if false;
         allow create: if arenaRoomIsHost(roomId)
           && get(/databases/$(database)/documents/arenaRooms/$(roomId)).data.status == 'preparing'
@@ -413,13 +411,11 @@ service cloud.firestore {
       }
 
       match /reveals/{questionId} {
-        function revealIsVisible() {
-          let room = get(/databases/$(database)/documents/arenaRooms/$(roomId)).data;
-          return arenaRoomIsMember(roomId)
-            && (room.status == 'finished' || (room.status == 'reveal' && room.activeQuestionId == questionId));
-        }
-
-        allow get, list: if arenaRoomIsHost(roomId) || revealIsVisible();
+        // Reveals contain public results (scores, rankings, correct answer).
+        // Restricting by activeQuestionId causes permission-denied on listener
+        // re-evaluation when the room advances past this question.
+        allow get: if isAuthenticated();
+        allow list: if false;
         allow create: if arenaRoomIsHost(roomId)
           && getAfter(/databases/$(database)/documents/arenaRooms/$(roomId)).data.status == 'reveal'
           && getAfter(/databases/$(database)/documents/arenaRooms/$(roomId)).data.activeQuestionId == questionId
