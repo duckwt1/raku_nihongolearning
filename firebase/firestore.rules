@@ -137,7 +137,7 @@ service cloud.firestore {
         && nextRoom.expiresAt == previousRoom.expiresAt
         && nextRoom.hasHadGuest == true
         && nextRoom.playerCount == previousRoom.playerCount + 1
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['playerCount'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['playerCount', 'hasHadGuest'])
         && exists(playerPath)
         && get(playerPath).data.uid == request.auth.uid
         && get(playerPath).data.status == 'left'

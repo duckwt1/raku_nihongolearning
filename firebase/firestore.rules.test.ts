@@ -10,6 +10,7 @@ import {
 } from '@firebase/rules-unit-testing';
 import {
   collection,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -296,6 +297,35 @@ describe('Arena Firestore security rules', () => {
       transaction.update(refs.guest, { status: 'left', leftAt: serverTimestamp() });
       transaction.update(refs.room, { playerCount: roomSnapshot.data()!.playerCount - 1 });
       expect(playerSnapshot.data()!.status).toBe('active');
+    }));
+  });
+
+  it('allows a left guest to reconnect via joinArenaRoom transaction', async () => {
+    await seedRoom('question');
+    const guestDb = modularFirestore(testEnv.authenticatedContext(guestUid));
+    const refs = paths(guestDb);
+
+    // Guest leaves first
+    await runTransaction(guestDb, async (transaction) => {
+      const roomSnapshot = await transaction.get(refs.room);
+      transaction.update(refs.guest, { status: 'left', leftAt: serverTimestamp() });
+      transaction.update(refs.room, { playerCount: roomSnapshot.data()!.playerCount - 1 });
+    });
+
+    // Guest reconnects using joinArenaRoom exact logic
+    await assertSucceeds(runTransaction(guestDb, async (transaction) => {
+      const roomDocument = await transaction.get(refs.room);
+      const ownPlayer = await transaction.get(refs.guest);
+      expect(ownPlayer.data()!.status).toBe('left');
+      transaction.update(refs.guest, {
+        status: 'active',
+        lastSeenAt: serverTimestamp(),
+        leftAt: deleteField()
+      });
+      transaction.update(refs.room, {
+        playerCount: roomDocument.data()!.playerCount + 1,
+        hasHadGuest: true
+      });
     }));
   });
 });

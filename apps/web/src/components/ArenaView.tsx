@@ -226,6 +226,7 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
   const submitLockRef = useRef<string | null>(null);
   const countdownFallbackRef = useRef<{ key: string; endsAt: number } | null>(null);
   const playerHeartbeatObservationsRef = useRef(new Map<string, { timestamp: number; receivedAt: number }>());
+  const hostHeartbeatObservationRef = useRef<{ timestamp: number; receivedAt: number } | null>(null);
   const selectedWords = useMemo(
     () => selectArenaWords(cards, decks, settings.source, settings.jlptLevel),
     [cards, decks, settings.source, settings.jlptLevel]
@@ -284,7 +285,16 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
       return;
     }
 
-    const unsubscribeRoom = subscribeArenaRoom(roomId, setRoom, handleSubscriptionError);
+    const unsubscribeRoom = subscribeArenaRoom(roomId, (nextRoom) => {
+      if (nextRoom?.hostHeartbeatAt) {
+        const timestamp = nextRoom.hostHeartbeatAt.toMillis();
+        const previous = hostHeartbeatObservationRef.current;
+        if (!previous || previous.timestamp !== timestamp) {
+          hostHeartbeatObservationRef.current = { timestamp, receivedAt: Date.now() };
+        }
+      }
+      setRoom(nextRoom);
+    }, handleSubscriptionError);
     const unsubscribePlayers = subscribeArenaPlayers(roomId, (nextPlayers) => {
       const receivedAt = Date.now();
       const presentUids = new Set(nextPlayers.map((player) => player.uid));
@@ -304,6 +314,7 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
       unsubscribeRoom();
       unsubscribePlayers();
       playerHeartbeatObservationsRef.current.clear();
+      hostHeartbeatObservationRef.current = null;
     };
   }, [roomId, connectionRevision, handleSubscriptionError]);
 
@@ -372,15 +383,28 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
     };
     heartbeat();
     const timer = window.setInterval(heartbeat, isHost ? ARENA_HOST_HEARTBEAT_MS : ARENA_PLAYER_HEARTBEAT_MS);
-    return () => window.clearInterval(timer);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') heartbeat();
+    };
+    const handleFocus = () => heartbeat();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, [roomId, room?.hostUid, room?.status, sessionUid, isHost, localPlayer?.status, connectionRevision]);
 
   useEffect(() => {
-    if (isHost || !room || !roomId || room.status === 'closed' || room.status === 'finished' || !room.hostHeartbeatAt) return;
-    if (now - room.hostHeartbeatAt.toMillis() <= ARENA_HOST_TIMEOUT_MS) return;
-    setSessionEnded('Không nhận được tín hiệu từ chủ phòng trong thời gian dài. Hãy đợi chủ phòng kết nối lại.');
+    // Trong phòng chờ ('lobby'), không ngắt kết nối vì chủ phòng có thể đang chia sẻ link hoặc chờ nhóm
+    if (isHost || !room || !roomId || ['lobby', 'closed', 'finished'].includes(room.status)) return;
+    const observation = hostHeartbeatObservationRef.current;
+    if (!observation) return;
+    if (now - observation.receivedAt <= ARENA_HOST_TIMEOUT_MS) return;
+    setSessionEnded('Không nhận được tín hiệu từ chủ phòng trong thời gian dài. Trận đấu đã dừng.');
     setRoomId(null);
-  }, [isHost, room, roomId, now]);
+  }, [isHost, room?.status, roomId, now]);
 
   useEffect(() => {
     if (roomId && room?.status === 'closed') {
@@ -452,6 +476,13 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
       : current);
   }, [maxQuestionCount]);
 
+  useEffect(() => {
+    const codeFromUrl = new URLSearchParams(window.location.search).get('arena')?.toUpperCase();
+    if (codeFromUrl && codeFromUrl !== roomCodeInput && !roomId) {
+      setRoomCodeInput(codeFromUrl);
+    }
+  }, [roomId, roomCodeInput]);
+
   const ensureUid = useCallback(async () => {
     await auth.authStateReady();
     const currentUser = auth.currentUser || (await signInAnonymously(auth)).user;
@@ -487,6 +518,9 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
       setRoomId(result.roomId);
       setSessionEnded('');
       setConnectionIssue(false);
+      const url = new URL(window.location.href);
+      url.searchParams.set('arena', result.roomCode);
+      window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
     } catch (error) {
       setNotice(errorText(error));
     } finally {
@@ -510,6 +544,9 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
       setRoomId(joinedRoomId);
       setSessionEnded('');
       setConnectionIssue(false);
+      const url = new URL(window.location.href);
+      url.searchParams.set('arena', roomCodeInput.trim().toUpperCase());
+      window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
     } catch (error) {
       setNotice(errorText(error));
     } finally {
