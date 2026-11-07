@@ -335,8 +335,10 @@ service cloud.firestore {
       allow delete: if false;
 
       match /players/{uid} {
-        allow get, list: if isAuthenticated()
+        allow get: if isAuthenticated()
           && (uid == request.auth.uid || arenaRoomIsHost(roomId) || arenaRoomIsMember(roomId));
+        allow list: if isAuthenticated()
+          && (arenaRoomIsHost(roomId) || arenaRoomIsMember(roomId));
         allow create: if validArenaPlayerCreate(roomId, uid);
         allow update: if arenaRoomIsHost(roomId)
           || (isAuthenticated() && uid == request.auth.uid && validArenaPlayerLeave(roomId))

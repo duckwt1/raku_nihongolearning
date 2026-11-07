@@ -328,4 +328,61 @@ describe('Arena Firestore security rules', () => {
       });
     }));
   });
+
+  it('simulates full guest flow in lobby: listen room, listen players, send player heartbeat', async () => {
+    const hostDb = modularFirestore(testEnv.authenticatedContext(hostUid));
+    const guestDb = modularFirestore(testEnv.authenticatedContext(guestUid));
+    const testRoomId = 'test-flow-room';
+    const roomRef = doc(hostDb, 'arenaRooms', testRoomId);
+    const codeRef = doc(hostDb, 'arenaRoomCodes', '3BC456');
+    const hostPlayerRef = doc(hostDb, 'arenaRooms', testRoomId, 'players', hostUid);
+    const guestPlayerRef = doc(guestDb, 'arenaRooms', testRoomId, 'players', guestUid);
+    const guestRoomRef = doc(guestDb, 'arenaRooms', testRoomId);
+    const expiresAt = Timestamp.fromMillis(Date.now() + 60 * 60 * 1_000);
+
+    await assertSucceeds(runTransaction(hostDb, async (transaction) => {
+      transaction.set(roomRef, {
+        roomCode: '3BC456', hostUid, hostNickname: 'Host', status: 'preparing',
+        settings: { source: 'all', questionCount: 1, timeLimitSeconds: 15, questionMode: 'mixed' },
+        questionCount: 1, playerCount: 1, hasHadGuest: false, activeQuestionIndex: -1,
+        activeQuestionId: null, answeredCount: 0, hostHeartbeatAt: serverTimestamp(),
+        createdAt: serverTimestamp(), expiresAt
+      });
+      transaction.set(codeRef, { roomId: testRoomId, hostUid, expiresAt });
+      transaction.set(hostPlayerRef, {
+        uid: hostUid, nickname: 'Host', status: 'active', score: 0, correctCount: 0,
+        totalCorrectResponseMs: 0, answeredQuestionId: null, joinedAt: serverTimestamp(),
+        lastSeenAt: serverTimestamp(), expiresAt
+      });
+    }));
+    await updateDoc(roomRef, { status: 'lobby' });
+
+    // Guest joins
+    await assertSucceeds(runTransaction(guestDb, async (transaction) => {
+      const roomSnapshot = await transaction.get(guestRoomRef);
+      transaction.set(guestPlayerRef, {
+        uid: guestUid, nickname: 'Guest', status: 'active', score: 0, correctCount: 0,
+        totalCorrectResponseMs: 0, answeredQuestionId: null, joinedAt: serverTimestamp(),
+        lastSeenAt: serverTimestamp(), expiresAt
+      });
+      transaction.update(guestRoomRef, {
+        playerCount: roomSnapshot.data()!.playerCount + 1,
+        hasHadGuest: true
+      });
+    }));
+
+    // Guest reads room
+    await assertSucceeds(getDoc(guestRoomRef));
+
+    // Guest queries players collection
+    await assertSucceeds(getDocs(query(collection(guestDb, 'arenaRooms', testRoomId, 'players'))));
+
+    // Guest sends player heartbeat
+    await assertSucceeds(updateDoc(guestPlayerRef, { lastSeenAt: serverTimestamp() }));
+
+    // Host sends host heartbeat
+    await assertSucceeds(runTransaction(hostDb, async (transaction) => {
+      transaction.update(roomRef, { hostHeartbeatAt: serverTimestamp() });
+    }));
+  });
 });

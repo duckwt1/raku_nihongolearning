@@ -17,7 +17,8 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "emulators": "firebase emulators:start --config firebase/firebase.json"
+    "emulators": "firebase emulators:start --config firebase/firebase.json",
+    "deploy:rules": "firebase deploy --only firestore:rules"
   },
   "devDependencies": {
     "typescript": "^5.7.3",

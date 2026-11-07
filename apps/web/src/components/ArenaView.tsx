@@ -260,6 +260,7 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
   const hasSubmitted = Boolean(ownAnswer || submittedQuestionId === room?.activeQuestionId);
   const ownResult = reveal?.results.find((result) => result.uid === sessionUid);
   const handleSubscriptionError = useCallback((error: { code?: string; message: string }) => {
+    console.error('[Arena subscription error]:', error);
     if (isPermissionDenied(error)) {
       setConnectionIssue(true);
       setNotice('Tạm mất quyền đọc phiên. Phòng vẫn được giữ; hãy thử kết nối lại. Nếu vẫn lỗi, cần cập nhật Firestore Rules trên Firebase.');
@@ -363,6 +364,7 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
     if (!roomId || !room || !sessionUid || localPlayer?.status !== 'active' || ['closed', 'finished'].includes(room.status)) return;
     const heartbeat = () => {
       void sendArenaPlayerHeartbeat(roomId, sessionUid).catch((error) => {
+        console.error('[Arena player heartbeat error]:', error);
         if (isPermissionDenied(error)) {
           setConnectionIssue(true);
           setNotice('Không cập nhật được tín hiệu kết nối. Hãy thử kết nối lại; nếu vẫn lỗi, cần cập nhật Firestore Rules trên Firebase.');
@@ -372,6 +374,7 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
       });
       if (isHost) {
         void sendArenaHeartbeat(roomId, room.hostUid).catch((error) => {
+          console.error('[Arena host heartbeat error]:', error);
           if (isPermissionDenied(error)) {
             setConnectionIssue(true);
             setNotice('Không cập nhật được tín hiệu của chủ phòng. Hãy thử kết nối lại; nếu vẫn lỗi, cần cập nhật Firestore Rules trên Firebase.');
