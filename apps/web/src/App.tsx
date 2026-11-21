@@ -40,6 +40,8 @@ import {
   getDailyNewWordCounts,
   calculateStudyStreaks,
   canDeleteDeck,
+  migrateDecks,
+  migrateFolders,
   type JlptLevel
 } from '@raku/core';
 import { auth, signInAnonymously, onAuthStateChanged, signOut, type User } from './services/firebase';
@@ -137,12 +139,25 @@ export function App() {
   // const [syncAuthUpdated, setSyncAuthUpdated] = useState(0);
   // const isAuthorizedForSync = useMemo(() => isSyncAuthorized(), [syncAuthUpdated]);
 
-  const showSyncToast = (message: string, type: 'success' | 'info' | 'warning' = 'info') => {
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isSyncingRef = useRef(false);
+
+  const showSyncToast = useCallback((message: string, type: 'success' | 'info' | 'warning' = 'info') => {
+    if (toastTimerRef.current !== null) {
+      clearTimeout(toastTimerRef.current);
+    }
     setSyncToast({ message, type });
-    setTimeout(() => {
+    toastTimerRef.current = setTimeout(() => {
+      toastTimerRef.current = null;
       setSyncToast((prev) => (prev?.message === message ? null : prev));
     }, 4500);
-  };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current !== null) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -265,6 +280,10 @@ export function App() {
   useEffect(() => {
     cardsRef.current = allCards;
   }, [allCards]);
+  const statsRef = useRef<UserStudyStats>(studyStats);
+  useEffect(() => {
+    statsRef.current = studyStats;
+  }, [studyStats]);
   useEffect(() => {
     userRef.current = user;
   }, [user]);
@@ -379,8 +398,11 @@ export function App() {
   // Auth listener: switch local user profiles cleanly upon sign-in/sign-out
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      // Huỷ các publish đang chờ của phiên trước trước khi đổi dữ liệu
+      // Huỷ các publish đang chờ và dừng phiên ôn tập của tài khoản trước
       deckPublishQueue.cancelAll();
+      setIsStudying(false);
+      setStudySessionCards([]);
+      setActiveStudyTarget(null);
       setUser(currentUser);
       const uid = currentUser?.uid || 'guest';
       const uCards = loadUserCards(uid);
@@ -429,17 +451,19 @@ export function App() {
           { hiddenDeckIds, hiddenFolderIds, currentUid }
         );
 
-        if (res.newDecksCount > 0 || res.newCardsCount > 0) {
+        if (res.hasChanges) {
           setDecks(res.updatedDecks);
           setFolders(res.updatedFolders);
           setAllCards(res.updatedCards);
           saveUserDecks(currentUid, res.updatedDecks);
           saveUserFolders(currentUid, res.updatedFolders);
           saveUserCards(currentUid, res.updatedCards);
-          showSyncToast(
-            `🌐 Đã tự động cập nhật ${res.newDecksCount} bộ thẻ cộng đồng (${res.newCardsCount} từ vựng mới)!`,
-            'info'
-          );
+          if (res.newDecksCount > 0 || res.newCardsCount > 0) {
+            showSyncToast(
+              `🌐 Đã tự động cập nhật ${res.newDecksCount} bộ thẻ cộng đồng (${res.newCardsCount} từ vựng mới)!`,
+              'info'
+            );
+          }
         }
 
         // Dọn tombstone: chỉ giữ id của deck/folder vẫn còn tồn tại trên Cloud.
@@ -472,9 +496,12 @@ export function App() {
     };
   }, [user?.uid, isOnline]);
 
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', darkMode);
+  }, [darkMode]);
+
   const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-    document.documentElement.classList.toggle('dark');
+    setDarkMode((prev) => !prev);
   };
 
   // Filtered Kanji list for Kanji tab
@@ -776,7 +803,10 @@ export function App() {
     saveUserCards(user?.uid, updatedCards);
 
     if (shouldUnpublish) {
-      void unpublishDeckFromCommunity(deck.communityDocId || deck.id)
+      void deckPublishQueue
+        .enqueueExclusive(`deck:${deckId}`, () =>
+          unpublishDeckFromCommunity(deck.communityDocId || deck.id)
+        )
         .then(() =>
           showSyncToast(`✓ Đã xoá "${deck.name}" và gỡ khỏi cộng đồng.`, 'success')
         )
@@ -805,15 +835,21 @@ export function App() {
       return;
     }
 
-    const prefs = loadDeckSyncPrefs(user.uid);
+    const uid = user.uid;
+    const prefs = loadDeckSyncPrefs(uid);
 
     if (deck.visibility === 'community') {
       cancelDeckPublish(deckId);
       applyDeckPatch(deckId, { visibility: 'private' });
-      void unpublishDeckFromCommunity(deck.communityDocId || deck.id)
+      void deckPublishQueue
+        .enqueueExclusive(`deck:${deckId}`, () =>
+          unpublishDeckFromCommunity(deck.communityDocId || deck.id)
+        )
         .then(() => showSyncToast(`✓ Đã gỡ "${deck.name}" khỏi cộng đồng.`, 'info'))
         .catch((err) => {
-          applyDeckPatch(deckId, { visibility: 'community' });
+          if (userRef.current?.uid === uid) {
+            applyDeckPatch(deckId, { visibility: 'community' });
+          }
           showSyncToast(
             `❌ Không thể gỡ khỏi cộng đồng: ${err?.message || err}`,
             'warning'
@@ -825,7 +861,7 @@ export function App() {
     const folder = folders.find((f) => f.id === deck.folderId);
     const cardsInDeck = allCards.filter((c) => c.deckId === deckId);
     cancelDeckPublish(deckId);
-    saveDeckSyncPrefs(user.uid, {
+    saveDeckSyncPrefs(uid, {
       ...prefs,
       hiddenDeckIds: prefs.hiddenDeckIds.filter(
         (id) => id !== deck.id && id !== (deck.communityDocId || deck.id)
@@ -833,18 +869,23 @@ export function App() {
     });
     applyDeckPatch(deckId, { visibility: 'community' });
 
-    void publishDeckToCommunity(
-      { ...deck, visibility: 'community' },
-      folder,
-      cardsInDeck,
-      user
-    )
-      .then((res) =>
-        applyDeckPatch(deckId, {
-          visibility: 'community',
-          communityDocId: res.docId
-        })
+    void deckPublishQueue
+      .enqueueExclusive(`deck:${deckId}`, () =>
+        publishDeckToCommunity(
+          { ...deck, visibility: 'community' },
+          folder,
+          cardsInDeck,
+          user
+        )
       )
+      .then((res) => {
+        if (userRef.current?.uid === uid) {
+          applyDeckPatch(deckId, {
+            visibility: 'community',
+            communityDocId: res.docId
+          });
+        }
+      })
       .then(() =>
         showSyncToast(
           `✓ Đã chia sẻ "${deck.name}" (${cardsInDeck.length} từ) lên cộng đồng.`,
@@ -852,7 +893,9 @@ export function App() {
         )
       )
       .catch((err) => {
-        applyDeckPatch(deckId, { visibility: 'private' });
+        if (userRef.current?.uid === uid) {
+          applyDeckPatch(deckId, { visibility: 'private' });
+        }
         showSyncToast(
           `❌ Không thể chia sẻ "${deck.name}": ${err?.message || err}`,
           'warning'
@@ -890,6 +933,9 @@ export function App() {
 
   const handleSignOut = async (clearLocalData = false) => {
     deckPublishQueue.cancelAll();
+    setIsStudying(false);
+    setStudySessionCards([]);
+    setActiveStudyTarget(null);
     const currentUid = user?.uid;
     if (clearLocalData && currentUid) {
       clearUserDataFromBrowser(currentUid);
@@ -927,19 +973,22 @@ export function App() {
   // };
 
   const executeUploadToCloud = async () => {
-    const currentUid = user?.uid || auth.currentUser?.uid;
-    if (!currentUid) return;
+    const currentUid = userRef.current?.uid || auth.currentUser?.uid;
+    if (!currentUid || isSyncingRef.current) return;
+    isSyncingRef.current = true;
     setSyncStatus('syncing');
     showSyncToast('☁️ Đang đẩy toàn bộ dữ liệu trên máy lên Cloud Firestore...', 'info');
     try {
       const res = await uploadEntireLocalStateToFirestore(
         currentUid,
-        allCards,
-        folders,
-        decks,
-        studyStats
+        cardsRef.current,
+        foldersRef.current,
+        decksRef.current,
+        statsRef.current
       );
-      setPendingCount(0);
+      if (userRef.current?.uid === currentUid) {
+        setPendingCount(getPendingSyncCount(currentUid));
+      }
       showSyncToast(
         `✓ Đã tải thành công ${res.cardsSynced} thẻ học lên Cloud Firestore!`,
         'success'
@@ -947,7 +996,8 @@ export function App() {
     } catch (err: any) {
       showSyncToast(`❌ Tải lên đám mây thất bại: ${err?.message || err}`, 'warning');
     } finally {
-      setSyncStatus('synced');
+      isSyncingRef.current = false;
+      setSyncStatus(navigator.onLine ? 'synced' : 'offline');
     }
   };
 
@@ -982,83 +1032,101 @@ export function App() {
   };
 
   const executeManualSync = async () => {
+    if (isSyncingRef.current) return;
     if (!navigator.onLine) {
       showSyncToast('Thiết bị đang ngoại tuyến, không thể đồng bộ lên đám mây.', 'warning');
       return;
     }
-    const currentUid = user?.uid || auth.currentUser?.uid;
+    const currentUid = userRef.current?.uid || auth.currentUser?.uid;
     if (!currentUid) {
       showSyncToast('Vui lòng đăng nhập hoặc bấm Dùng thử ngay để đồng bộ.', 'warning');
       setIsAuthModalOpen(true);
       return;
     }
 
+    isSyncingRef.current = true;
     setSyncStatus('syncing');
     let syncStage = 'đẩy hàng đợi review offline';
-
-    // Kiểm tra xem trên Cloud Firestore có dữ liệu không
-    let cloudStatus;
-    try {
-      cloudStatus = await checkCloudDataStatus(currentUid);
-    } catch (err: any) {
-      setSyncStatus('synced');
-      showSyncToast(`Không thể kiểm tra dữ liệu cloud: ${err?.message || err}`, 'warning');
-      return;
-    }
-    const localLearned = allCards.filter(
-      (c) => (c.fsrsCard?.reps ?? 0) > 0 || Boolean(c.fsrsCard?.last_review) || !c.isNew
-    ).length;
-    const pendingQ = getPendingSyncCount(currentUid);
-
-    // Giống Anki: Nếu Cloud trống hoàn toàn (hoặc vừa bị xóa trên Firebase),
-    // nhưng trên máy người dùng đã có tiến độ -> Mở hộp thoại giải quyết xung đột!
-    if (!cloudStatus.hasCloudData && (localLearned > 0 || pendingQ > 0)) {
-      setSyncStatus('synced');
-      setIsConflictModalOpen(true);
-      return;
-    }
-
-    showSyncToast('☁️ Đang đồng bộ dữ liệu lên đám mây...', 'info');
+    let cancelled = false;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
     try {
+      // Kiểm tra xem trên Cloud Firestore có dữ liệu không
+      let cloudStatus;
+      try {
+        cloudStatus = await checkCloudDataStatus(currentUid);
+      } catch (err: any) {
+        showSyncToast(`Không thể kiểm tra dữ liệu cloud: ${err?.message || err}`, 'warning');
+        return;
+      }
+      if (userRef.current?.uid !== currentUid) return;
+
+      const localLearned = cardsRef.current.filter(
+        (c) => (c.fsrsCard?.reps ?? 0) > 0 || Boolean(c.fsrsCard?.last_review) || !c.isNew
+      ).length;
+      const pendingQ = getPendingSyncCount(currentUid);
+
+      // Giống Anki: Nếu Cloud trống hoàn toàn (hoặc vừa bị xóa trên Firebase),
+      // nhưng trên máy người dùng đã có tiến độ -> Mở hộp thoại giải quyết xung đột!
+      if (!cloudStatus.hasCloudData && (localLearned > 0 || pendingQ > 0)) {
+        setIsConflictModalOpen(true);
+        return;
+      }
+
+      showSyncToast('☁️ Đang đồng bộ dữ liệu lên đám mây...', 'info');
+
       // Giới hạn thời gian tối đa 45s cho mạng di động
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(
-          () => reject(new Error('Hết thời gian chờ kết nối máy chủ (45s). Vui lòng thử lại.')),
-          45000
-        )
-      );
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          cancelled = true;
+          reject(new Error('Hết thời gian chờ kết nối máy chủ (45s). Vui lòng thử lại.'));
+        }, 45000);
+      });
 
       const doSync = async () => {
         // 1. Đẩy offline queue trước
         syncStage = 'đẩy hàng đợi review offline';
         const flushed = await flushOfflineQueue(currentUid);
+        if (cancelled || userRef.current?.uid !== currentUid) return flushed;
 
         // 2. Read latest card snapshots and compact stats. Recent review logs only
         // reconcile activity not yet reflected in the saved stats summary.
         syncStage = 'đọc hồ sơ, thẻ, thư mục, decks và review logs';
         const remoteProgress = await pullDataFromFirestore(currentUid, {
-          existingStats: studyStats,
-          currentCards: allCards,
+          existingStats: statsRef.current,
+          currentCards: cardsRef.current,
           includeStructure: false
         });
+        if (cancelled || userRef.current?.uid !== currentUid) return flushed;
+
+        const latestCards = cardsRef.current;
+        const baseCards = remoteProgress.legacyUpdatedCards
+          ? mergeFirestoreCardProgress(latestCards, Object.fromEntries(
+              remoteProgress.legacyUpdatedCards
+                .filter((c) => c.fsrsCard.last_review || c.fsrsCard.reps > 0)
+                .map((c) => [c.id, { ...c.fsrsCard, firstLearnedAt: c.firstLearnedAt, learnedAt: c.learnedAt }])
+            ))
+          : latestCards;
         const mergedCards = mergeFirestoreCardProgress(
-          remoteProgress.legacyUpdatedCards || allCards,
+          baseCards,
           remoteProgress.cards
         ).filter((card) => card.type !== 'grammar' && card.deckId !== 'deck_n3_grammar');
         if (Object.keys(remoteProgress.cards).length > 0 || remoteProgress.legacyUpdatedCards) {
           setAllCards(mergedCards);
           saveUserCards(currentUid, mergedCards);
         }
-        const mergedStats = remoteProgress.stats || studyStats;
+        const mergedStats = remoteProgress.stats || statsRef.current;
         setStudyStats(mergedStats);
         saveUserStudyStats(currentUid, mergedStats);
 
         // 3. Skip unchanged structure/stats so repeated manual syncs do not issue no-op writes.
-        if (remoteProgress.structureFingerprint !== folderDeckFingerprint(folders, decks)) {
+        const currentFolders = foldersRef.current;
+        const currentDecks = decksRef.current;
+        if (remoteProgress.structureFingerprint !== folderDeckFingerprint(currentFolders, currentDecks)) {
           syncStage = 'ghi thư mục và decks';
-          await syncFoldersAndDecks(currentUid, folders, decks);
+          await syncFoldersAndDecks(currentUid, currentFolders, currentDecks);
         }
+        if (cancelled || userRef.current?.uid !== currentUid) return flushed;
         if (!areStudyStatsEqual(mergedStats, remoteProgress.remoteStats)) {
           syncStage = 'ghi thống kê học tập';
           await syncUserStudyStats(currentUid, mergedStats);
@@ -1068,6 +1136,7 @@ export function App() {
       };
 
       const flushed = await Promise.race([doSync(), timeoutPromise]);
+      if (userRef.current?.uid !== currentUid) return;
       const remaining = getPendingSyncCount(currentUid);
       setPendingCount(remaining);
 
@@ -1089,8 +1158,12 @@ export function App() {
       const code = typeof err?.code === 'string' ? ` (${err.code})` : '';
       showSyncToast(`❌ Đồng bộ thất bại tại bước ${syncStage}${code}: ${err?.message || err}`, 'warning');
     } finally {
-      setPendingCount(getPendingSyncCount(currentUid));
-      setSyncStatus('synced');
+      if (timeoutId !== undefined) clearTimeout(timeoutId);
+      isSyncingRef.current = false;
+      if (userRef.current?.uid === currentUid) {
+        setPendingCount(getPendingSyncCount(currentUid));
+      }
+      setSyncStatus(navigator.onLine ? 'synced' : 'offline');
     }
   };
 
@@ -1222,9 +1295,18 @@ export function App() {
   const handleUndoImportCards = (cardIds: string[]) => {
     const currentUid = user?.uid;
     const cardIdSet = new Set(cardIds);
+    const affectedDeckIds = new Set(
+      allCards
+        .filter((c) => cardIdSet.has(c.id) && c.deckId)
+        .map((c) => c.deckId as string)
+    );
     const updatedCards = allCards.filter((c) => !cardIdSet.has(c.id));
+    cardsRef.current = updatedCards;
     setAllCards(updatedCards);
     saveUserCards(currentUid, updatedCards);
+    for (const deckId of affectedDeckIds) {
+      scheduleDeckPublish(deckId);
+    }
     showSyncToast(`✓ Đã hoàn tác lượt nhập (${cardIds.length} từ).`, 'info');
   };
 
@@ -1280,7 +1362,7 @@ export function App() {
 
   const handleNavigateToImport = (deckId: string, folderId?: string) => {
     setImportTargetDeckId(deckId);
-    if (folderId) setImportTargetFolderId(folderId);
+    setImportTargetFolderId(folderId || '');
     setActiveTab('import');
   };
 
@@ -1298,41 +1380,47 @@ export function App() {
   };
 
   const handlePullFromFirestore = async () => {
+    if (isSyncingRef.current) return;
     if (!user) {
       setPullResult('Bạn cần đăng nhập hoặc bấm Dùng thử ẩn danh trước khi đồng bộ.');
       return;
     }
     const currentUid = user.uid;
-
-    // Kiểm tra xem trên Cloud Firestore có dữ liệu không
-    let cloudStatus;
-    try {
-      cloudStatus = await checkCloudDataStatus(currentUid);
-    } catch (err: any) {
-      setPullResult(`Không thể kiểm tra dữ liệu cloud: ${err?.message || err}`);
-      return;
-    }
-    const localLearned = allCards.filter(
-      (c) => (c.fsrsCard?.reps ?? 0) > 0 || Boolean(c.fsrsCard?.last_review) || !c.isNew
-    ).length;
-
-    if (!cloudStatus.hasCloudData && localLearned > 0) {
-      setIsConflictModalOpen(true);
-      return;
-    }
-
+    isSyncingRef.current = true;
     setIsPulling(true);
     setPullResult(null);
+
     try {
+      // Kiểm tra xem trên Cloud Firestore có dữ liệu không
+      let cloudStatus;
+      try {
+        cloudStatus = await checkCloudDataStatus(currentUid);
+      } catch (err: any) {
+        setPullResult(`Không thể kiểm tra dữ liệu cloud: ${err?.message || err}`);
+        return;
+      }
+      if (userRef.current?.uid !== currentUid) return;
+
+      const localLearned = cardsRef.current.filter(
+        (c) => (c.fsrsCard?.reps ?? 0) > 0 || Boolean(c.fsrsCard?.last_review) || !c.isNew
+      ).length;
+
+      if (!cloudStatus.hasCloudData && localLearned > 0) {
+        setIsConflictModalOpen(true);
+        return;
+      }
+
       // Card documents contain the latest FSRS snapshot; review logs are only
       // scanned fully for legacy accounts that have no saved profile summary.
       const data = await pullDataFromFirestore(currentUid, {
-        existingStats: studyStats,
-        currentCards: allCards
+        existingStats: statsRef.current,
+        currentCards: cardsRef.current
       });
+      if (userRef.current?.uid !== currentUid) return;
+
       const cardCount = Object.keys(data.cards).length;
       const cardsWithCloudProgress = mergeFirestoreCardProgress(
-        data.legacyUpdatedCards || allCards,
+        data.legacyUpdatedCards || cardsRef.current,
         data.cards
       ).filter((card) => card.type !== 'grammar' && card.deckId !== 'deck_n3_grammar');
       if (cardCount > 0 || data.legacyUpdatedCards) {
@@ -1341,12 +1429,16 @@ export function App() {
       }
 
       if (data.folders) {
-        setFolders(data.folders);
-        saveUserFolders(currentUid, data.folders);
+        const migratedFolders = migrateFolders(data.folders);
+        setFolders(migratedFolders);
+        saveUserFolders(currentUid, migratedFolders);
       }
 
       if (data.decks) {
-        const filteredDecks = data.decks.filter((deck) => deck.id !== 'deck_n3_grammar');
+        const filteredDecks = migrateDecks(
+          data.decks.filter((deck) => deck.id !== 'deck_n3_grammar'),
+          currentUid
+        );
         setDecks(filteredDecks);
         saveUserDecks(currentUid, filteredDecks);
       }
@@ -1366,6 +1458,7 @@ export function App() {
     } catch (err: any) {
       setPullResult(`❌ Lỗi khi tải dữ liệu: ${err.message || err}`);
     } finally {
+      isSyncingRef.current = false;
       setIsPulling(false);
     }
   };
@@ -1537,7 +1630,11 @@ export function App() {
             </div>
             <div className="flex items-center space-x-2">
               <button
-                onClick={() => signInAnonymously(auth)}
+                onClick={() => {
+                  void signInAnonymously(auth).catch((err) =>
+                    showSyncToast(`Không thể đăng nhập ẩn danh: ${err?.message || err}`, 'warning')
+                  );
+                }}
                 className="px-4 py-2 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white text-xs font-semibold rounded-xl shadow-sm touch-target"
               >
                 Dùng thử ngay

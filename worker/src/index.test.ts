@@ -36,4 +36,28 @@ describe('Worker API Routing & AI endpoints', () => {
     const res = await worker.fetch(req, fakeEnv, fakeCtx);
     expect(res.status).toBe(401);
   });
+
+  it('rejects forged Bearer tokens on AI endpoints', async () => {
+    const reqGen = new Request('http://localhost/api/ai/generate', {
+      method: 'POST',
+      body: JSON.stringify({ prompt: 'test' }),
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer forged-token'
+      }
+    });
+    const resGen = await worker.fetch(reqGen, fakeEnv, fakeCtx);
+    expect(resGen.status).toBe(401);
+
+    const reqImport = new Request('http://localhost/api/ai/import-analyze', {
+      method: 'POST',
+      body: JSON.stringify({ text: 'test' }),
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer forged-token'
+      }
+    });
+    const resImport = await worker.fetch(reqImport, fakeEnv, fakeCtx);
+    expect(resImport.status).toBe(401);
+  });
 });

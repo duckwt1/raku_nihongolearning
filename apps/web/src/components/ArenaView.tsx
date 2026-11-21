@@ -27,7 +27,9 @@ import {
   ARENA_REVEAL_MS,
   ARENA_SUBMISSION_GRACE_MS,
   ARENA_TIME_LIMITS,
+  computeArenaClockOffsetMs,
   countArenaEligibleWords,
+  estimateArenaServerNowMs,
   rankArenaPlayers,
   selectArenaWords,
   type ArenaQuestionMode,
@@ -198,7 +200,13 @@ function ArenaPlayerList({ players, hostUid, unresponsiveUids }: {
 
 export function ArenaView({ cards, decks }: ArenaViewProps) {
   const [settings, setSettings] = useState<ArenaSettings>(createInitialSettings);
-  const [nickname, setNickname] = useState(() => localStorage.getItem('raku-arena-nickname') || '');
+  const [nickname, setNickname] = useState(() => {
+    try {
+      return localStorage.getItem('raku-arena-nickname') || '';
+    } catch {
+      return '';
+    }
+  });
   const [roomCodeInput, setRoomCodeInput] = useState(() =>
     new URLSearchParams(window.location.search).get('arena')?.toUpperCase() || ''
   );
@@ -221,12 +229,24 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
   const [sessionEnded, setSessionEnded] = useState('');
   const [copied, setCopied] = useState(false);
   const [connectionIssue, setConnectionIssue] = useState(false);
+  const [hostUnresponsive, setHostUnresponsive] = useState(false);
   const [connectionRevision, setConnectionRevision] = useState(0);
   const settlingQuestionIds = useRef(new Set<string>());
+  const settleRetryAfterRef = useRef(new Map<string, number>());
   const submitLockRef = useRef<string | null>(null);
   const countdownFallbackRef = useRef<{ key: string; endsAt: number } | null>(null);
   const playerHeartbeatObservationsRef = useRef(new Map<string, { timestamp: number; receivedAt: number }>());
-  const hostHeartbeatObservationRef = useRef<{ timestamp: number; receivedAt: number } | null>(null);
+  const hostHeartbeatObservationRef = useRef<{ signalKey: string; receivedAt: number } | null>(null);
+  const serverClockOffsetRef = useRef(0);
+  const roomServerTimestampsRef = useRef<{
+    hostHeartbeatAt?: number;
+    countdownStartedAt?: number;
+    questionStartedAt?: number;
+    revealedAt?: number;
+  }>({});
+  const ownLastSeenRef = useRef<number | null>(null);
+  const sessionUidRef = useRef<string | null>(sessionUid);
+  sessionUidRef.current = sessionUid;
   const selectedWords = useMemo(
     () => selectArenaWords(cards, decks, settings.source, settings.jlptLevel),
     [cards, decks, settings.source, settings.jlptLevel]
@@ -237,6 +257,7 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
   );
   const maxQuestionCount = Math.min(availableCount, ARENA_MAX_QUESTIONS);
   const isHost = Boolean(room && sessionUid && room.hostUid === sessionUid);
+  const isActiveRoomPhase = Boolean(room && !['closed', 'finished'].includes(room.status));
   const localPlayer = players.find((player) => player.uid === sessionUid);
   const activePlayers = players.filter((player) => player.status === 'active');
   const unresponsiveUids = new Set(players.flatMap((player) => {
@@ -249,13 +270,14 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
   const inviteLink = room
     ? `${window.location.origin}${window.location.pathname}?arena=${room.roomCode}`
     : '';
+  const estimatedServerNow = estimateArenaServerNowMs(now, serverClockOffsetRef.current);
   const countdownEnds = room ? arenaCountdownEndsAt(room) : null;
   const questionEnds = room ? arenaQuestionEndsAt(room) : null;
   const revealEnds = room ? arenaRevealEndsAt(room) : null;
-  const countdownNumber = countdownEnds === null ? 3 : Math.max(1, Math.ceil((countdownEnds - now) / 1_000));
-  const timeLeft = questionEnds === null ? room?.settings.timeLimitSeconds ?? 0 : Math.max(0, Math.ceil((questionEnds - now) / 1_000));
+  const countdownNumber = countdownEnds === null ? 3 : Math.max(1, Math.ceil((countdownEnds - estimatedServerNow) / 1_000));
+  const timeLeft = questionEnds === null ? room?.settings.timeLimitSeconds ?? 0 : Math.max(0, Math.ceil((questionEnds - estimatedServerNow) / 1_000));
   const timeProgress = room?.settings.timeLimitSeconds
-    ? Math.max(0, Math.min(100, ((questionEnds ?? now) - now) / (room.settings.timeLimitSeconds * 1_000) * 100))
+    ? Math.max(0, Math.min(100, ((questionEnds ?? estimatedServerNow) - estimatedServerNow) / (room.settings.timeLimitSeconds * 1_000) * 100))
     : 0;
   const hasSubmitted = Boolean(ownAnswer || submittedQuestionId === room?.activeQuestionId);
   const ownResult = reveal?.results.find((result) => result.uid === sessionUid);
@@ -283,20 +305,74 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
       setOwnAnswer(null);
       setAnswers([]);
       setReveal(null);
+      setHostUnresponsive(false);
+      settlingQuestionIds.current.clear();
+      settleRetryAfterRef.current.clear();
+      roomServerTimestampsRef.current = {};
+      ownLastSeenRef.current = null;
       return;
     }
 
-    const unsubscribeRoom = subscribeArenaRoom(roomId, (nextRoom) => {
-      if (nextRoom?.hostHeartbeatAt) {
-        const timestamp = nextRoom.hostHeartbeatAt.toMillis();
+    const unsubscribeRoom = subscribeArenaRoom(roomId, (nextRoom, meta) => {
+      const receivedAt = Date.now();
+      if (nextRoom) {
+        const hostHeartbeatMs = nextRoom.hostHeartbeatAt?.toMillis();
+        const countdownStartedMs = nextRoom.countdownStartedAt?.toMillis();
+        const questionStartedMs = nextRoom.questionStartedAt?.toMillis();
+        const revealedMs = nextRoom.revealedAt?.toMillis();
+
+        // Calibrate client-vs-server clock skew whenever a fresh server timestamp advances.
+        if (!meta.fromCache && !meta.hasPendingWrites) {
+          const prev = roomServerTimestampsRef.current;
+          const freshCandidates: number[] = [];
+          if (hostHeartbeatMs !== undefined && prev.hostHeartbeatAt !== undefined && hostHeartbeatMs > prev.hostHeartbeatAt) {
+            freshCandidates.push(hostHeartbeatMs);
+          }
+          if (countdownStartedMs !== undefined && prev.countdownStartedAt !== countdownStartedMs) {
+            if (prev.countdownStartedAt !== undefined || nextRoom.status === 'countdown') {
+              freshCandidates.push(countdownStartedMs);
+            }
+          }
+          if (questionStartedMs !== undefined && prev.questionStartedAt !== questionStartedMs) {
+            if (prev.questionStartedAt !== undefined || nextRoom.status === 'question') {
+              freshCandidates.push(questionStartedMs);
+            }
+          }
+          if (revealedMs !== undefined && prev.revealedAt !== revealedMs) {
+            if (prev.revealedAt !== undefined || nextRoom.status === 'reveal') {
+              freshCandidates.push(revealedMs);
+            }
+          }
+          if (freshCandidates.length > 0) {
+            const latestServerMs = Math.max(...freshCandidates);
+            serverClockOffsetRef.current = computeArenaClockOffsetMs(receivedAt, latestServerMs);
+          }
+          roomServerTimestampsRef.current = {
+            hostHeartbeatAt: hostHeartbeatMs ?? prev.hostHeartbeatAt,
+            countdownStartedAt: countdownStartedMs ?? prev.countdownStartedAt,
+            questionStartedAt: questionStartedMs ?? prev.questionStartedAt,
+            revealedAt: revealedMs ?? prev.revealedAt
+          };
+        }
+
+        // Treat ANY host-driven change on the room doc as proof the host is alive.
+        const signalKey = [
+          nextRoom.status,
+          nextRoom.activeQuestionId ?? '',
+          hostHeartbeatMs ?? '',
+          countdownStartedMs ?? '',
+          questionStartedMs ?? '',
+          revealedMs ?? ''
+        ].join('|');
         const previous = hostHeartbeatObservationRef.current;
-        if (!previous || previous.timestamp !== timestamp) {
-          hostHeartbeatObservationRef.current = { timestamp, receivedAt: Date.now() };
+        if (!previous || previous.signalKey !== signalKey) {
+          hostHeartbeatObservationRef.current = { signalKey, receivedAt };
+          setHostUnresponsive(false);
         }
       }
       setRoom(nextRoom);
     }, handleSubscriptionError);
-    const unsubscribePlayers = subscribeArenaPlayers(roomId, (nextPlayers) => {
+    const unsubscribePlayers = subscribeArenaPlayers(roomId, (nextPlayers, meta) => {
       const receivedAt = Date.now();
       const presentUids = new Set(nextPlayers.map((player) => player.uid));
       for (const player of nextPlayers) {
@@ -304,6 +380,18 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
         const previous = playerHeartbeatObservationsRef.current.get(player.uid);
         if (!previous || previous.timestamp !== timestamp) {
           playerHeartbeatObservationsRef.current.set(player.uid, { timestamp, receivedAt });
+        }
+        // Own player's server-resolved lastSeenAt is freshly written on join/heartbeat,
+        // giving immediate clock skew calibration even before the first room phase transition.
+        if (
+          !meta.fromCache &&
+          !meta.hasPendingWrites &&
+          player.uid === sessionUidRef.current &&
+          timestamp > 0 &&
+          ownLastSeenRef.current !== timestamp
+        ) {
+          ownLastSeenRef.current = timestamp;
+          serverClockOffsetRef.current = computeArenaClockOffsetMs(receivedAt, timestamp);
         }
       }
       for (const uid of playerHeartbeatObservationsRef.current.keys()) {
@@ -316,14 +404,16 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
       unsubscribePlayers();
       playerHeartbeatObservationsRef.current.clear();
       hostHeartbeatObservationRef.current = null;
+      settlingQuestionIds.current.clear();
+      settleRetryAfterRef.current.clear();
+      roomServerTimestampsRef.current = {};
+      ownLastSeenRef.current = null;
     };
   }, [roomId, connectionRevision, handleSubscriptionError]);
 
   useEffect(() => {
-    if (!roomId || !room?.activeQuestionId) {
-      setQuestion(null);
-      return;
-    }
+    setQuestion(null);
+    if (!roomId || !room?.activeQuestionId) return;
     const unsubscribe = subscribeArenaQuestion(roomId, room.activeQuestionId, setQuestion, handleSubscriptionError);
     return unsubscribe;
   }, [roomId, room?.activeQuestionId, connectionRevision, handleSubscriptionError]);
@@ -361,25 +451,22 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
   }, [roomId, room?.activeQuestionId, room?.status, isHost, connectionRevision, handleSubscriptionError]);
 
   useEffect(() => {
-    if (!roomId || !room || !sessionUid || localPlayer?.status !== 'active' || ['closed', 'finished'].includes(room.status)) return;
+    if (!roomId || !room?.hostUid || !isActiveRoomPhase || !sessionUid || localPlayer?.status !== 'active') return;
+    const hostUid = room.hostUid;
     const heartbeat = () => {
       void sendArenaPlayerHeartbeat(roomId, sessionUid).catch((error) => {
         console.error('[Arena player heartbeat error]:', error);
         if (isPermissionDenied(error)) {
           setConnectionIssue(true);
           setNotice('Không cập nhật được tín hiệu kết nối. Hãy thử kết nối lại; nếu vẫn lỗi, cần cập nhật Firestore Rules trên Firebase.');
-        } else {
-          setNotice(errorText(error));
         }
       });
       if (isHost) {
-        void sendArenaHeartbeat(roomId, room.hostUid).catch((error) => {
+        void sendArenaHeartbeat(roomId, hostUid).catch((error) => {
           console.error('[Arena host heartbeat error]:', error);
           if (isPermissionDenied(error)) {
             setConnectionIssue(true);
             setNotice('Không cập nhật được tín hiệu của chủ phòng. Hãy thử kết nối lại; nếu vẫn lỗi, cần cập nhật Firestore Rules trên Firebase.');
-          } else {
-            setNotice(errorText(error));
           }
         });
       }
@@ -397,21 +484,18 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
     };
-  }, [roomId, room?.hostUid, room?.status, sessionUid, isHost, localPlayer?.status, connectionRevision]);
+  }, [roomId, room?.hostUid, isActiveRoomPhase, sessionUid, isHost, localPlayer?.status, connectionRevision]);
 
   useEffect(() => {
-    if (isHost || !room || !roomId || ['closed', 'finished'].includes(room.status)) return;
+    if (isHost || !room || !roomId || ['closed', 'finished'].includes(room.status)) {
+      setHostUnresponsive(false);
+      return;
+    }
     const observation = hostHeartbeatObservationRef.current;
     if (!observation) return;
-    // Lobby dùng timeout dài hơn (3×) vì host có thể đang chia sẻ link hoặc chờ nhóm chuẩn bị.
     const threshold = room.status === 'lobby' ? ARENA_HOST_TIMEOUT_MS * 3 : ARENA_HOST_TIMEOUT_MS;
-    if (now - observation.receivedAt <= threshold) return;
-    setSessionEnded(
-      room.status === 'lobby'
-        ? 'Không nhận được tín hiệu từ chủ phòng. Có thể chủ phòng đã đóng tab.'
-        : 'Không nhận được tín hiệu từ chủ phòng trong thời gian dài. Trận đấu đã dừng.'
-    );
-    setRoomId(null);
+    // Warn non-destructively instead of kicking the guest out of the room.
+    setHostUnresponsive(now - observation.receivedAt > threshold);
   }, [isHost, room?.status, roomId, now]);
 
   useEffect(() => {
@@ -436,45 +520,87 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
       countdownFallbackRef.current = null;
       return;
     }
+    let cancelled = false;
+    let retryTimer: number | null = null;
     const countdownKey = `${roomId}:${room.activeQuestionId || room.activeQuestionIndex}`;
+    const currentServerNow = estimateArenaServerNowMs(Date.now(), serverClockOffsetRef.current);
     if (room.countdownStartedAt) {
       countdownFallbackRef.current = null;
     } else if (countdownFallbackRef.current?.key !== countdownKey) {
-      countdownFallbackRef.current = { key: countdownKey, endsAt: Date.now() + ARENA_COUNTDOWN_MS + 500 };
+      countdownFallbackRef.current = { key: countdownKey, endsAt: currentServerNow + ARENA_COUNTDOWN_MS + 500 };
     }
     const endsAt = arenaCountdownEndsAt(room) ?? countdownFallbackRef.current?.endsAt ?? null;
     if (endsAt === null) return;
-    const timer = window.setTimeout(() => {
+    const runStart = () => {
+      if (cancelled) return;
       void startArenaQuestion(roomId, room.hostUid, room.activeQuestionIndex, room.activeQuestionId || `q${room.activeQuestionIndex}`)
-        .catch((error) => setNotice(errorText(error)));
-    }, Math.max(0, endsAt - Date.now()));
-    return () => window.clearTimeout(timer);
+        .catch((error) => {
+          if (cancelled) return;
+          console.error('[Arena start question error]:', error);
+          setNotice(errorText(error));
+          retryTimer = window.setTimeout(runStart, 1_500);
+        });
+    };
+    const timer = window.setTimeout(runStart, Math.max(0, endsAt - currentServerNow));
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      if (retryTimer !== null) window.clearTimeout(retryTimer);
+    };
   }, [roomId, room?.status, room?.hostUid, room?.activeQuestionId, room?.activeQuestionIndex, room?.countdownStartedAt, isHost]);
 
   useEffect(() => {
-    if (!roomId || !isHost || !room || room.status !== 'question' || !room.activeQuestionId) return;
+    if (!roomId || !isHost || !room || room.status !== 'question' || !room.activeQuestionId || !room.questionStartedAt) return;
+    const settleKey = `${roomId}:${room.activeQuestionId}`;
     const allActiveAnswered = activePlayers.length > 0 && activePlayers.every((player) =>
       answersForQuestionId === room.activeQuestionId && answers.some((answer) => answer.uid === player.uid)
     );
-    const timeExpired = questionEnds !== null && questionEnds + ARENA_SUBMISSION_GRACE_MS <= now;
+    const currentServerNow = estimateArenaServerNowMs(now, serverClockOffsetRef.current);
+    const timeExpired = questionEnds !== null && questionEnds + ARENA_SUBMISSION_GRACE_MS <= currentServerNow;
     if (!allActiveAnswered && !timeExpired) return;
-    if (settlingQuestionIds.current.has(room.activeQuestionId)) return;
-    settlingQuestionIds.current.add(room.activeQuestionId);
-    void settleArenaQuestion(roomId, room.hostUid, room.activeQuestionId, true)
+    if (settlingQuestionIds.current.has(settleKey)) return;
+    const retryAfter = settleRetryAfterRef.current.get(settleKey) ?? 0;
+    if (now < retryAfter) return;
+
+    settlingQuestionIds.current.add(settleKey);
+    const targetQuestionId = room.activeQuestionId;
+    void settleArenaQuestion(roomId, room.hostUid, targetQuestionId, true)
+      .then((result) => {
+        if (!result) {
+          settlingQuestionIds.current.delete(settleKey);
+          settleRetryAfterRef.current.set(settleKey, Date.now() + 1_000);
+        }
+      })
       .catch((error) => {
-        settlingQuestionIds.current.delete(room.activeQuestionId!);
+        console.error('[Arena settle question error]:', error);
+        settlingQuestionIds.current.delete(settleKey);
+        settleRetryAfterRef.current.set(settleKey, Date.now() + 1_500);
         setNotice(errorText(error));
       });
-  }, [roomId, room?.status, room?.hostUid, room?.activeQuestionId, answers, answersForQuestionId, activePlayers, questionEnds, now, isHost]);
+  }, [roomId, room?.status, room?.hostUid, room?.activeQuestionId, room?.questionStartedAt, answers, answersForQuestionId, activePlayers, questionEnds, now, isHost]);
 
   useEffect(() => {
     if (!roomId || !isHost || !room || room.status !== 'reveal' || !room.activeQuestionId) return;
-    const endsAt = revealEnds ?? (room.revealedAt?.toMillis() ?? Date.now()) + ARENA_REVEAL_MS;
-    const timer = window.setTimeout(() => {
+    let cancelled = false;
+    let retryTimer: number | null = null;
+    const currentServerNow = estimateArenaServerNowMs(Date.now(), serverClockOffsetRef.current);
+    const endsAt = revealEnds ?? (currentServerNow + ARENA_REVEAL_MS);
+    const runAdvance = () => {
+      if (cancelled) return;
       void advanceArenaGame(roomId, room.hostUid, room.activeQuestionIndex, room.questionCount)
-        .catch((error) => setNotice(errorText(error)));
-    }, Math.max(0, endsAt - Date.now()));
-    return () => window.clearTimeout(timer);
+        .catch((error) => {
+          if (cancelled) return;
+          console.error('[Arena advance game error]:', error);
+          setNotice(errorText(error));
+          retryTimer = window.setTimeout(runAdvance, 1_500);
+        });
+    };
+    const timer = window.setTimeout(runAdvance, Math.max(0, endsAt - currentServerNow));
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      if (retryTimer !== null) window.clearTimeout(retryTimer);
+    };
   }, [roomId, room?.status, room?.hostUid, room?.activeQuestionId, room?.activeQuestionIndex, room?.questionCount, room?.revealedAt, revealEnds, isHost]);
 
   useEffect(() => {
@@ -590,6 +716,7 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
     setRoomId(null);
     setSessionEnded('');
     setConnectionIssue(false);
+    setHostUnresponsive(false);
     setNotice('');
     setRoomCodeInput('');
     const url = new URL(window.location.href);
@@ -646,10 +773,9 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
     setSubmittedQuestionId(questionId);
     setNotice('');
     try {
-      await submitArenaAnswer(roomId, questionId, sessionUid, answer);
+      await submitArenaAnswer(roomId, questionId, sessionUid, answer, room?.expiresAt);
     } catch (error) {
       if (isPermissionDenied(error)) {
-        setConnectionIssue(true);
         try {
           const submissionState = await getArenaSubmissionState(roomId, questionId, sessionUid);
           if (submissionState.answer) {
@@ -667,8 +793,10 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
             setNotice('Câu hỏi đã kết thúc. Đáp án chưa được ghi nhận.');
             return;
           }
-          setNotice('Không thể gửi đáp án lúc này. Vui lòng thử lại.');
-        } catch {
+          setConnectionIssue(false);
+          setNotice('Đã hết thời gian gửi đáp án cho câu này.');
+        } catch (stateError) {
+          if (isPermissionDenied(stateError)) setConnectionIssue(true);
           setNotice('Không thể xác nhận trạng thái đáp án. Kiểm tra kết nối rồi thử lại.');
         }
       } else {
@@ -713,6 +841,11 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
       setRoomCodeInput(result.roomCode);
       setRoomId(result.roomId);
       setSessionEnded('');
+      setConnectionIssue(false);
+      setHostUnresponsive(false);
+      const url = new URL(window.location.href);
+      url.searchParams.set('arena', result.roomCode);
+      window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
     } catch (error) {
       const message = errorText(error);
       returnHome();
@@ -809,6 +942,11 @@ export function ArenaView({ cards, decks }: ArenaViewProps) {
               </ArenaButton>
             )}
           </div>
+        )}
+        {!isHost && hostUnresponsive && (
+          <p role="status" className="rounded-xl border border-raku-signal/25 bg-raku-signal/5 px-4 py-3 text-sm leading-5 text-raku-signal">
+            Không nhận được tín hiệu từ chủ phòng trong thời gian dài. Có thể chủ phòng đang chuyển tab hoặc mất mạng — phòng vẫn được giữ, bạn có thể chờ chủ phòng quay lại hoặc bấm Rời phòng.
+          </p>
         )}
         {isHost && unresponsivePlayers.length > 0 && (
           <p role="status" className="rounded-xl border border-raku-signal/25 bg-raku-signal/5 px-4 py-3 text-sm leading-5 text-raku-signal">

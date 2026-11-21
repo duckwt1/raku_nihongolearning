@@ -9,8 +9,8 @@ import {
   query,
   runTransaction,
   serverTimestamp,
+  setDoc,
   updateDoc,
-  where,
   writeBatch,
   type DocumentData,
   type FirestoreError,
@@ -22,7 +22,7 @@ import {
   ARENA_COUNTDOWN_MS,
   ARENA_MAX_PLAYERS,
   ARENA_MAX_QUESTIONS,
-  ARENA_SUBMISSION_GRACE_MS,
+  ARENA_NETWORK_GRACE_MS,
   ARENA_REVEAL_MS,
   calculateArenaScore,
   generateArenaQuiz,
@@ -34,6 +34,11 @@ import {
   type ArenaQuestionType,
   type ArenaSettings
 } from '@raku/core';
+
+export interface ArenaSnapshotMeta {
+  fromCache: boolean;
+  hasPendingWrites: boolean;
+}
 
 export type ArenaRoomStatus =
   | 'preparing'
@@ -353,24 +358,30 @@ export async function joinArenaRoom(roomCodeInput: string, uid: string, nickname
 
 export function subscribeArenaRoom(
   roomId: string,
-  onRoom: (room: ArenaRoom | null) => void,
+  onRoom: (room: ArenaRoom | null, meta: ArenaSnapshotMeta) => void,
   onError?: (error: FirestoreError) => void
 ): Unsubscribe {
   return onSnapshot(roomRef(roomId), (snapshot) => {
-    onRoom(snapshot.exists() ? ({ ...snapshot.data(), roomId: snapshot.id } as ArenaRoom) : null);
+    onRoom(
+      snapshot.exists() ? ({ ...snapshot.data(), roomId: snapshot.id } as ArenaRoom) : null,
+      { fromCache: snapshot.metadata.fromCache, hasPendingWrites: snapshot.metadata.hasPendingWrites }
+    );
   }, onError);
 }
 
 export function subscribeArenaPlayers(
   roomId: string,
-  onPlayers: (players: ArenaPlayer[]) => void,
+  onPlayers: (players: ArenaPlayer[], meta: ArenaSnapshotMeta) => void,
   onError?: (error: FirestoreError) => void
 ): Unsubscribe {
   return onSnapshot(query(playersCollection(roomId)), (snapshot) => {
     const players = snapshot.docs.map((item) => item.data() as ArenaPlayer);
-    onPlayers(players.sort((left, right) =>
-      (left.joinedAt?.toMillis() ?? 0) - (right.joinedAt?.toMillis() ?? 0)
-    ));
+    onPlayers(
+      players.sort((left, right) =>
+        (left.joinedAt?.toMillis() ?? 0) - (right.joinedAt?.toMillis() ?? 0)
+      ),
+      { fromCache: snapshot.metadata.fromCache, hasPendingWrites: snapshot.metadata.hasPendingWrites }
+    );
   }, onError);
 }
 
@@ -434,7 +445,8 @@ export async function submitArenaAnswer(
   roomId: string,
   questionId: string,
   uid: string,
-  answer: string
+  answer: string,
+  expiresAt?: Timestamp
 ): Promise<void> {
   const trimmed = answer.trim();
   if (!trimmed) throw new Error('Nhập hoặc chọn đáp án trước khi gửi.');
@@ -446,32 +458,32 @@ export async function submitArenaAnswer(
     throw new ArenaSubmissionError('Phiên đăng nhập đã thay đổi. Hãy vào lại phòng để tiếp tục.');
   }
 
-  await runTransaction(db, async (transaction) => {
-    const currentRoomRef = roomRef(roomId);
-    const currentPlayerRef = playerRef(roomId, uid);
-    const [roomSnapshot, playerSnapshot] = await Promise.all([
-      transaction.get(currentRoomRef),
-      transaction.get(currentPlayerRef)
-    ]);
+  let resolvedExpiresAt = expiresAt;
+  if (!resolvedExpiresAt) {
+    const roomSnapshot = await getDoc(roomRef(roomId));
     if (!roomSnapshot.exists()) throw new ArenaSubmissionError('Phòng không còn tồn tại.');
-    if (!playerSnapshot.exists() || (playerSnapshot.data() as ArenaPlayer).status !== 'active') {
-      throw new ArenaSubmissionError('Bạn đã mất kết nối khỏi phòng.');
-    }
-
-    const currentAnswerRef = answerRef(roomId, questionId, uid);
-    const existingAnswer = await transaction.get(currentAnswerRef);
-    if (existingAnswer.exists()) return;
-
     const room = roomSnapshot.data() as ArenaRoom;
     if (room.status !== 'question' || room.activeQuestionId !== questionId) {
       throw new ArenaSubmissionError('Câu hỏi đã kết thúc. Đáp án chưa được gửi.');
     }
-    transaction.set(currentAnswerRef, {
+    resolvedExpiresAt = room.expiresAt;
+  }
+
+  // Write directly without locking arenaRooms/{roomId} in a transaction to avoid
+  // contention with heartbeats, other submissions, and question settlement.
+  // Firestore rules atomically enforce membership, active question, deadline, and immutability.
+  const currentAnswerRef = answerRef(roomId, questionId, uid);
+  try {
+    await setDoc(currentAnswerRef, {
       answer: trimmed,
       submittedAt: serverTimestamp(),
-      expiresAt: room.expiresAt
+      expiresAt: resolvedExpiresAt
     });
-  });
+  } catch (error) {
+    const existing = await getDoc(currentAnswerRef).catch(() => null);
+    if (existing?.exists()) return;
+    throw error;
+  }
 }
 
 export async function getArenaSubmissionState(
@@ -510,7 +522,8 @@ export async function startArenaGame(roomId: string, hostUid: string): Promise<v
       activeQuestionId: 'q0',
       answeredCount: 0,
       countdownStartedAt: serverTimestamp(),
-      questionStartedAt: null
+      questionStartedAt: null,
+      hostHeartbeatAt: serverTimestamp()
     });
   });
 }
@@ -532,7 +545,8 @@ export async function startArenaQuestion(
     transaction.update(roomRef(roomId), {
       status: 'question',
       questionStartedAt: serverTimestamp(),
-      answeredCount: 0
+      answeredCount: 0,
+      hostHeartbeatAt: serverTimestamp()
     });
   });
 }
@@ -543,11 +557,11 @@ export async function settleArenaQuestion(
   questionId: string,
   force = false
 ): Promise<ArenaReveal | null> {
-  // Membership is fixed once the lobby starts, so a bounded pre-read gives us
-  // the player IDs. Only fetch active players to reduce transaction size.
+  // Membership is fixed once the lobby starts (at most 8 players), so a bounded pre-read
+  // gives us all player IDs to keep rankings complete even if someone temporarily left.
   // The transaction then reads each participant document and their answer individually
   // (the Web SDK transaction API does not support queries).
-  const participantIds = (await getDocs(query(playersCollection(roomId), where('status', '==', 'active')))).docs.map((snapshot) => snapshot.id);
+  const participantIds = (await getDocs(query(playersCollection(roomId)))).docs.map((snapshot) => snapshot.id);
   return runTransaction(db, async (transaction) => {
     const roomSnapshot = await transaction.get(roomRef(roomId));
     if (!roomSnapshot.exists()) return null;
@@ -556,6 +570,9 @@ export async function settleArenaQuestion(
       room.hostUid !== hostUid || room.status !== 'question' ||
       room.activeQuestionId !== questionId || !room.questionStartedAt
     ) return null;
+
+    const existingReveal = await transaction.get(revealRef(roomId, questionId));
+    if (existingReveal.exists()) return existingReveal.data() as ArenaReveal;
 
     const playerSnapshots = await Promise.all(participantIds.map((uid) => transaction.get(playerRef(roomId, uid))));
     const playerDocuments = playerSnapshots
@@ -581,13 +598,19 @@ export async function settleArenaQuestion(
       const answerSnapshot = answerSnapshots[index]!;
       const answer = answerSnapshot.exists() ? answerSnapshot.data() as ArenaAnswer : null;
       const submittedAt = answer?.submittedAt?.toMillis();
-      const responseTimeMs = submittedAt === undefined ? null : submittedAt - questionStartMs;
-      const withinLimit = responseTimeMs !== null && responseTimeMs >= 0
-        && responseTimeMs <= timeLimitMs + ARENA_SUBMISSION_GRACE_MS;
+      const rawResponseTimeMs = submittedAt === undefined ? null : submittedAt - questionStartMs;
+      const responseTimeMs = rawResponseTimeMs === null ? null : Math.max(0, rawResponseTimeMs);
+      const withinLimit = rawResponseTimeMs !== null && rawResponseTimeMs >= -1_000
+        && rawResponseTimeMs <= timeLimitMs + ARENA_NETWORK_GRACE_MS;
       const isCorrect = Boolean(
         answer && withinLimit && gradeArenaAnswer(question.type, answerKey, answer.answer)
       );
-      const points = calculateArenaScore(isCorrect, responseTimeMs ?? -1, room.settings.timeLimitSeconds);
+      const points = calculateArenaScore(
+        isCorrect,
+        responseTimeMs ?? -1,
+        room.settings.timeLimitSeconds,
+        ARENA_NETWORK_GRACE_MS
+      );
       const totalScore = player.score + points;
       const correctCount = player.correctCount + Number(isCorrect);
       const totalCorrectResponseMs = player.totalCorrectResponseMs + (isCorrect ? responseTimeMs! : 0);
@@ -658,7 +681,8 @@ export async function settleArenaQuestion(
     transaction.update(roomRef(roomId), {
       status: 'reveal',
       answeredCount: activeAnswers.filter(({ answerSnapshot }) => answerSnapshot.exists()).length,
-      revealedAt: serverTimestamp()
+      revealedAt: serverTimestamp(),
+      hostHeartbeatAt: serverTimestamp()
     });
     return reveal;
   });
@@ -677,7 +701,11 @@ export async function advanceArenaGame(
     if (room.hostUid !== hostUid || room.status !== 'reveal' || room.activeQuestionIndex !== currentQuestionIndex) return;
     const nextIndex = currentQuestionIndex + 1;
     if (nextIndex >= questionCount) {
-      transaction.update(roomRef(roomId), { status: 'finished', finishedAt: serverTimestamp() });
+      transaction.update(roomRef(roomId), {
+        status: 'finished',
+        finishedAt: serverTimestamp(),
+        hostHeartbeatAt: serverTimestamp()
+      });
       return;
     }
     transaction.update(roomRef(roomId), {
@@ -686,17 +714,15 @@ export async function advanceArenaGame(
       activeQuestionId: `q${nextIndex}`,
       answeredCount: 0,
       countdownStartedAt: null,
-      questionStartedAt: serverTimestamp()
+      questionStartedAt: serverTimestamp(),
+      hostHeartbeatAt: serverTimestamp()
     });
   });
 }
 
 export async function sendArenaHeartbeat(roomId: string, hostUid: string): Promise<void> {
-  await runTransaction(db, async (transaction) => {
-    const snapshot = await transaction.get(roomRef(roomId));
-    if (!snapshot.exists() || snapshot.data().hostUid !== hostUid) return;
-    transaction.update(roomRef(roomId), { hostHeartbeatAt: serverTimestamp() });
-  });
+  if (auth.currentUser?.uid !== hostUid) return;
+  await updateDoc(roomRef(roomId), { hostHeartbeatAt: serverTimestamp() });
 }
 
 export async function sendArenaPlayerHeartbeat(roomId: string, uid: string): Promise<void> {

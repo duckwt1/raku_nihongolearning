@@ -1,5 +1,6 @@
 import Papa from 'papaparse';
 import {
+  GrammarExerciseSchema,
   validateGrammarExercise,
   type Grammar,
   type GrammarExercise,
@@ -95,11 +96,12 @@ export function parseExerciseCsv(
     const rawAnswer = (raw.answer || '').trim();
     const choices = splitList(raw.choices);
     const tokens = splitList(raw.tokens);
+    const answerParts = splitList(rawAnswer);
     const answer =
       type === 'translate_jp_vi' || type === 'translate_vi_jp'
-        ? splitList(rawAnswer).length > 1
-          ? splitList(rawAnswer)
-          : rawAnswer
+        ? answerParts.length > 1
+          ? answerParts
+          : answerParts[0] || ''
         : rawAnswer;
 
     const check = validateGrammarExercise({ type, prompt, answer, choices, tokens });
@@ -109,7 +111,12 @@ export function parseExerciseCsv(
     }
 
     const now = new Date().toISOString();
-    exercises.push({
+    const parsedDifficulty = Number(raw.difficulty || 2);
+    const difficulty = Math.min(
+      5,
+      Math.max(1, Number.isFinite(parsedDifficulty) ? Math.round(parsedDifficulty) : 2)
+    );
+    const candidate: GrammarExercise = {
       id: createGrammarExerciseId(),
       grammarId: grammar.id,
       grammarPattern: grammar.pattern,
@@ -121,10 +128,7 @@ export function parseExerciseCsv(
       choices: choices.length > 0 ? choices : undefined,
       tokens: tokens.length > 0 ? tokens : undefined,
       explanationVi: (raw.explanation_vi || '').trim(),
-      difficulty: Math.min(
-        5,
-        Math.max(1, Number(raw.difficulty || 2) || 2)
-      ),
+      difficulty,
       tags: splitList(raw.tags),
       createdByUid,
       createdByName,
@@ -132,7 +136,16 @@ export function parseExerciseCsv(
       visibility: 'public',
       createdAt: now,
       updatedAt: now
-    });
+    };
+    const schemaCheck = GrammarExerciseSchema.safeParse(candidate);
+    if (!schemaCheck.success) {
+      issues.push({
+        row,
+        message: schemaCheck.error.issues.map((issue) => issue.message).join('; ')
+      });
+      return;
+    }
+    exercises.push(schemaCheck.data);
   });
 
   return { exercises, issues };

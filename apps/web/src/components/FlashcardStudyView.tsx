@@ -40,6 +40,12 @@ export function FlashcardStudyView({
   useEffect(() => {
     setSessionCards(cards);
     setCurrentIndex(0);
+    setIsAnswerRevealed(false);
+    setGradeResult(null);
+    setInputReading('');
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
   }, [cards]);
 
   const currentCard = sessionCards[currentIndex];
@@ -79,12 +85,16 @@ export function FlashcardStudyView({
       const result = gradeReadingAnswer(inputReading, currentCard.word.readings);
       setGradeResult({ isCorrect: result.isCorrect });
     } else if (currentCard.kanji) {
+      const normalizedInput = inputReading.trim().toLowerCase();
       const validAnswers = [
-        ...(currentCard.kanji.hanViet || []),
+        ...(currentCard.kanji.hanViet || []).map((hv) => hv.toLowerCase()),
         ...(currentCard.kanji.onyomi || []),
-        ...(currentCard.kanji.kunyomi || [])
+        ...(currentCard.kanji.kunyomi || []).flatMap((k) => {
+          const stripped = k.replace(/[.\-]/g, '');
+          return stripped !== k ? [k, stripped] : [k];
+        })
       ];
-      const result = gradeReadingAnswer(inputReading, validAnswers);
+      const result = gradeReadingAnswer(normalizedInput, validAnswers);
       setGradeResult({ isCorrect: result.isCorrect });
     }
 
@@ -101,8 +111,14 @@ export function FlashcardStudyView({
   // FSRS rating handler (Again, Hard, Good, Easy)
   const handleApplyRating = useCallback(
     (rating: Rating) => {
+      if (!isAnswerRevealed) return;
       const cardToRate = sessionCards[currentIndex];
       if (!cardToRate) return;
+
+      // Reset revealed state synchronously to block double-clicks and prevent flashing the next card's answer.
+      setIsAnswerRevealed(false);
+      setGradeResult(null);
+      setInputReading('');
 
       // 1. Advance card state via FSRS algorithm
       const recordLog = applyGrade(cardToRate.fsrsCard, rating as 1 | 2 | 3 | 4);
@@ -135,15 +151,31 @@ export function FlashcardStudyView({
         onComplete();
       }
     },
-    [sessionCards, currentIndex, onComplete, onRateCard]
+    [isAnswerRevealed, sessionCards, currentIndex, onComplete, onRateCard]
   );
 
   // Keyboard navigation & shortcuts (1-4 for ratings, Enter for submit)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger shortcuts when typing in input
-      if (e.target instanceof HTMLInputElement && !isAnswerRevealed) {
-        if (e.key === 'Enter' && !isComposing) {
+      if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
+
+      const target = e.target as HTMLElement | null;
+      const isEditable =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        Boolean(target?.isContentEditable);
+
+      if (isEditable) {
+        if (
+          target instanceof HTMLInputElement &&
+          !isAnswerRevealed &&
+          e.key === 'Enter' &&
+          !isComposing &&
+          !e.isComposing &&
+          e.keyCode !== 229
+        ) {
           e.preventDefault();
           handleCheckAnswer();
         }
@@ -492,6 +524,17 @@ export function FlashcardStudyView({
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+
+            {!currentCard.word && !currentCard.kanji && !currentCard.grammar && currentCard.customAnswer && (
+              <div className="space-y-2 text-center">
+                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  Đáp án
+                </div>
+                <div className="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-100 whitespace-pre-wrap">
+                  {currentCard.customAnswer}
+                </div>
               </div>
             )}
 

@@ -58,6 +58,8 @@ export function GrammarAdminPanel({ user, onNotify }: GrammarAdminPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const parseSeqRef = useRef(0);
+  const isBusy = isImporting || isPurging || isParsing;
 
   const notify = (message: string, type: 'success' | 'info' | 'warning' = 'info') => {
     onNotify?.(message, type);
@@ -95,13 +97,15 @@ export function GrammarAdminPanel({ user, onNotify }: GrammarAdminPanelProps) {
   if (checking || !isAdmin) return null;
 
   const handleFiles = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
+    if (!files || files.length === 0 || isImporting || isPurging) return;
+    const seq = ++parseSeqRef.current;
     setIsParsing(true);
     setError(null);
     setStatus(null);
     setBundleResult(null);
     try {
       const bundle = await readGrammarCsvBundle(Array.from(files));
+      if (seq !== parseSeqRef.current) return;
       const result = parseGrammarCsvBundle(bundle);
       setBundleResult(result);
       if (result.issues.length > 0) {
@@ -112,9 +116,12 @@ export function GrammarAdminPanel({ user, onNotify }: GrammarAdminPanelProps) {
         );
       }
     } catch (err: unknown) {
+      if (seq !== parseSeqRef.current) return;
       setError(err instanceof Error ? err.message : 'Không thể đọc file CSV/ZIP.');
     } finally {
-      setIsParsing(false);
+      if (seq === parseSeqRef.current) {
+        setIsParsing(false);
+      }
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
@@ -175,23 +182,24 @@ export function GrammarAdminPanel({ user, onNotify }: GrammarAdminPanelProps) {
   };
 
   const handlePurge = async () => {
+    if (isBusy) return;
     if (purgeConfirm !== 'XOA GRAMMAR' && purgeConfirm !== 'XOÁ GRAMMAR') {
       setError('Gõ "XOÁ GRAMMAR" để xác nhận.');
       return;
     }
-    if (!window.confirm('Xoá toàn bộ grammar point, level và bài tập grammar cũ? Không thể hoàn tác.')) {
+    if (!window.confirm('Xoá toàn bộ grammarPoints, grammarLevels và collection grammar cũ (giữ nguyên ngân hàng bài tập hiện tại)? Không thể hoàn tác.')) {
       return;
     }
     setIsPurging(true);
     setError(null);
     setStatus(null);
     try {
-      const result = await purgeGrammarData();
+      const result = await purgeGrammarData({ includeExercises: false });
       clearGrammarCache();
       setLevels(await fetchGrammarLevels());
       setPurgeConfirm('');
       setStatus(
-        `Đã xoá: ${result.grammarPoints} grammar point, ${result.grammarLevels} level, ${result.legacyGrammar} grammar cũ, ${result.legacyExercises} bài tập cũ.`
+        `Đã xoá: ${result.grammarPoints} grammar point, ${result.grammarLevels} level, ${result.legacyGrammar} grammar cũ.`
       );
       notify('Đã xoá dữ liệu grammar.', 'success');
     } catch (err: unknown) {
@@ -344,7 +352,7 @@ export function GrammarAdminPanel({ user, onNotify }: GrammarAdminPanelProps) {
               type="button"
               onClick={() => void handleImport()}
               disabled={
-                isImporting ||
+                isBusy ||
                 points.length === 0 ||
                 bundleResult.issues.length > 0 ||
                 levelMismatch
@@ -377,20 +385,21 @@ export function GrammarAdminPanel({ user, onNotify }: GrammarAdminPanelProps) {
           </summary>
           <div className="space-y-2 border-t border-rose-200 p-3 dark:border-rose-900">
             <p className="text-[11px] text-rose-700 dark:text-rose-300">
-              Xoá grammarPoints, grammarLevels, collection grammar cũ và grammarExercises cũ.
+              Xoá grammarPoints, grammarLevels và collection grammar cũ (không xoá ngân hàng bài tập đang dùng).
               Hãy xuất CSV backup trước.
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <input
                 value={purgeConfirm}
                 onChange={(e) => setPurgeConfirm(e.target.value)}
+                disabled={isBusy}
                 placeholder="Gõ XOÁ GRAMMAR"
-                className="rounded-lg border border-rose-300 bg-white px-3 py-2 text-xs dark:border-rose-800 dark:bg-slate-900"
+                className="rounded-lg border border-rose-300 bg-white px-3 py-2 text-xs disabled:opacity-50 dark:border-rose-800 dark:bg-slate-900"
               />
               <button
                 type="button"
                 onClick={() => void handlePurge()}
-                disabled={isPurging}
+                disabled={isBusy}
                 className="flex items-center gap-1.5 rounded-xl bg-rose-600 px-3 py-2 text-xs font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
               >
                 <Trash2 className="h-3.5 w-3.5" />

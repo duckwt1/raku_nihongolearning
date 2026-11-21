@@ -4,7 +4,7 @@ import {
   DEFAULT_DECKS,
   buildDefaultCards,
   createInitialStudyStats,
-  recordStudyActivity,
+  getTodayDateString,
   migrateDecks,
   migrateFolders
 } from '@raku/core';
@@ -21,16 +21,36 @@ export interface OfflineReviewItem {
  * Sinh key lưu trữ cục bộ phân tách theo User ID (Namespaced Storage như Profile trong Anki)
  */
 export function getUserStorageKey(baseKey: string, userId?: string | null): string {
-  const ns = userId && userId !== 'local_device' ? `user_${userId}` : 'guest';
+  const ns = userId && userId !== 'local_device' && userId !== 'guest' ? `user_${userId}` : 'guest';
   return `raku_${baseKey}_${ns}`;
 }
 
 /**
  * Chuyển giao dữ liệu từ khóa cũ (legacy global keys) sang khóa namespaced
- * để đảm bảo người dùng cũ không bị mất dữ liệu đã học
+ * để đảm bảo người dùng cũ không bị mất dữ liệu đã học.
+ * Chỉ xóa khóa legacy khi đã xác định user thực hoặc chuyển giao khóa guest bị tách trước đây (`user_guest`).
  */
 export function migrateLegacyDataIfPresent(userId?: string | null): void {
   if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
+
+  const isGuestNamespace = !userId || userId === 'local_device' || userId === 'guest';
+
+  // Di chuyển dữ liệu bị tách ở phiên bản cũ (`raku_*_user_guest` -> `raku_*_guest`)
+  if (isGuestNamespace) {
+    const guestBases = ['cards', 'study_stats', 'folders', 'decks', 'offline_queue', 'daily_new_word_goal', 'deck_sync_prefs', 'grammar_practice_stats'];
+    for (const baseKey of guestBases) {
+      const oldGuestKey = `raku_${baseKey}_user_guest`;
+      const newGuestKey = `raku_${baseKey}_guest`;
+      const oldVal = localStorage.getItem(oldGuestKey);
+      if (oldVal) {
+        if (!localStorage.getItem(newGuestKey)) {
+          localStorage.setItem(newGuestKey, oldVal);
+        }
+        localStorage.removeItem(oldGuestKey);
+      }
+    }
+    return;
+  }
 
   const mapping: Array<[string, string]> = [
     ['raku_cards', 'cards'],
@@ -46,7 +66,6 @@ export function migrateLegacyDataIfPresent(userId?: string | null): void {
 
     if (legacyVal && !localStorage.getItem(newKey)) {
       localStorage.setItem(newKey, legacyVal);
-      // Xóa khóa cũ sau khi đã di chuyển thành công
       localStorage.removeItem(legacyKey);
     }
   }
@@ -127,7 +146,25 @@ export function loadUserStudyStats(userId?: string | null): UserStudyStats {
   try {
     const saved = localStorage.getItem(key);
     if (saved) {
-      return recordStudyActivity(JSON.parse(saved), 0);
+      const parsed = JSON.parse(saved) as Partial<UserStudyStats>;
+      const today = getTodayDateString();
+      const base = createInitialStudyStats();
+      const todayStats =
+        parsed.todayStats?.date === today
+          ? {
+              date: today,
+              studySeconds: Number(parsed.todayStats.studySeconds) || 0,
+              reviewedCount: Number(parsed.todayStats.reviewedCount) || 0,
+              correctCount: Number(parsed.todayStats.correctCount) || 0,
+              againCount: Number(parsed.todayStats.againCount) || 0
+            }
+          : base.todayStats;
+      return {
+        streakDays: Number(parsed.streakDays) || 0,
+        lastStudiedDate: typeof parsed.lastStudiedDate === 'string' ? parsed.lastStudiedDate : '',
+        totalCardsLearned: Number(parsed.totalCardsLearned) || 0,
+        todayStats
+      };
     }
   } catch (err) {
     console.warn(`Lỗi khi nạp stats của user [${userId}]:`, err);
@@ -216,17 +253,21 @@ export function saveUserDecks(userId: string | null | undefined, decks: Deck[]):
  */
 export function getOfflineReviewQueue(userId?: string | null): OfflineReviewItem[] {
   if (typeof window === 'undefined' || typeof localStorage === 'undefined') return [];
+  migrateLegacyDataIfPresent(userId);
   const key = getUserStorageKey('offline_queue', userId);
   try {
     const raw = localStorage.getItem(key);
     if (raw) return JSON.parse(raw);
-    // Legacy fallback
-    const legacy = localStorage.getItem('raku_offline_reviews_queue');
-    if (legacy) {
-      const parsed = JSON.parse(legacy);
-      localStorage.setItem(key, legacy);
-      localStorage.removeItem('raku_offline_reviews_queue');
-      return parsed;
+    // Only consume the global legacy queue for authenticated users so it isn't stolen by initial guest render.
+    const isAuthenticatedUid = Boolean(userId && userId !== 'local_device' && userId !== 'guest');
+    if (isAuthenticatedUid) {
+      const legacy = localStorage.getItem('raku_offline_reviews_queue');
+      if (legacy) {
+        const parsed = JSON.parse(legacy);
+        localStorage.setItem(key, legacy);
+        localStorage.removeItem('raku_offline_reviews_queue');
+        return parsed;
+      }
     }
   } catch {}
   return [];

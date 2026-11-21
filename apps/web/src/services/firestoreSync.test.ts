@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { mergeFirestoreCardProgress } from './firestoreSync';
+import { mergeFirestoreCardProgress, sanitizeFirestoreData } from './firestoreSync';
+import { getUserStorageKey } from './userStorage';
 import { createNewCard, getDailyNewWordCounts, getTodayDateString, type StudyCard, type Word } from '@raku/core';
 
 function makeWord(id: string, surface: string, reading: string, meaningVi: string): Word {
@@ -88,5 +89,60 @@ describe('mergeFirestoreCardProgress', () => {
 
     const merged = mergeFirestoreCardProgress(localCards, cloudCards);
     expect(merged[0]?.firstLearnedAt).toBe('2026-11-01T10:00:00.000Z');
+  });
+
+  it('keeps newer local FSRS progress instead of overwriting with older cloud snapshot', () => {
+    const localCards: StudyCard[] = [
+      {
+        id: 'c_word_w_1',
+        type: 'word',
+        refId: 'w_1',
+        fsrsCard: {
+          ...createNewCard(),
+          reps: 4,
+          state: 2,
+          last_review: new Date('2026-11-20T12:00:00.000Z')
+        },
+        isNew: false,
+        isDue: false
+      }
+    ];
+    const cloudCards = {
+      c_word_w_1: {
+        reps: 2,
+        state: 1,
+        last_review: '2026-11-19T12:00:00.000Z',
+        firstLearnedAt: '2026-11-18T10:00:00.000Z'
+      }
+    };
+    const merged = mergeFirestoreCardProgress(localCards, cloudCards);
+    expect(merged[0]?.fsrsCard.reps).toBe(4);
+    expect(merged[0]?.firstLearnedAt).toBe('2026-11-18T10:00:00.000Z');
+  });
+});
+
+describe('sanitizeFirestoreData & getUserStorageKey', () => {
+  it('recursively strips undefined and non-finite numbers inside nested arrays', () => {
+    const sanitized = sanitizeFirestoreData({
+      id: 'deck_1',
+      cards: [
+        { id: 'c_1', word: { surface: '猫', exampleJp: undefined, score: Number.NaN } },
+        undefined
+      ],
+      extra: undefined
+    });
+    expect(sanitized).toEqual({
+      id: 'deck_1',
+      cards: [{ id: 'c_1', word: { surface: '猫', score: 0 } }]
+    });
+    expect('exampleJp' in (sanitized.cards[0]!.word as Record<string, unknown>)).toBe(false);
+  });
+
+  it('normalizes guest, local_device, null, and undefined to the same guest storage key', () => {
+    expect(getUserStorageKey('cards', 'guest')).toBe('raku_cards_guest');
+    expect(getUserStorageKey('cards', undefined)).toBe('raku_cards_guest');
+    expect(getUserStorageKey('cards', null)).toBe('raku_cards_guest');
+    expect(getUserStorageKey('cards', 'local_device')).toBe('raku_cards_guest');
+    expect(getUserStorageKey('cards', 'uid_123')).toBe('raku_cards_user_uid_123');
   });
 });

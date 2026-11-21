@@ -7,12 +7,21 @@ export const ARENA_MAX_PLAYERS = 8;
 export const ARENA_MAX_QUESTIONS = 30;
 export const ARENA_MIN_PLAYERS = 2;
 export const ARENA_COUNTDOWN_MS = 3_000;
-export const ARENA_REVEAL_MS = 1_000;
+export const ARENA_REVEAL_MS = 4_000;
 export const ARENA_SUBMISSION_GRACE_MS = 1_000;
+export const ARENA_NETWORK_GRACE_MS = 3_000;
 export const ARENA_HOST_HEARTBEAT_MS = 10_000;
 export const ARENA_HOST_TIMEOUT_MS = 90_000;
 export const ARENA_PLAYER_HEARTBEAT_MS = 10_000;
 export const ARENA_PLAYER_TIMEOUT_MS = 60_000;
+
+export function computeArenaClockOffsetMs(clientNowMs: number, serverTimestampMs: number): number {
+  return clientNowMs - serverTimestampMs;
+}
+
+export function estimateArenaServerNowMs(clientNowMs: number, clockOffsetMs: number): number {
+  return clientNowMs - clockOffsetMs;
+}
 
 export type ArenaQuestionType = 'vi-to-jp' | 'jp-to-reading' | 'jp-to-meaning';
 export type ArenaQuestionMode = ArenaQuestionType | 'mixed';

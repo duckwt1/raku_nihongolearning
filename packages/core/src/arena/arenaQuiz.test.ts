@@ -2,9 +2,13 @@ import { describe, expect, it } from 'vitest';
 import type { Deck, Word } from '../models/schemas.js';
 import type { StudyCard } from '../fsrs/studySession.js';
 import {
+  ARENA_NETWORK_GRACE_MS,
+  ARENA_REVEAL_MS,
   ArenaQuestionGenerationError,
   calculateArenaScore,
+  computeArenaClockOffsetMs,
   countArenaEligibleWords,
+  estimateArenaServerNowMs,
   generateArenaQuiz,
   gradeArenaAnswer,
   normalizeArenaReading,
@@ -184,5 +188,24 @@ describe('arena answer grading and scoring', () => {
       { uid: 'faster', nickname: 'Nhanh', score: 1_000, correctCount: 1, totalCorrectResponseMs: 1_000 }
     ]);
     expect(ranked.map((player) => player.uid)).toEqual(['faster', 'slower']);
+  });
+
+  it('compensates client clock skew against Firestore server timestamps', () => {
+    // Device clock is 15s ahead of server clock
+    const serverStartMs = 1_700_000_000_000;
+    const fastClientNow = serverStartMs + 15_000;
+    const fastOffset = computeArenaClockOffsetMs(fastClientNow, serverStartMs);
+    expect(fastOffset).toBe(15_000);
+    expect(estimateArenaServerNowMs(fastClientNow + 3_000, fastOffset)).toBe(serverStartMs + 3_000);
+
+    // Device clock is 12s behind server clock
+    const slowClientNow = serverStartMs - 12_000;
+    const slowOffset = computeArenaClockOffsetMs(slowClientNow, serverStartMs);
+    expect(slowOffset).toBe(-12_000);
+    expect(estimateArenaServerNowMs(slowClientNow + 4_000, slowOffset)).toBe(serverStartMs + 4_000);
+
+    expect(ARENA_REVEAL_MS).toBeGreaterThanOrEqual(4_000);
+    expect(calculateArenaScore(true, 12_500, 10, ARENA_NETWORK_GRACE_MS)).toBe(300);
+    expect(calculateArenaScore(true, 13_001, 10, ARENA_NETWORK_GRACE_MS)).toBe(0);
   });
 });

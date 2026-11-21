@@ -56,7 +56,7 @@ export async function fetchGrammarExercises(): Promise<GrammarExercise[]> {
     snap.forEach((item) => {
       const parsed = GrammarExerciseSchema.safeParse({
         ...item.data(),
-        id: (item.data() as { id?: string }).id || item.id
+        id: item.id
       });
       if (parsed.success && validateGrammarExercise(parsed.data).valid) {
         exercises.push(parsed.data);

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   FileText,
   ListChecks,
@@ -117,20 +117,31 @@ export function GrammarExerciseView({
     sessions: []
   });
   const [error, setError] = useState<string | null>(null);
+  const exerciseLoadSeqRef = useRef(0);
 
   const notify = (message: string, type: 'success' | 'info' | 'warning' = 'info') => {
     onNotify?.(message, type);
   };
 
   const loadExercises = async () => {
+    const seq = ++exerciseLoadSeqRef.current;
     setIsLoading(true);
-    const list = await fetchGrammarExercises();
-    setExercises(list);
-    setIsLoading(false);
+    try {
+      const list = await fetchGrammarExercises();
+      if (seq !== exerciseLoadSeqRef.current) return;
+      setExercises(list);
+    } finally {
+      if (seq === exerciseLoadSeqRef.current) {
+        setIsLoading(false);
+      }
+    }
   };
 
   useEffect(() => {
     void loadExercises();
+    return () => {
+      exerciseLoadSeqRef.current++;
+    };
   }, []);
 
   useEffect(() => {
@@ -147,6 +158,7 @@ export function GrammarExerciseView({
 
   useEffect(() => {
     let cancelled = false;
+    setGrammarPoints([]);
     const loadGrammar = async () => {
       const list = await fetchGrammarPoints(level);
       if (cancelled) return;
@@ -162,7 +174,7 @@ export function GrammarExerciseView({
   }, [level]);
 
   useEffect(() => {
-    setPracticeStore(loadGrammarPracticeStore(user?.uid || 'guest'));
+    setPracticeStore(loadGrammarPracticeStore(user?.uid));
   }, [user?.uid]);
 
   useEffect(() => {
@@ -282,7 +294,7 @@ export function GrammarExerciseView({
       correct: results.filter((result) => result.correct).length
     };
     const next = recordGrammarPracticeSession(
-      user?.uid || 'guest',
+      user?.uid,
       session,
       results
     );

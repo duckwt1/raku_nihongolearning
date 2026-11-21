@@ -40,6 +40,7 @@ export function AiQuizGeneratorModal({
         throw new Error('Bạn cần đăng nhập (hoặc dùng thử ẩn danh) để gọi AI.');
       }
 
+      const safeCount = Math.min(Math.max(Math.trunc(Number(count) || 3), 1), 10);
       const res = await fetch(getApiUrl('/api/ai/generate'), {
         method: 'POST',
         headers: {
@@ -49,17 +50,21 @@ export function AiQuizGeneratorModal({
         body: JSON.stringify({
           prompt: promptInput,
           jlpt,
-          count
+          count: safeCount
         })
       });
 
       if (!res.ok) {
-        const errJson = (await res.json()) as { error?: string };
+        const errJson = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(errJson.error || `HTTP ${res.status}`);
       }
 
-      const data = (await res.json()) as { questions: Question[] };
-      setDraftQuestions(data.questions || []);
+      const data = (await res.json()) as { questions?: Question[] };
+      const generated = data.questions || [];
+      if (generated.length === 0) {
+        setError('AI không tạo được câu hỏi hợp lệ nào. Vui lòng thử lại với yêu cầu cụ thể hơn.');
+      }
+      setDraftQuestions(generated);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Lỗi không xác định khi gọi AI');
     } finally {
@@ -67,16 +72,20 @@ export function AiQuizGeneratorModal({
     }
   };
 
-  const handleDeleteDraft = (id: string) => {
-    setDraftQuestions((prev) => prev.filter((q) => q.id !== id));
+  const handleDeleteDraft = (indexToDelete: number) => {
+    setDraftQuestions((prev) => prev.filter((_, idx) => idx !== indexToDelete));
   };
 
   const handleSaveDeck = () => {
     if (draftQuestions.length === 0) return;
-    if (onSaveToDeck) {
-      onSaveToDeck(draftQuestions);
+    if (!onSaveToDeck) {
+      setError('Chức năng lưu bộ câu hỏi AI vào bộ ôn tập hiện chưa được kết nối.');
+      return;
     }
-    alert(`Đã lưu thành công ${draftQuestions.length} câu hỏi vào bộ ôn tập!`);
+    onSaveToDeck(draftQuestions);
+    const savedCount = draftQuestions.length;
+    setDraftQuestions([]);
+    alert(`Đã lưu thành công ${savedCount} câu hỏi vào bộ ôn tập!`);
     onClose();
   };
 
@@ -141,7 +150,10 @@ export function AiQuizGeneratorModal({
                     min={1}
                     max={10}
                     value={count}
-                    onChange={(e) => setCount(Number(e.target.value))}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setCount(Number.isFinite(val) ? Math.min(Math.max(Math.trunc(val), 1), 10) : 1);
+                    }}
                     className="w-16 p-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-center"
                   />
                 </div>
@@ -186,7 +198,7 @@ export function AiQuizGeneratorModal({
               <div className="space-y-3">
                 {draftQuestions.map((q, idx) => (
                   <div
-                    key={q.id || idx}
+                    key={`${q.id || 'q'}_${idx}`}
                     className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-2 relative"
                   >
                     <div className="flex items-center justify-between">
@@ -195,7 +207,7 @@ export function AiQuizGeneratorModal({
                         <span>AI tạo, chưa kiểm chứng</span>
                       </span>
                       <button
-                        onClick={() => handleDeleteDraft(q.id)}
+                        onClick={() => handleDeleteDraft(idx)}
                         className="text-slate-400 hover:text-rose-500 p-1 rounded-lg"
                         title="Xóa câu hỏi này"
                       >
@@ -209,18 +221,21 @@ export function AiQuizGeneratorModal({
 
                     {q.choices && (
                       <div className="grid grid-cols-2 gap-2 pt-1">
-                        {q.choices.map((c, cIdx) => (
-                          <div
-                            key={cIdx}
-                            className={`p-2 rounded-lg border text-xs ${
-                              c === q.answer
-                                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 font-semibold'
-                                : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900'
-                            }`}
-                          >
-                            {c} {c === q.answer && '✓ (Đáp án)'}
-                          </div>
-                        ))}
+                        {q.choices.map((c, cIdx) => {
+                          const isAns = Array.isArray(q.answer) ? q.answer.includes(c) : c === q.answer;
+                          return (
+                            <div
+                              key={cIdx}
+                              className={`p-2 rounded-lg border text-xs ${
+                                isAns
+                                  ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 font-semibold'
+                                  : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900'
+                              }`}
+                            >
+                              {c} {isAns && '✓ (Đáp án)'}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
 

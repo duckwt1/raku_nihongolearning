@@ -102,29 +102,55 @@ export async function checkCloudDataStatus(userId: string): Promise<{
   }
 }
 
+function sanitizeFirestoreValue(value: any): any {
+  if (value === undefined) return undefined;
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : 0;
+  }
+  if (Array.isArray(value)) {
+    const cleaned: any[] = [];
+    for (const item of value) {
+      const next = sanitizeFirestoreValue(item);
+      if (next !== undefined) cleaned.push(next);
+    }
+    return cleaned;
+  }
+  if (value !== null && typeof value === 'object' && !(value instanceof Date)) {
+    // FieldValue (serverTimestamp, deleteField, etc.) or Timestamp — preserve as-is
+    if (typeof value.isEqual === 'function' || value._methodName || typeof value.toMillis === 'function') {
+      return value;
+    }
+    return sanitizeFirestoreData(value);
+  }
+  return value;
+}
+
 /**
- * Lọc bỏ mọi giá trị undefined, NaN, Infinity trước khi đẩy lên Firestore
- * để tránh lỗi 'Unsupported field value: undefined/NaN'
+ * Lọc bỏ mọi giá trị undefined, NaN, Infinity (kể cả bên trong mảng lồng nhau)
+ * trước khi đẩy lên Firestore để tránh lỗi 'Unsupported field value: undefined/NaN'
  */
 export function sanitizeFirestoreData<T extends Record<string, any>>(obj: T): T {
   const result: Record<string, any> = {};
   for (const [key, value] of Object.entries(obj)) {
     if (value === undefined) continue;
-    if (typeof value === 'number' && !Number.isFinite(value)) {
-      // NaN, Infinity, -Infinity → thay bằng 0 để Firestore không reject
-      result[key] = 0;
-    } else if (value !== null && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
-      // Kiểm tra nếu là FieldValue (serverTimestamp) thì giữ nguyên, không đệ quy
-      if (typeof value.isEqual === 'function' || value._methodName) {
-        result[key] = value;
-      } else {
-        result[key] = sanitizeFirestoreData(value);
-      }
-    } else {
-      result[key] = value;
+    const cleaned = sanitizeFirestoreValue(value);
+    if (cleaned !== undefined) {
+      result[key] = cleaned;
     }
   }
   return result as T;
+}
+
+async function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(message)), ms);
+  });
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
 }
 
 /**
@@ -165,13 +191,25 @@ export async function flushOfflineQueue(userId: string): Promise<number> {
     const chunk = queue.slice(i, i + CHUNK_SIZE);
     const batch = writeBatch(db);
     const acknowledgedIds: string[] = [];
+    const malformedIds: string[] = [];
+    const validItems: typeof chunk = [];
     const latestReviewByCard = new Map<string, (typeof chunk)[number]>();
     for (const item of chunk) {
-      const cardId = item.card?.id;
-      if (!item.id || !cardId || typeof cardId !== 'string' || !cardId.trim()) throw new Error('Invalid queued review item: ' + (item.id || '(missing id)'));
+      const cardId = item?.card?.id;
+      if (!item?.id || !cardId || typeof cardId !== 'string' || !cardId.trim()) {
+        console.warn('[flushOfflineQueue] Bỏ qua bản ghi hỏng trong hàng đợi offline:', item?.id || '(missing id)');
+        if (item?.id) malformedIds.push(item.id);
+        continue;
+      }
+      validItems.push(item);
       latestReviewByCard.set(cardId, item);
       acknowledgedIds.push(item.id);
     }
+
+    if (malformedIds.length > 0) {
+      removeOfflineReviewItems(userId, malformedIds);
+    }
+    if (validItems.length === 0) continue;
 
     // A card may have several queued reviews; only its newest state needs writing.
     for (const [cardId, item] of latestReviewByCard) {
@@ -183,21 +221,21 @@ export async function flushOfflineQueue(userId: string): Promise<number> {
         difficulty: safeNumber(fsrs?.difficulty), elapsed_days: safeNumber(fsrs?.elapsed_days),
         scheduled_days: safeNumber(fsrs?.scheduled_days), reps: safeNumber(fsrs?.reps),
         lapses: safeNumber(fsrs?.lapses), state: safeNumber(fsrs?.state),
-        last_review: safeISOString(fsrs?.last_review), firstLearnedAt: item.card.firstLearnedAt || null,
+        last_review: safeISOString(fsrs?.last_review), firstLearnedAt: item.card.firstLearnedAt || undefined,
         learnedAt: item.card.learnedAt || (safeNumber(item.rating) > 1 ? item.reviewedAt : undefined),
         updatedAt: serverTimestamp()
       }), { merge: true });
     }
 
     // Keep every event for cross-device daily counts and history.
-    for (const item of chunk) {
+    for (const item of validItems) {
       const cardId = item.card.id;
       const fsrs = item.card.fsrsCard;
-      // Stable ID makes retries idempotent instead of creating duplicate review logs.
+      // Stable ID and deterministic reviewedAt make retries idempotent on Firestore rules.
       const logRef = doc(db, 'users', userId, 'reviewLogs', encodeURIComponent(item.id));
       batch.set(logRef, sanitizeFirestoreData({
         cardId, rating: safeNumber(item.rating, 3), state: safeNumber(fsrs?.state),
-        reviewedAt: item.reviewedAt || new Date().toISOString()
+        reviewedAt: item.reviewedAt || safeISOString(fsrs?.last_review) || '1970-01-01T00:00:00.000Z'
       }));
     }
     // Keep unconfirmed items in the queue, and preserve items added while syncing.
@@ -225,7 +263,7 @@ export async function saveCardProgress(userId: string, card: StudyCard, rating: 
       difficulty: safeNumber(card.fsrsCard.difficulty), elapsed_days: safeNumber(card.fsrsCard.elapsed_days),
       scheduled_days: safeNumber(card.fsrsCard.scheduled_days), reps: safeNumber(card.fsrsCard.reps),
       lapses: safeNumber(card.fsrsCard.lapses), state: safeNumber(card.fsrsCard.state),
-      last_review: safeISOString(card.fsrsCard.last_review), firstLearnedAt: card.firstLearnedAt || null,
+      last_review: safeISOString(card.fsrsCard.last_review), firstLearnedAt: card.firstLearnedAt || undefined,
       learnedAt: card.learnedAt || (rating > 1 ? review.reviewedAt : undefined),
       updatedAt: serverTimestamp()
     }), { merge: true });
@@ -601,8 +639,34 @@ export function mergeFirestoreCardProgress(
     const cloud = cloudCards[card.id];
     if (!cloud) return card;
 
+    const firstLearnedAt =
+      (typeof cloud.firstLearnedAt === 'string' && cloud.firstLearnedAt.trim()) ||
+      card.firstLearnedAt ||
+      undefined;
+    const learnedAt = cloud.learnedAt || card.learnedAt;
+
+    const localLastReviewMs = card.fsrsCard.last_review instanceof Date && !isNaN(card.fsrsCard.last_review.getTime())
+      ? card.fsrsCard.last_review.getTime()
+      : 0;
+    const cloudLastReview = parseReviewDate(cloud.last_review);
+    const cloudLastReviewMs = cloudLastReview ? cloudLastReview.getTime() : 0;
+    const localReps = safeNumber(card.fsrsCard.reps);
+    const cloudReps = safeNumber(cloud.reps, localReps);
+
+    // Keep local FSRS progress if it is strictly newer than the cloud snapshot
+    const localIsNewer =
+      (localLastReviewMs > 0 && localLastReviewMs > cloudLastReviewMs) ||
+      (localLastReviewMs === cloudLastReviewMs && localReps > cloudReps);
+
+    if (localIsNewer) {
+      return {
+        ...card,
+        firstLearnedAt,
+        learnedAt
+      };
+    }
+
     const due = parseReviewDate(cloud.due) || card.fsrsCard.due;
-    const lastReview = parseReviewDate(cloud.last_review);
     const fsrsCard = {
       ...card.fsrsCard,
       due,
@@ -610,21 +674,17 @@ export function mergeFirestoreCardProgress(
       difficulty: safeNumber(cloud.difficulty, card.fsrsCard.difficulty),
       elapsed_days: safeNumber(cloud.elapsed_days, card.fsrsCard.elapsed_days),
       scheduled_days: safeNumber(cloud.scheduled_days, card.fsrsCard.scheduled_days),
-      reps: safeNumber(cloud.reps, card.fsrsCard.reps),
+      reps: cloudReps,
       lapses: safeNumber(cloud.lapses, card.fsrsCard.lapses),
       state: safeNumber(cloud.state, card.fsrsCard.state),
-      last_review: lastReview
+      last_review: cloudLastReview || card.fsrsCard.last_review
     };
-    const isNew = fsrsCard.reps === 0 && !lastReview && fsrsCard.state === 0;
-    const firstLearnedAt =
-      (typeof cloud.firstLearnedAt === 'string' && cloud.firstLearnedAt.trim()) ||
-      card.firstLearnedAt ||
-      undefined;
+    const isNew = fsrsCard.reps === 0 && !fsrsCard.last_review && fsrsCard.state === 0;
 
     return {
       ...card,
       firstLearnedAt,
-      learnedAt: cloud.learnedAt || card.learnedAt,
+      learnedAt,
       fsrsCard,
       isNew,
       isDue: !isNew && due.getTime() <= Date.now()
@@ -652,22 +712,14 @@ export async function syncFoldersAndDecks(
       for (const write of writes.slice(i, i + CHUNK_SIZE)) {
         batch.set(doc(db, 'users', userId, write.collectionName, write.id), write.data, { merge: true });
       }
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout sync folders/decks (25s)')), 25000)
-      );
-      await Promise.race([batch.commit(), timeoutPromise]);
+      await withTimeout(batch.commit(), 25000, 'Timeout sync folders/decks (25s)');
     }
     await setDoc(doc(db, 'users', userId), {
       structureFingerprint: folderDeckFingerprint(folders, decks)
     }, { merge: true });
     // Chờ SDK thực sự gửi lên server (an toàn không làm crash flow chính)
     try {
-      await Promise.race([
-        waitForPendingWrites(db),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Timeout chờ ghi folders/decks lên server')), 15000)
-        )
-      ]);
+      await withTimeout(waitForPendingWrites(db), 15000, 'Timeout chờ ghi folders/decks lên server');
     } catch {}
     console.log('✓ Đã đồng bộ cấu trúc Thư mục và Deck lên Firestore');
   } catch (err) {
@@ -698,18 +750,10 @@ export async function syncUserStudyStats(
       }),
       { merge: true }
     );
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Timeout sync study stats (25s)')), 25000)
-    );
-    await Promise.race([setPromise, timeoutPromise]);
+    await withTimeout(setPromise, 25000, 'Timeout sync study stats (25s)');
     // Chờ SDK thực sự ghi lên server (an toàn không làm crash flow)
     try {
-      await Promise.race([
-        waitForPendingWrites(db),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Timeout chờ ghi stats lên server')), 15000)
-        )
-      ]);
+      await withTimeout(waitForPendingWrites(db), 15000, 'Timeout chờ ghi stats lên server');
     } catch {}
   } catch (err) {
     console.warn('Lỗi khi đồng bộ chỉ số học tập lên Firestore:', err);
@@ -740,41 +784,37 @@ export async function uploadEntireLocalStateToFirestore(
 
   for (let i = 0; i < learnedCards.length; i += CHUNK_SIZE) {
     const chunk = learnedCards.slice(i, i + CHUNK_SIZE);
-    const batch = writeBatch(db);
 
-    for (const card of chunk) {
-      const fsrs = card.fsrsCard;
-      const cardRef = doc(db, 'users', userId, 'cards', card.id);
-      const cardData = sanitizeFirestoreData({
-        id: card.id,
-        refId: card.refId,
-        type: card.type,
-        deckId: card.deckId,
-        due: fsrs?.due ? new Date(fsrs.due).toISOString() : null,
-        stability: fsrs?.stability ?? 0,
-        difficulty: fsrs?.difficulty ?? 0,
-        elapsed_days: fsrs?.elapsed_days ?? 0,
-        scheduled_days: fsrs?.scheduled_days ?? 0,
-        reps: fsrs?.reps ?? 0,
-        lapses: fsrs?.lapses ?? 0,
-        state: fsrs?.state ?? 0,
-        last_review: fsrs?.last_review ? new Date(fsrs.last_review).toISOString() : null,
-        firstLearnedAt: card.firstLearnedAt || null,
-        learnedAt: card.learnedAt || undefined,
-        updatedAt: serverTimestamp()
-      });
-      batch.set(cardRef, cardData, { merge: true });
-    }
-
-    // Tăng timeout lên 35s kèm 1 lần retry nếu gặp sự cố mạng chập chờn
+    // Tăng timeout lên 35s kèm 1 lần retry (tạo WriteBatch mới cho mỗi lần thử)
     let commitSuccess = false;
     let lastError: any = null;
     for (let attempt = 1; attempt <= 2; attempt++) {
+      const batch = writeBatch(db);
+      for (const card of chunk) {
+        const fsrs = card.fsrsCard;
+        const cardRef = doc(db, 'users', userId, 'cards', card.id);
+        const cardData = sanitizeFirestoreData({
+          id: card.id,
+          refId: card.refId,
+          type: card.type,
+          deckId: card.deckId,
+          due: safeISOString(fsrs?.due),
+          stability: safeNumber(fsrs?.stability),
+          difficulty: safeNumber(fsrs?.difficulty),
+          elapsed_days: safeNumber(fsrs?.elapsed_days),
+          scheduled_days: safeNumber(fsrs?.scheduled_days),
+          reps: safeNumber(fsrs?.reps),
+          lapses: safeNumber(fsrs?.lapses),
+          state: safeNumber(fsrs?.state),
+          last_review: safeISOString(fsrs?.last_review),
+          firstLearnedAt: card.firstLearnedAt || undefined,
+          learnedAt: card.learnedAt || undefined,
+          updatedAt: serverTimestamp()
+        });
+        batch.set(cardRef, cardData, { merge: true });
+      }
       try {
-        const commitTimeout = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Timeout upload cards batch (35s)')), 35000)
-        );
-        await Promise.race([batch.commit(), commitTimeout]);
+        await withTimeout(batch.commit(), 35000, 'Timeout upload cards batch (35s)');
         commitSuccess = true;
         break;
       } catch (err) {

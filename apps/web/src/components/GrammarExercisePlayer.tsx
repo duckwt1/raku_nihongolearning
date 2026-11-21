@@ -110,7 +110,7 @@ export function GrammarExercisePlayer({
       exercise.type === 'fill_blank' ||
       exercise.type === 'K7'
     ) {
-      return selectedChoice !== null && selectedChoice === exercise.answer;
+      return selectedChoice !== null && selectedChoice.trim() === String(exercise.answer).trim();
     }
     if (exercise.type === 'order') {
       return (
@@ -310,13 +310,14 @@ export function GrammarExercisePlayer({
         {(exercise.type === 'fill_blank' || exercise.type === 'K7') &&
           shuffledChoices.length > 0 && (
             <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {shuffledChoices.map((choice) => {
+              {shuffledChoices.map((choice, idx) => {
                 const selected = selectedChoice === choice;
-                const correct = checked && choice === exercise.answer;
-                const wrong = checked && selected && choice !== exercise.answer;
+                const matchesAnswer = choice.trim() === String(exercise.answer).trim();
+                const correct = checked && matchesAnswer;
+                const wrong = checked && selected && !matchesAnswer;
                 return (
                   <button
-                    key={choice}
+                    key={`${choice}_${idx}`}
                     type="button"
                     disabled={checked}
                     onClick={() => setSelectedChoice(choice)}

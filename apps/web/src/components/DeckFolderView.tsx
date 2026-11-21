@@ -141,6 +141,11 @@ export function DeckFolderView({
       alert('Vui lòng nhập từ vựng và nghĩa tiếng Việt.');
       return;
     }
+    const surfaceHasKanji = /[\u4E00-\u9FAF\u3400-\u4DBF]/.test(cardSurface);
+    if (surfaceHasKanji && !cardReading.trim()) {
+      alert('Từ vựng có chứa chữ Hán cần nhập Cách đọc (Hiragana) để chấm bài chính xác.');
+      return;
+    }
     const finalDeckId = cardTargetDeckId || decks[0]?.id;
     if (!finalDeckId) {
       alert('Vui lòng tạo hoặc chọn một bộ thẻ (Deck) trước.');

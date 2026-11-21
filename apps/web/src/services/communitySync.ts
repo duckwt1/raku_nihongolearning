@@ -179,6 +179,7 @@ export function mergeCommunityDecksIntoLocalState(
   updatedCards: StudyCard[];
   newDecksCount: number;
   newCardsCount: number;
+  hasChanges: boolean;
 } {
   const hiddenDeckIds = options.hiddenDeckIds ?? new Set<string>();
   const hiddenFolderIds = options.hiddenFolderIds ?? new Set<string>();
@@ -190,6 +191,7 @@ export function mergeCommunityDecksIntoLocalState(
 
   let newDecksCount = 0;
   let newCardsCount = 0;
+  let hasChanges = false;
 
   for (const item of communityPayloads) {
     const { deck, folder, cards } = item;
@@ -213,6 +215,7 @@ export function mergeCommunityDecksIntoLocalState(
     // 1. Thêm Folder nếu có và chưa bị người dùng xoá
     if (folder && !hiddenFolderIds.has(folder.id) && !folderMap.has(folder.id)) {
       folderMap.set(folder.id, { ...folder, isDefault: false });
+      hasChanges = true;
     }
 
     // 2. Thêm hoặc cập nhật Deck
@@ -226,15 +229,26 @@ export function mergeCommunityDecksIntoLocalState(
         isDefault: false
       });
       newDecksCount++;
+      hasChanges = true;
     } else {
       // Chỉ cập nhật metadata của deck đã tải từ cộng đồng, giữ nguyên FSRS của người dùng
+      const nextDescription = deck.description || existingDeck.description;
+      const nextAuthorName = deck.authorName || existingDeck.authorName;
+      if (
+        existingDeck.name !== deck.name ||
+        existingDeck.description !== nextDescription ||
+        existingDeck.communityDocId !== docId ||
+        existingDeck.authorName !== nextAuthorName
+      ) {
+        hasChanges = true;
+      }
       deckMap.set(deck.id, {
         ...existingDeck,
         name: deck.name,
-        description: deck.description || existingDeck.description,
+        description: nextDescription,
         visibility: 'community',
         communityDocId: docId,
-        authorName: deck.authorName || existingDeck.authorName
+        authorName: nextAuthorName
       });
     }
 
@@ -269,19 +283,42 @@ export function mergeCommunityDecksIntoLocalState(
         };
         cardMap.set(remoteCard.id, newLocalCard);
         newCardsCount++;
+        hasChanges = true;
       } else {
-        // Thẻ đã có -> cập nhật nội dung từ vựng nhưng giữ nguyên tiến độ FSRS của cá nhân
-        existingCard.word = {
-          ...existingCard.word!,
+        // Bảo vệ chống ghi đè chéo deck (ngăn deck cộng đồng chiếm quyền sửa thẻ builtin/private khác)
+        if (existingCard.deckId !== deck.id) continue;
+
+        const prevWord = existingCard.word;
+        const nextWord = {
+          id: prevWord?.id || remoteCard.word.id,
           surface: remoteCard.word.surface,
-          readings: remoteCard.word.readings || existingCard.word!.readings,
+          readings: remoteCard.word.readings || prevWord?.readings || [remoteCard.word.surface],
           meaningVi: remoteCard.word.meaningVi,
-          pos: remoteCard.word.pos || existingCard.word!.pos,
-          hanVietBreakdown: remoteCard.word.hanVietBreakdown || existingCard.word!.hanVietBreakdown,
-          kanji: remoteCard.word.kanji || existingCard.word!.kanji,
-          exampleJp: remoteCard.word.exampleJp || existingCard.word!.exampleJp,
-          exampleVi: remoteCard.word.exampleVi || existingCard.word!.exampleVi
+          pos: remoteCard.word.pos || prevWord?.pos || '名詞',
+          hanVietBreakdown: remoteCard.word.hanVietBreakdown || prevWord?.hanVietBreakdown || [],
+          kanji: remoteCard.word.kanji || prevWord?.kanji || [],
+          exampleJp: remoteCard.word.exampleJp || prevWord?.exampleJp,
+          exampleVi: remoteCard.word.exampleVi || prevWord?.exampleVi,
+          exampleIds: prevWord?.exampleIds || remoteCard.word.exampleIds || [],
+          tags: prevWord?.tags || remoteCard.word.tags || ['community']
         };
+
+        if (
+          !prevWord ||
+          prevWord.surface !== nextWord.surface ||
+          prevWord.meaningVi !== nextWord.meaningVi ||
+          prevWord.exampleJp !== nextWord.exampleJp ||
+          prevWord.exampleVi !== nextWord.exampleVi ||
+          JSON.stringify(prevWord.readings) !== JSON.stringify(nextWord.readings)
+        ) {
+          hasChanges = true;
+        }
+
+        // Clone thẻ thay vì mutate tại chỗ để giữ bất biến React state
+        cardMap.set(remoteCard.id, {
+          ...existingCard,
+          word: nextWord
+        });
       }
     }
   }
@@ -291,6 +328,7 @@ export function mergeCommunityDecksIntoLocalState(
     updatedFolders: Array.from(folderMap.values()),
     updatedCards: Array.from(cardMap.values()),
     newDecksCount,
-    newCardsCount
+    newCardsCount,
+    hasChanges
   };
 }

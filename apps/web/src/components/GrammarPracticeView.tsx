@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BookOpen,
   ChevronDown,
@@ -61,6 +61,9 @@ export function GrammarPracticeView({ user, onNotify, onOpenExercises }: Grammar
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const loadSeqRef = useRef(0);
+  const levelRef = useRef<JlptLevel>(level);
+  levelRef.current = level;
 
   const loadLevels = useCallback(async () => {
     const list = await fetchGrammarLevels();
@@ -68,20 +71,25 @@ export function GrammarPracticeView({ user, onNotify, onOpenExercises }: Grammar
   }, []);
 
   const loadPoints = useCallback(async (targetLevel: JlptLevel) => {
+    const seq = ++loadSeqRef.current;
     setIsLoading(true);
     setError(null);
     try {
       const list = await fetchGrammarPoints(targetLevel);
+      if (seq !== loadSeqRef.current) return;
       setPoints(list);
       setSelectedId((current) => {
         if (current && list.some((point) => point.id === current)) return current;
         return list[0]?.id || null;
       });
     } catch (err: unknown) {
+      if (seq !== loadSeqRef.current) return;
       setError(err instanceof Error ? err.message : 'Không thể tải dữ liệu ngữ pháp.');
       setPoints([]);
     } finally {
-      setIsLoading(false);
+      if (seq === loadSeqRef.current) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
@@ -115,8 +123,7 @@ export function GrammarPracticeView({ user, onNotify, onOpenExercises }: Grammar
   const selected = points.find((point) => point.id === selectedId) || null;
 
   const refresh = async () => {
-    await loadLevels();
-    await loadPoints(level);
+    await Promise.all([loadLevels(), loadPoints(levelRef.current)]);
     onNotify?.('Đã làm mới dữ liệu ngữ pháp.', 'success');
   };
 

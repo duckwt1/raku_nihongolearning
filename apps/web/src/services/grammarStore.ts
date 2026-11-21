@@ -172,28 +172,55 @@ export async function importGrammarPoints(
     throw new Error('Tất cả grammar point trong một lần import phải cùng JLPT level.');
   }
 
-  let deleted = 0;
-  if (options.mode === 'replace') {
-    deleted = await deleteAllMatching(
-      'grammarPoints',
-      (data) => data.jlpt === level
-    );
-  }
+  // Query only the target level before writing so replace mode never wipes data before new docs commit.
+  const existingLevelSnap =
+    options.mode === 'replace'
+      ? await getDocs(query(collection(db, 'grammarPoints'), where('jlpt', '==', level)))
+      : null;
 
   for (let i = 0; i < points.length; i += 400) {
     const batch = writeBatch(db);
     for (const point of points.slice(i, i + 400)) {
-      batch.set(
-        doc(db, 'grammarPoints', point.id),
-        sanitizeFirestoreData({ ...point, updatedAt: point.updatedAt || new Date().toISOString() }),
-        { merge: true }
-      );
+      const payload = sanitizeFirestoreData({
+        ...point,
+        updatedAt: point.updatedAt || new Date().toISOString()
+      });
+      if (options.mode === 'replace') {
+        batch.set(doc(db, 'grammarPoints', point.id), payload);
+      } else {
+        batch.set(doc(db, 'grammarPoints', point.id), payload, { merge: true });
+      }
     }
     await batch.commit();
   }
 
+  let deleted = 0;
+  if (options.mode === 'replace' && existingLevelSnap) {
+    const importedIds = new Set(points.map((point) => point.id));
+    const obsoleteDocs = existingLevelSnap.docs.filter((docSnap) => !importedIds.has(docSnap.id));
+    for (let i = 0; i < obsoleteDocs.length; i += 400) {
+      const batch = writeBatch(db);
+      for (const target of obsoleteDocs.slice(i, i + 400)) {
+        batch.delete(target.ref);
+      }
+      await batch.commit();
+      deleted += Math.min(400, obsoleteDocs.length - i);
+    }
+  }
+
   const latest = await getDocs(
     query(collection(db, 'grammarPoints'), where('jlpt', '==', level))
+  );
+  const latestPoints: Grammar[] = [];
+  latest.forEach((item) => {
+    const parsed = GrammarSchema.safeParse({ ...item.data(), id: item.id });
+    if (parsed.success) latestPoints.push(parsed.data);
+  });
+  latestPoints.sort(
+    (a, b) =>
+      (a.lesson ?? 999) - (b.lesson ?? 999) ||
+      (a.order ?? 999) - (b.order ?? 999) ||
+      a.pattern.localeCompare(b.pattern)
   );
 
   await setDoc(
@@ -201,25 +228,28 @@ export async function importGrammarPoints(
     sanitizeFirestoreData({
       level,
       name: `JLPT ${level}`,
-      pointCount: latest.size,
+      pointCount: latestPoints.length,
       contentVersion: Date.now(),
       updatedAt: new Date().toISOString()
     }),
     { merge: true }
   );
 
-  writeJson(`${POINTS_CACHE_PREFIX}${level}`, points);
+  writeJson(`${POINTS_CACHE_PREFIX}${level}`, latestPoints);
   return { level, imported: points.length, deleted };
 }
 
-export async function purgeGrammarData(): Promise<{
+export async function purgeGrammarData(options?: { includeExercises?: boolean }): Promise<{
   grammarPoints: number;
   grammarLevels: number;
   legacyGrammar: number;
   legacyExercises: number;
 }> {
   const legacyGrammar = await deleteAllMatching('grammar');
-  const legacyExercises = await deleteAllMatching('grammarExercises');
+  // grammarExercises is an active production collection; only delete when explicitly requested.
+  const legacyExercises = options?.includeExercises
+    ? await deleteAllMatching('grammarExercises')
+    : 0;
   const grammarPoints = await deleteAllMatching('grammarPoints');
   const grammarLevels = await deleteAllMatching('grammarLevels');
   return { grammarPoints, grammarLevels, legacyGrammar, legacyExercises };

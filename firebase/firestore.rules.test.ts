@@ -380,9 +380,24 @@ describe('Arena Firestore security rules', () => {
     // Guest sends player heartbeat
     await assertSucceeds(updateDoc(guestPlayerRef, { lastSeenAt: serverTimestamp() }));
 
-    // Host sends host heartbeat
-    await assertSucceeds(runTransaction(hostDb, async (transaction) => {
-      transaction.update(roomRef, { hostHeartbeatAt: serverTimestamp() });
+    // Host sends host heartbeat directly via updateDoc (no transaction contention)
+    await assertSucceeds(updateDoc(roomRef, { hostHeartbeatAt: serverTimestamp() }));
+  });
+
+  it('allows answers within the 3s network grace window and host heartbeats during countdown if a guest leaves', async () => {
+    await seedRoom('question', 16_500); // 15s limit + 1.5s network grace
+    const guestDb = modularFirestore(testEnv.authenticatedContext(guestUid));
+    await assertSucceeds(writeAnswer(guestDb, guestUid));
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await updateDoc(doc(modularFirestore(context), 'arenaRooms', roomId), {
+        status: 'countdown',
+        playerCount: 1
+      });
+    });
+    const hostDb = modularFirestore(testEnv.authenticatedContext(hostUid));
+    await assertSucceeds(updateDoc(doc(hostDb, 'arenaRooms', roomId), {
+      hostHeartbeatAt: serverTimestamp()
     }));
   });
 });

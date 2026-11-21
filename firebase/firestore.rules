@@ -301,8 +301,8 @@ service cloud.firestore {
     }
 
     match /arenaRooms/{roomId} {
-      allow get: if isAuthenticated()
-        && (resource.data.status != 'preparing' || arenaRoomIsHost(roomId) || arenaRoomIsMember(roomId));
+      // Room metadata contains only public lobby/game state (no questions or answer keys).
+      allow get: if isAuthenticated();
       allow list: if false;
       allow create: if validArenaRoomCreation(roomId);
       allow update: if (
@@ -321,8 +321,10 @@ service cloud.firestore {
             'finishedAt', 'closedAt', 'closedReason'
           ])
           && (!('hostHeartbeatAt' in request.resource.data.diff(resource.data).affectedKeys())
-            || request.resource.data.hostHeartbeatAt == request.time)
-          && (request.resource.data.status != 'countdown' || request.resource.data.playerCount >= 2)
+            || request.resource.data.hostHeartbeatAt is timestamp)
+          && (resource.data.status == 'countdown'
+            || request.resource.data.status != 'countdown'
+            || request.resource.data.playerCount >= 2)
         )
         || validArenaJoinRoomUpdate(roomId)
         || validArenaReconnectRoomUpdate(roomId)
@@ -336,10 +338,11 @@ service cloud.firestore {
         // which Cloud Firestore rejects for collection queries with permission-denied.
         allow get, list: if isAuthenticated();
         allow create: if validArenaPlayerCreate(roomId, uid);
-        allow update: if arenaRoomIsHost(roomId)
+        // Check own heartbeat first so routine 10s heartbeats incur zero cross-document reads.
+        allow update: if (isAuthenticated() && uid == request.auth.uid && validArenaPlayerHeartbeat(roomId))
+          || arenaRoomIsHost(roomId)
           || (isAuthenticated() && uid == request.auth.uid && validArenaPlayerLeave(roomId))
-          || validArenaPlayerReconnect(roomId, uid)
-          || (isAuthenticated() && uid == request.auth.uid && validArenaPlayerHeartbeat(roomId));
+          || validArenaPlayerReconnect(roomId, uid);
         allow delete: if false;
       }
 
@@ -368,13 +371,12 @@ service cloud.firestore {
           }
 
           allow get: if isAuthenticated()
-            && (arenaRoomIsHost(roomId)
-              || (uid == request.auth.uid && arenaRoomIsMember(roomId))
-              || (arenaRoomIsMember(roomId)
-                && (answerRoom().status == 'finished'
-                  || (answerRoom().status == 'reveal' && answerRoom().activeQuestionId == questionId))));
+            && (uid == request.auth.uid
+              || arenaRoomIsHost(roomId)
+              || answerRoom().status == 'finished'
+              || (answerRoom().status == 'reveal' && answerRoom().activeQuestionId == questionId));
           allow list: if arenaRoomIsHost(roomId)
-            || (arenaRoomIsMember(roomId)
+            || (isAuthenticated()
               && (answerRoom().status == 'finished'
                 || (answerRoom().status == 'reveal' && answerRoom().activeQuestionId == questionId)));
           allow create: if isAuthenticated()
@@ -386,7 +388,7 @@ service cloud.firestore {
             && answerRoom().questionStartedAt is timestamp
             && request.time <= answerRoom().questionStartedAt
               + duration.value(answerRoom().settings.timeLimitSeconds, 's')
-              + duration.value(1, 's')
+              + duration.value(3, 's')
             && request.resource.data.keys().hasOnly(['answer', 'submittedAt', 'expiresAt'])
             && request.resource.data.answer is string
             && request.resource.data.answer.size() > 0

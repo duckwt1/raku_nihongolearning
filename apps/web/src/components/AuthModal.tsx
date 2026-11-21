@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   X,
   LogIn,
@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import {
   signInWithPopup,
+  linkWithPopup,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   linkWithCredential,
@@ -29,6 +30,15 @@ export function AuthModal({ isOpen, onClose, onSignOut }: AuthModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (!isOpen) {
+      setEmail('');
+      setPassword('');
+      setError(null);
+      setLoading(false);
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const currentUser = auth.currentUser;
@@ -39,8 +49,8 @@ export function AuthModal({ isOpen, onClose, onSignOut }: AuthModalProps) {
     setLoading(true);
 
     try {
-      if (currentUser && currentUser.isAnonymous) {
-        // Link anonymous account to email/password to preserve progress (Section 2)
+      if (currentUser && currentUser.isAnonymous && isRegister) {
+        // Link anonymous account to new email/password to preserve anonymous progress
         const credential = EmailAuthProvider.credential(email, password);
         await linkWithCredential(currentUser, credential);
         alert('Đã liên kết tài khoản thành công! Tiến độ học tập đã được lưu giữ.');
@@ -49,6 +59,8 @@ export function AuthModal({ isOpen, onClose, onSignOut }: AuthModalProps) {
       } else {
         await signInWithEmailAndPassword(auth, email, password);
       }
+      setEmail('');
+      setPassword('');
       onClose();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Lỗi đăng nhập/đăng ký');
@@ -61,7 +73,21 @@ export function AuthModal({ isOpen, onClose, onSignOut }: AuthModalProps) {
     setError(null);
     setLoading(true);
     try {
-      await signInWithPopup(auth, googleProvider);
+      if (currentUser && currentUser.isAnonymous) {
+        try {
+          await linkWithPopup(currentUser, googleProvider);
+        } catch (linkErr: any) {
+          if (linkErr?.code === 'auth/credential-already-in-use' || linkErr?.code === 'auth/email-already-in-use') {
+            await signInWithPopup(auth, googleProvider);
+          } else {
+            throw linkErr;
+          }
+        }
+      } else {
+        await signInWithPopup(auth, googleProvider);
+      }
+      setEmail('');
+      setPassword('');
       onClose();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Đăng nhập Google thất bại');
@@ -71,12 +97,23 @@ export function AuthModal({ isOpen, onClose, onSignOut }: AuthModalProps) {
   };
 
   const handleSignOut = async (clearLocal = false) => {
-    if (onSignOut) {
-      await onSignOut(clearLocal);
-    } else {
-      await signOut(auth);
+    if (loading) return;
+    setError(null);
+    setLoading(true);
+    try {
+      if (onSignOut) {
+        await onSignOut(clearLocal);
+      } else {
+        await signOut(auth);
+      }
+      setEmail('');
+      setPassword('');
+      onClose();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Đăng xuất thất bại');
+    } finally {
+      setLoading(false);
     }
-    onClose();
   };
 
   return (
@@ -115,17 +152,26 @@ export function AuthModal({ isOpen, onClose, onSignOut }: AuthModalProps) {
               <div className="text-[10px] text-slate-400">UID: {currentUser.uid}</div>
             </div>
 
+            {error && (
+              <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-400 flex items-center space-x-1.5">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
             <div className="space-y-2 pt-1">
               <button
-                onClick={() => handleSignOut(false)}
-                className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-semibold touch-target transition"
+                disabled={loading}
+                onClick={() => void handleSignOut(false)}
+                className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-semibold touch-target transition"
               >
-                Đăng xuất (Giữ bản lưu offline)
+                {loading ? 'Đang đăng xuất...' : 'Đăng xuất (Giữ bản lưu offline)'}
               </button>
 
               <button
-                onClick={() => handleSignOut(true)}
-                className="w-full py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-300 rounded-xl font-medium touch-target transition text-[11px]"
+                disabled={loading}
+                onClick={() => void handleSignOut(true)}
+                className="w-full py-2 bg-rose-50 hover:bg-rose-100 disabled:opacity-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-300 rounded-xl font-medium touch-target transition text-[11px]"
               >
                 Đăng xuất & Xóa dữ liệu tài khoản khỏi máy
               </button>
@@ -220,8 +266,8 @@ export function AuthModal({ isOpen, onClose, onSignOut }: AuthModalProps) {
               >
                 {loading
                   ? 'Đang xử lý...'
-                  : currentUser?.isAnonymous
-                  ? 'Liên kết tài khoản'
+                  : currentUser?.isAnonymous && isRegister
+                  ? 'Liên kết tài khoản mới'
                   : isRegister
                   ? 'Đăng ký tài khoản'
                   : 'Đăng nhập'}

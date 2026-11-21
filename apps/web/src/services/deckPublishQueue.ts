@@ -12,16 +12,19 @@ export const DECK_PUBLISH_DEBOUNCE_MS = 1500;
 export class DeckPublishQueue {
   private timers = new Map<string, ReturnType<typeof setTimeout>>();
   private jobs = new Map<string, DeckPublishJob>();
+  private inFlight = new Map<string, Promise<void>>();
+  private generations = new Map<string, number>();
 
   schedule(key: string, job: DeckPublishJob, delayMs = DECK_PUBLISH_DEBOUNCE_MS): void {
     this.cancel(key);
     this.jobs.set(key, job);
+    const gen = this.bumpGeneration(key);
 
     const timer = setTimeout(() => {
       this.timers.delete(key);
       const pending = this.jobs.get(key);
       this.jobs.delete(key);
-      if (pending) this.run(pending);
+      if (pending) this.run(key, pending, gen);
     }, delayMs);
 
     this.timers.set(key, timer);
@@ -34,10 +37,11 @@ export class DeckPublishQueue {
       this.timers.delete(key);
     }
     this.jobs.delete(key);
+    this.bumpGeneration(key);
   }
 
   cancelAll(): void {
-    for (const key of Array.from(this.timers.keys())) {
+    for (const key of new Set([...this.timers.keys(), ...this.jobs.keys(), ...this.inFlight.keys()])) {
       this.cancel(key);
     }
     this.jobs.clear();
@@ -51,13 +55,37 @@ export class DeckPublishQueue {
     }
     const pending = this.jobs.get(key);
     this.jobs.delete(key);
-    if (pending) this.run(pending);
+    if (pending) {
+      const gen = this.generations.get(key) ?? this.bumpGeneration(key);
+      this.run(key, pending, gen);
+    }
   }
 
   flushAll(): void {
     for (const key of Array.from(this.jobs.keys())) {
       this.flush(key);
     }
+  }
+
+  /**
+   * Chạy tuần tự 1 thao tác ngay lập tức (publish/unpublish/delete) sau mọi request đang bay của cùng key
+   * để tránh ghi đè ngược thứ tự hoặc làm sống lại deck vừa xoá.
+   */
+  enqueueExclusive<T>(key: string, action: () => Promise<T>): Promise<T> {
+    this.cancel(key);
+    const previous = this.inFlight.get(key) ?? Promise.resolve();
+    const resultPromise = previous.then(() => action());
+    const tracked = resultPromise.then(
+      () => undefined,
+      () => undefined
+    );
+    this.inFlight.set(key, tracked);
+    void tracked.finally(() => {
+      if (this.inFlight.get(key) === tracked) {
+        this.inFlight.delete(key);
+      }
+    });
+    return resultPromise;
   }
 
   has(key: string): boolean {
@@ -68,17 +96,48 @@ export class DeckPublishQueue {
     return this.jobs.size;
   }
 
-  private run(job: DeckPublishJob): void {
-    try {
-      const result = job();
-      if (result && typeof (result as Promise<void>).catch === 'function') {
-        void (result as Promise<void>).catch(() => {
-          // Lỗi đã được job tự log/toast; tránh unhandled rejection
+  private bumpGeneration(key: string): number {
+    const next = (this.generations.get(key) ?? 0) + 1;
+    this.generations.set(key, next);
+    return next;
+  }
+
+  private run(key: string, job: DeckPublishJob, gen: number): void {
+    const execute = (): void | Promise<void> => {
+      if (this.generations.get(key) !== gen) return;
+      try {
+        const result = job();
+        if (result && typeof (result as Promise<void>).catch === 'function') {
+          return (result as Promise<void>).catch(() => {
+            // Lỗi đã được job tự log/toast; tránh unhandled rejection
+          });
+        }
+      } catch {
+        // Job tự xử lý lỗi; không để lỗi đồng bộ làm sập timer
+      }
+    };
+
+    const previous = this.inFlight.get(key);
+    if (!previous) {
+      const outcome = execute();
+      if (outcome) {
+        this.inFlight.set(key, outcome);
+        void outcome.finally(() => {
+          if (this.inFlight.get(key) === outcome) {
+            this.inFlight.delete(key);
+          }
         });
       }
-    } catch {
-      // Job tự xử lý lỗi; không để lỗi đồng bộ làm sập timer
+      return;
     }
+
+    const chained = previous.then(() => execute());
+    this.inFlight.set(key, chained);
+    void chained.finally(() => {
+      if (this.inFlight.get(key) === chained) {
+        this.inFlight.delete(key);
+      }
+    });
   }
 }
 

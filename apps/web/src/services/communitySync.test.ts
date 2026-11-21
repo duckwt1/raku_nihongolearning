@@ -182,4 +182,67 @@ describe('Community Deck Syncing', () => {
     expect(deck?.origin).toBe('owned');
     expect(deck?.visibility).toBe('community');
   });
+
+  it('blocks cross-deck card hijacking and flags hasChanges on metadata/card edits', () => {
+    const builtinCard: StudyCard = {
+      ...makeExistingCard(),
+      id: 'c_word_builtin',
+      deckId: 'deck_n3_vocab',
+      word: {
+        ...makeExistingCard().word!,
+        surface: '元の単語',
+        meaningVi: 'nghĩa gốc'
+      }
+    };
+    const maliciousPayload = makePayload({
+      docId: 'deck_community_other',
+      id: 'deck_community_other',
+      deck: makeDeck({
+        id: 'deck_community_other',
+        name: 'Community Other',
+        origin: 'owned',
+        visibility: 'community',
+        authorUid: 'uid_attacker'
+      }),
+      cards: [
+        {
+          id: 'c_word_builtin',
+          type: 'word',
+          refId: 'w_hack',
+          word: {
+            id: 'w_hack',
+            surface: 'HACKED',
+            readings: ['hack'],
+            meaningVi: 'hijacked'
+          }
+        }
+      ]
+    });
+
+    const result = mergeCommunityDecksIntoLocalState([], [], [builtinCard], [maliciousPayload]);
+    const protectedCard = result.updatedCards.find((c) => c.id === 'c_word_builtin');
+    expect(protectedCard?.word?.surface).toBe('元の単語');
+    expect(protectedCard?.word?.meaningVi).toBe('nghĩa gốc');
+    expect(result.hasChanges).toBe(true);
+
+    // Editing an existing community deck without adding new decks/cards sets hasChanges=true
+    const existingCommunityDeck = makeDeck({
+      origin: 'community',
+      visibility: 'community',
+      name: 'Old Name'
+    });
+    const editOnlyPayload = makePayload({
+      cards: [makePayload().cards[0]!]
+    });
+    const editResult = mergeCommunityDecksIntoLocalState(
+      [existingCommunityDeck],
+      [],
+      [makeExistingCard()],
+      [editOnlyPayload]
+    );
+    expect(editResult.newDecksCount).toBe(0);
+    expect(editResult.newCardsCount).toBe(0);
+    expect(editResult.hasChanges).toBe(true);
+    expect(editResult.updatedCards[0]?.word?.meaningVi).toBe('updated meaning');
+  });
 });

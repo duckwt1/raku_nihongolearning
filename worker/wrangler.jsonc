@@ -9,7 +9,7 @@
     "not_found_handling": "single-page-application"
   },
   "vars": {
-    "FIREBASE_PROJECT_ID": "raku-nihongo-learning"
+    "FIREBASE_PROJECT_ID": "raku-nihongolearning"
   },
   "workers_dev": false
 }

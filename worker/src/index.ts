@@ -41,6 +41,33 @@ function jsonResponse(data: unknown, status = 200, extraHeaders: HeadersInit = {
   });
 }
 
+const MAX_AI_PROMPT_LENGTH = 4000;
+const MAX_IMPORT_ANALYZE_LENGTH = 10000;
+const VALID_JLPT_LEVELS = new Set(['N5', 'N4', 'N3', 'N2', 'N1']);
+
+function sanitizePromptBoundary(text: string): string {
+  return text.replace(/<<<\/?(?:END_)?USER_INPUT>>>/gi, '');
+}
+
+async function authenticateRequest(
+  request: Request,
+  env: Env,
+  missingMessage: string
+): Promise<{ ok: true; user: Awaited<ReturnType<typeof verifyFirebaseIdToken>> } | { ok: false; response: Response }> {
+  const token = extractBearerToken(request.headers.get('Authorization'));
+  if (!token) {
+    return { ok: false, response: jsonResponse({ error: missingMessage }, 401) };
+  }
+  const projectId = env.FIREBASE_PROJECT_ID || 'raku-nihongolearning';
+  try {
+    const user = await verifyFirebaseIdToken(token, projectId);
+    return { ok: true, user };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Invalid token';
+    return { ok: false, response: jsonResponse({ error: message }, 401) };
+  }
+}
+
 export default {
   async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
@@ -72,19 +99,13 @@ export default {
 
       // Auth validation endpoint
       if (url.pathname === '/api/auth/me') {
-        const token = extractBearerToken(request.headers.get('Authorization'));
-        if (!token) {
-          return jsonResponse({ error: 'Thiếu Bearer token trong Authorization header' }, 401);
-        }
-
-        const projectId = env.FIREBASE_PROJECT_ID || 'raku-nihongo-learning';
-        try {
-          const user = await verifyFirebaseIdToken(token, projectId);
-          return jsonResponse({ authenticated: true, user });
-        } catch (err: unknown) {
-          const message = err instanceof Error ? err.message : 'Invalid token';
-          return jsonResponse({ error: message }, 401);
-        }
+        const authResult = await authenticateRequest(
+          request,
+          env,
+          'Thiếu Bearer token trong Authorization header'
+        );
+        if (!authResult.ok) return authResult.response;
+        return jsonResponse({ authenticated: true, user: authResult.user });
       }
 
       // AI Question Generator Endpoint (Section 8)
@@ -93,10 +114,12 @@ export default {
           return jsonResponse({ error: 'Method Not Allowed' }, 405);
         }
 
-        const token = extractBearerToken(request.headers.get('Authorization'));
-        if (!token) {
-          return jsonResponse({ error: 'Cần đăng nhập (Firebase ID token) để sử dụng tính năng AI' }, 401);
-        }
+        const authResult = await authenticateRequest(
+          request,
+          env,
+          'Cần đăng nhập (Firebase ID token) để sử dụng tính năng AI'
+        );
+        if (!authResult.ok) return authResult.response;
 
         const apiKey = env.GEMINI_API_KEY;
         if (!apiKey) {
@@ -106,14 +129,27 @@ export default {
           );
         }
 
-        let body: { prompt?: string; count?: number; jlpt?: string; type?: string };
+        let rawBody: unknown;
         try {
-          body = await request.json();
+          rawBody = await request.json();
         } catch {
           return jsonResponse({ error: 'Dữ liệu JSON gửi lên không hợp lệ' }, 400);
         }
+        if (!rawBody || typeof rawBody !== 'object' || Array.isArray(rawBody)) {
+          return jsonResponse({ error: 'Payload phải là JSON object hợp lệ' }, 400);
+        }
+        const body = rawBody as Record<string, unknown>;
+        const rawCount = typeof body.count === 'number' && Number.isFinite(body.count) ? Math.trunc(body.count) : 3;
+        const count = Math.min(Math.max(rawCount, 1), 10);
+        const jlpt = typeof body.jlpt === 'string' && VALID_JLPT_LEVELS.has(body.jlpt.toUpperCase())
+          ? body.jlpt.toUpperCase()
+          : 'N3';
+        const rawPrompt = typeof body.prompt === 'string' ? body.prompt.trim() : '';
+        if (rawPrompt.length > MAX_AI_PROMPT_LENGTH) {
+          return jsonResponse({ error: `Yêu cầu quá dài (tối đa ${MAX_AI_PROMPT_LENGTH} ký tự)` }, 400);
+        }
+        const safePrompt = sanitizePromptBoundary(rawPrompt || `Trắc nghiệm từ vựng trình độ ${jlpt}`);
 
-        const count = Math.min(Math.max(body.count || 3, 1), 10);
         const provider = new GeminiAiProvider(apiKey, env.AI_MODEL || 'gemini-1.5-flash');
 
         // Prepare dictionary context for relevant sample words
@@ -146,8 +182,10 @@ QUY TẮC BẮT BUỘC:
   }
 ]`;
 
-        const userPrompt = `Hãy tạo ${count} câu hỏi trắc nghiệm tiếng Nhật dựa trên yêu cầu sau:
-Yêu cầu: ${body.prompt || 'Trắc nghiệm từ vựng trình độ ' + (body.jlpt || 'N3')}
+        const userPrompt = `Hãy tạo ${count} câu hỏi trắc nghiệm tiếng Nhật (trình độ ${jlpt}) dựa trên yêu cầu sau:
+<<<USER_INPUT>>>
+${safePrompt}
+<<<END_USER_INPUT>>>
 Từ điển tham khảo chuẩn: ${JSON.stringify(sampleDict)}`;
 
         try {
@@ -184,10 +222,12 @@ Từ điển tham khảo chuẩn: ${JSON.stringify(sampleDict)}`;
           return jsonResponse({ error: 'Method Not Allowed' }, 405);
         }
 
-        const token = extractBearerToken(request.headers.get('Authorization'));
-        if (!token) {
-          return jsonResponse({ error: 'Cần đăng nhập để sử dụng tính năng AI Import' }, 401);
-        }
+        const authResult = await authenticateRequest(
+          request,
+          env,
+          'Cần đăng nhập để sử dụng tính năng AI Import'
+        );
+        if (!authResult.ok) return authResult.response;
 
         const apiKey = env.GEMINI_API_KEY;
         if (!apiKey) {
@@ -197,20 +237,27 @@ Từ điển tham khảo chuẩn: ${JSON.stringify(sampleDict)}`;
           );
         }
 
-        let body: { text?: string };
+        let rawBody: unknown;
         try {
-          body = await request.json();
+          rawBody = await request.json();
         } catch {
           return jsonResponse({ error: 'Dữ liệu JSON không hợp lệ' }, 400);
         }
-
-        const rawText = body.text || '';
+        if (!rawBody || typeof rawBody !== 'object' || Array.isArray(rawBody)) {
+          return jsonResponse({ error: 'Payload phải là JSON object hợp lệ' }, 400);
+        }
+        const rawText = typeof (rawBody as Record<string, unknown>).text === 'string'
+          ? ((rawBody as Record<string, unknown>).text as string)
+          : '';
         if (!rawText.trim()) {
           return jsonResponse({ error: 'Nội dung văn bản đầu vào trống' }, 400);
         }
 
-        if (rawText.length > 50000) {
-          return jsonResponse({ error: 'Văn bản quá dài (tối đa 50.000 ký tự mỗi lượt phân tích)' }, 400);
+        if (rawText.length > MAX_IMPORT_ANALYZE_LENGTH) {
+          return jsonResponse(
+            { error: `Văn bản quá dài (tối đa ${MAX_IMPORT_ANALYZE_LENGTH.toLocaleString('vi-VN')} ký tự mỗi lượt phân tích)` },
+            400
+          );
         }
 
         const provider = new GeminiAiProvider(apiKey, env.AI_MODEL || 'gemini-1.5-flash');
@@ -234,9 +281,10 @@ QUY TẮC BẮT BUỘC:
   }
 ]`;
 
+        const safeText = sanitizePromptBoundary(rawText);
         const userPrompt = `Phân tích đoạn văn bản sau để trích xuất danh sách từ vựng:
 <<<USER_INPUT>>>
-${rawText.slice(0, 10000)}
+${safeText}
 <<<END_USER_INPUT>>>`;
 
         try {
@@ -249,8 +297,12 @@ ${rawText.slice(0, 10000)}
             const check = ImportRecordSchema.safeParse(item);
             if (check.success) {
               const rec = check.data;
-              // Grounding verification
-              if (rawText.includes(rec.sourceText) || rec.sourceText.includes(rec.surface)) {
+              // Grounding verification: sourceText must be non-empty, present in rawText, and contain surface
+              if (
+                rec.sourceText.trim().length > 0 &&
+                rawText.includes(rec.sourceText) &&
+                rec.sourceText.includes(rec.surface)
+              ) {
                 validRecords.push(rec);
               }
             }

@@ -1,5 +1,5 @@
 import { CheckCircle2, Clock3, Flame, Layers3, BookOpen, Sparkles } from 'lucide-react';
-import type { UserStudyStats } from '@raku/core';
+import { getTodayDateString, type UserStudyStats } from '@raku/core';
 
 interface TodayStatsBarProps {
   stats: UserStudyStats;
@@ -25,7 +25,9 @@ export function TodayStatsBar({
   onQuickStudy,
   onStudyMoreNew
 }: TodayStatsBarProps) {
-  const { studySeconds, reviewedCount } = stats.todayStats;
+  const isStatsToday = stats.todayStats.date === getTodayDateString();
+  const studySeconds = isStatsToday ? stats.todayStats.studySeconds : 0;
+  const reviewedCount = isStatsToday ? stats.todayStats.reviewedCount : 0;
   const minutes = Math.floor(studySeconds / 60);
   const formattedTime = minutes > 0
     ? `${minutes} phút học`
@@ -34,7 +36,7 @@ export function TodayStatsBar({
       : 'Chưa học hôm nay';
   const isDailyGoalFinished =
     newItemsLearnedToday >= newWordGoal &&
-    reviewedCount > 0 &&
+    (reviewedCount > 0 || newItemsLearnedToday > 0) &&
     totalDueToday === 0 &&
     totalNewToday === 0;
   const hasWorkToday = totalDueToday > 0 || totalNewToday > 0;
@@ -108,7 +110,7 @@ export function TodayStatsBar({
             {!hasWorkToday && !isDailyGoalFinished && (
               <span className="text-sm font-medium text-raku-muted">Hôm nay chưa có thẻ đến hạn.</span>
             )}
-            {onStudyMoreNew && isDailyGoalFinished && (
+            {onStudyMoreNew && !hasWorkToday && (
               <button onClick={onStudyMoreNew} className="raku-daily-more">
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
                 Mở thêm 20 từ

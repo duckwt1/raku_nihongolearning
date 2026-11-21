@@ -33,13 +33,17 @@ export function StudyHeatmap({
   longestStreak
 }: StudyHeatmapProps) {
   const today = getTodayDateString();
-  const [selected, setSelected] = useState<{ date: string; count: number; completed: boolean } | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const cellRefs = useRef(new Map<string, HTMLButtonElement>());
   const weeks = useMemo(
     () => buildHeatmapWeeks(counts, today, goal, 53),
     [counts, today, goal]
   );
   const cells = useMemo(() => weeks.flat(), [weeks]);
+  const selected = useMemo(
+    () => (selectedDate ? cells.find((c) => c.date === selectedDate && !c.future) ?? null : null),
+    [cells, selectedDate]
+  );
 
   const monthLabels = useMemo(() => {
     let previousMonth = -1;
@@ -60,11 +64,7 @@ export function StudyHeatmap({
     : null;
 
   const selectCell = (cell: (typeof cells)[number]) => {
-    setSelected({
-      date: cell.date,
-      count: cell.count,
-      completed: cell.completed
-    });
+    setSelectedDate(cell.date);
   };
 
   const handleCellKeyDown = (

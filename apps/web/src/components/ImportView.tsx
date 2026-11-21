@@ -61,7 +61,13 @@ export function ImportView({
   const [filterStatus, setFilterStatus] = useState<'all' | 'ok' | 'warning' | 'error' | 'duplicate'>('all');
 
   // Target Folder & Deck Selection State
-  const defaultFolderId = initialFolderId || '';
+  const defaultFolderId = useMemo(() => {
+    if (initialDeckId) {
+      const targetDeck = decks.find((d) => d.id === initialDeckId);
+      if (targetDeck) return targetDeck.folderId || '';
+    }
+    return initialFolderId || '';
+  }, [initialDeckId, initialFolderId, decks]);
   const [selectedFolderId, setSelectedFolderId] = useState<string>(defaultFolderId);
 
   const availableDecks = useMemo(() => {
@@ -75,6 +81,23 @@ export function ImportView({
   }, [availableDecks, initialDeckId, decks]);
 
   const [selectedDeckId, setSelectedDeckId] = useState<string>(defaultDeckId);
+
+  // Sync folder & deck when navigation props change (e.g., clicking "Nhập từ" on a specific deck)
+  useEffect(() => {
+    if (initialDeckId) {
+      const targetDeck = decks.find((d) => d.id === initialDeckId);
+      if (targetDeck) {
+        setSelectedFolderId(targetDeck.folderId || '');
+        setSelectedDeckId(targetDeck.id);
+        setIsCreatingFolder(false);
+        setIsCreatingDeck(false);
+        return;
+      }
+    }
+    if (initialFolderId !== undefined) {
+      setSelectedFolderId(initialFolderId || '');
+    }
+  }, [initialDeckId, initialFolderId, decks]);
 
   // Sync selected deck when folder changes
   useEffect(() => {
@@ -129,26 +152,38 @@ export function ImportView({
     }
   }, [parseResult]);
 
+  const classifyRecord = (r: ImportRecord): 'ok' | 'warning' | 'error' | 'duplicate' => {
+    if (r.issues.some((i) => i.includes('Trùng lặp') || i.includes('Trùng'))) return 'duplicate';
+    if (!r.surface.trim() || !r.meaningVi.trim() || (r.issues.length > 0 && r.confidence < 0.5)) return 'error';
+    if (r.issues.length > 0) return 'warning';
+    return 'ok';
+  };
+
+  const recordCounts = useMemo(() => {
+    let ok = 0;
+    let warning = 0;
+    let error = 0;
+    let duplicate = 0;
+    for (const r of records) {
+      const status = classifyRecord(r);
+      if (status === 'ok') ok++;
+      else if (status === 'warning') warning++;
+      else if (status === 'error') error++;
+      else duplicate++;
+    }
+    return { ok, warning, error, duplicate, committable: ok + warning };
+  }, [records]);
+
   // Filter records based on active tab
   const filteredRecords = useMemo(() => {
     if (filterStatus === 'all') return records;
-    return records.filter((r) => {
-      const isDup = r.issues.some((i) => i.includes('Trùng lặp'));
-      const isErr = !r.surface || (r.issues.length > 0 && r.confidence < 0.5);
-      const isWarn = r.issues.length > 0 && !isErr && !isDup;
-      const isOk = r.issues.length === 0;
-
-      if (filterStatus === 'duplicate') return isDup;
-      if (filterStatus === 'error') return isErr;
-      if (filterStatus === 'warning') return isWarn;
-      if (filterStatus === 'ok') return isOk;
-      return true;
-    });
+    return records.filter((r) => classifyRecord(r) === filterStatus);
   }, [records, filterStatus]);
 
   // Handle file drop / upload (.csv, .tsv, .txt)
   const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
 
     if (file.size > 1024 * 1024) {
@@ -160,6 +195,9 @@ export function ImportView({
     reader.onload = (event) => {
       const text = (event.target?.result as string) || '';
       setInputText(text);
+    };
+    reader.onerror = () => {
+      setAiError('Không thể đọc tệp đã chọn. Vui lòng thử lại.');
     };
     reader.readAsText(file, 'utf-8');
   };
@@ -186,13 +224,15 @@ export function ImportView({
       });
 
       if (!res.ok) {
-        const errJson = (await res.json()) as { error?: string };
+        const errJson = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(errJson.error || `HTTP ${res.status}`);
       }
 
-      const data = (await res.json()) as { records: ImportRecord[] };
+      const data = (await res.json()) as { records?: ImportRecord[] };
       if (data.records && data.records.length > 0) {
         setRecords(data.records);
+      } else {
+        setAiError('AI không tìm thấy từ vựng hợp lệ nào khớp với văn bản đầu vào.');
       }
     } catch (err: unknown) {
       setAiError(err instanceof Error ? err.message : 'Lỗi khi gọi AI');
@@ -203,9 +243,12 @@ export function ImportView({
 
   // Commit batch import to local storage
   const handleCommitImport = () => {
-    const validRecords = records.filter((r) => r.surface.trim().length > 0);
+    const validRecords = records.filter((r) => {
+      const status = classifyRecord(r);
+      return status === 'ok' || status === 'warning';
+    });
     if (validRecords.length === 0) {
-      alert('Không có mục từ hợp lệ nào để nhập.');
+      alert('Không có mục từ hợp lệ nào để nhập (các dòng lỗi hoặc trùng lặp đã bị bỏ qua).');
       return;
     }
 
@@ -230,7 +273,7 @@ export function ImportView({
 
     let finalDeckId = selectedDeckId;
     let newDeckObj: Deck | undefined;
-    if (isCreatingDeck || selectedDeckId === '__new__' || !finalDeckId) {
+    if (isCreatingFolder || isCreatingDeck || selectedDeckId === '__new__' || !finalDeckId) {
       if (!newDeckName.trim()) {
         alert('Vui lòng nhập tên bộ thẻ (Deck) mới.');
         return;
@@ -344,7 +387,7 @@ export function ImportView({
     a.href = url;
     a.download = `raku_vocabulary_export_${Date.now()}.${delimiter === ',' ? 'csv' : 'tsv'}`;
     a.click();
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   return (
@@ -426,14 +469,16 @@ export function ImportView({
                 <Layers className="w-3.5 h-3.5 text-indigo-600" />
                 <span>Bộ thẻ (Deck):</span>
               </label>
-              <button
-                type="button"
-                onClick={() => setIsCreatingDeck(!isCreatingDeck)}
-                className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 flex items-center gap-0.5"
-              >
-                <Plus className="w-3 h-3" />
-                <span>{isCreatingDeck ? 'Chọn bộ thẻ có sẵn' : 'Tạo bộ thẻ mới'}</span>
-              </button>
+              {!isCreatingFolder && (
+                <button
+                  type="button"
+                  onClick={() => setIsCreatingDeck(!isCreatingDeck)}
+                  className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 flex items-center gap-0.5"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>{isCreatingDeck ? 'Chọn bộ thẻ có sẵn' : 'Tạo bộ thẻ mới'}</span>
+                </button>
+              )}
             </div>
 
             {isCreatingDeck ? (
@@ -645,7 +690,7 @@ Ví dụ:
                 Bảng xem trước &amp; Sàng lọc ({records.length} mục)
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Đích: <strong>{decks.find((d) => d.id === selectedDeckId)?.name || newDeckName || 'Bộ thẻ mới'}</strong> · Lưu cục bộ trên máy
+                Đích: <strong>{isCreatingDeck || isCreatingFolder ? (newDeckName.trim() || 'Bộ thẻ mới') : (decks.find((d) => d.id === selectedDeckId)?.name || 'Bộ thẻ mới')}</strong> · Lưu cục bộ trên máy
               </p>
             </div>
 
@@ -660,16 +705,17 @@ Ví dụ:
               </button>
               <button
                 onClick={handleCommitImport}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1.5"
+                disabled={recordCounts.committable === 0}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1.5"
               >
                 <CheckCircle className="w-4 h-4" />
-                <span>Lưu {records.length} từ vào máy</span>
+                <span>Lưu {recordCounts.committable} từ vào máy</span>
               </button>
             </div>
           </div>
 
           {/* Status Filter Tabs */}
-          <div className="flex items-center space-x-2 border-b border-slate-100 dark:border-slate-800 pb-2 text-xs">
+          <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2 text-xs">
             <button
               onClick={() => setFilterStatus('all')}
               className={`px-3 py-1 rounded-lg font-medium transition ${
@@ -688,7 +734,7 @@ Ví dụ:
                   : 'text-slate-500 hover:text-slate-700'
               }`}
             >
-              Hợp lệ ({records.filter((r) => r.issues.length === 0).length})
+              Hợp lệ ({recordCounts.ok})
             </button>
             <button
               onClick={() => setFilterStatus('warning')}
@@ -698,7 +744,17 @@ Ví dụ:
                   : 'text-slate-500 hover:text-slate-700'
               }`}
             >
-              Cảnh báo ({records.filter((r) => r.issues.length > 0 && r.confidence >= 0.5).length})
+              Cảnh báo ({recordCounts.warning})
+            </button>
+            <button
+              onClick={() => setFilterStatus('error')}
+              className={`px-3 py-1 rounded-lg font-medium transition ${
+                filterStatus === 'error'
+                  ? 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 font-bold'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Lỗi ({recordCounts.error})
             </button>
             <button
               onClick={() => setFilterStatus('duplicate')}
@@ -708,7 +764,7 @@ Ví dụ:
                   : 'text-slate-500 hover:text-slate-700'
               }`}
             >
-              Trùng lặp ({records.filter((r) => r.issues.some((i) => i.includes('Trùng'))).length})
+              Trùng lặp ({recordCounts.duplicate})
             </button>
           </div>
 

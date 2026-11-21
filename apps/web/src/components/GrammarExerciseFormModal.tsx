@@ -97,7 +97,8 @@ export function GrammarExerciseFormModal({
   const [isSaving, setIsSaving] = useState(false);
 
   const selectedGrammar =
-    grammarPoints.find((grammar) => grammar.id === grammarId) || grammarPoints[0] || null;
+    grammarPoints.find((grammar) => grammar.id === grammarId) ||
+    (!grammarId ? grammarPoints[0] || null : null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -114,7 +115,7 @@ export function GrammarExerciseFormModal({
 
       if (editing.type === 'fill_blank') {
         const answer = typeof editing.answer === 'string' ? editing.answer : '';
-        setSentence(editing.prompt.replace(GRAMMAR_BLANK_MARKER, answer));
+        setSentence(editing.prompt.replace(GRAMMAR_BLANK_MARKER, () => answer));
         setBlankAnswer(answer);
         setDistractorsText(
           (editing.choices || []).filter((choice) => choice !== answer).join('\n')
@@ -123,7 +124,7 @@ export function GrammarExerciseFormModal({
         setTokensText('');
         setTranslatePrompt('');
         setTranslateAnswers('');
-        setPrompt('');
+        setPrompt(editing.prompt);
         setChoicesText('');
         setCorrectChoice('');
         return;
@@ -137,7 +138,7 @@ export function GrammarExerciseFormModal({
         setDistractorsText('');
         setTranslatePrompt('');
         setTranslateAnswers('');
-        setPrompt('');
+        setPrompt(editing.prompt || '');
         setChoicesText('');
         setCorrectChoice('');
         return;
@@ -174,7 +175,16 @@ export function GrammarExerciseFormModal({
     setDifficulty(2);
     setTagsText('');
     setSourceExampleId(undefined);
-  }, [isOpen, editing, initialGrammarId, grammarPoints]);
+    // Intentionally exclude grammarPoints from deps so async reloads don't wipe unsaved edits
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, editing?.id, initialGrammarId]);
+
+  useEffect(() => {
+    if (!isOpen || editing || grammarId) return;
+    if (grammarPoints[0]?.id) {
+      setGrammarId(grammarPoints[0].id);
+    }
+  }, [isOpen, editing, grammarId, grammarPoints]);
 
   const choices = useMemo(() => splitLines(choicesText), [choicesText]);
   const tags = useMemo(
@@ -225,7 +235,22 @@ export function GrammarExerciseFormModal({
   };
 
   const buildExercise = (): GrammarExercise => {
-    if (!selectedGrammar) throw new Error('Chưa chọn grammar point.');
+    const resolvedGrammar = selectedGrammar
+      ? {
+          id: selectedGrammar.id,
+          pattern: selectedGrammar.pattern,
+          title: selectedGrammar.title,
+          jlpt: selectedGrammar.jlpt
+        }
+      : editing && grammarId === editing.grammarId
+        ? {
+            id: editing.grammarId,
+            pattern: editing.grammarPattern,
+            title: editing.grammarTitle,
+            jlpt: editing.jlpt
+          }
+        : null;
+    if (!resolvedGrammar) throw new Error('Chưa chọn grammar point hợp lệ cho level này.');
     if (!createdByUid) throw new Error('Bạn cần đăng nhập.');
 
     let builtPrompt = prompt;
@@ -238,7 +263,20 @@ export function GrammarExerciseFormModal({
       if (!trimmedAnswer || !sentence.includes(trimmedAnswer)) {
         throw new Error('Đáp án không xuất hiện trong câu.');
       }
-      builtPrompt = sentence.replace(trimmedAnswer, GRAMMAR_BLANK_MARKER);
+      // Preserve exact original blank position if sentence & answer were not changed during edit
+      const originalFilled =
+        editing?.type === 'fill_blank' && typeof editing.answer === 'string'
+          ? editing.prompt.replace(GRAMMAR_BLANK_MARKER, () => editing.answer as string)
+          : null;
+      if (
+        editing?.type === 'fill_blank' &&
+        originalFilled === sentence &&
+        editing.answer === trimmedAnswer
+      ) {
+        builtPrompt = editing.prompt;
+      } else {
+        builtPrompt = sentence.replace(trimmedAnswer, () => GRAMMAR_BLANK_MARKER);
+      }
       answer = trimmedAnswer;
       const uniqueDistractors = Array.from(
         new Set([
@@ -262,15 +300,19 @@ export function GrammarExerciseFormModal({
       builtPrompt = translatePrompt.trim();
       answer = answers.length === 1 ? answers[0]! : answers;
     } else {
-      if (!prompt.trim() || choices.length < 3) {
-        throw new Error('Câu hỏi cần prompt và ít nhất 3 lựa chọn.');
+      const uniqueChoices = Array.from(new Set(choices));
+      if (!prompt.trim() || uniqueChoices.length < 3) {
+        throw new Error('Câu hỏi cần prompt và ít nhất 3 lựa chọn khác nhau.');
       }
-      if (!correctChoice || !choices.includes(correctChoice)) {
+      if (uniqueChoices.length !== choices.length) {
+        throw new Error('Các lựa chọn trắc nghiệm không được trùng lặp.');
+      }
+      if (!correctChoice || !uniqueChoices.includes(correctChoice)) {
         throw new Error('Hãy chọn đáp án đúng trong danh sách lựa chọn.');
       }
       builtPrompt = prompt.trim();
       answer = correctChoice;
-      builtChoices = choices;
+      builtChoices = uniqueChoices;
     }
 
     const validation = validateGrammarExercise({
@@ -287,10 +329,10 @@ export function GrammarExerciseFormModal({
     const now = new Date().toISOString();
     return {
       id: editing?.id || createGrammarExerciseId(),
-      grammarId: selectedGrammar.id,
-      grammarPattern: selectedGrammar.pattern,
-      grammarTitle: selectedGrammar.title,
-      jlpt: selectedGrammar.jlpt,
+      grammarId: resolvedGrammar.id,
+      grammarPattern: resolvedGrammar.pattern,
+      grammarTitle: resolvedGrammar.title,
+      jlpt: resolvedGrammar.jlpt,
       type,
       prompt: builtPrompt,
       answer,

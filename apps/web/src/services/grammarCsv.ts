@@ -93,9 +93,11 @@ function toNumber(value?: string): number | undefined {
 async function readZip(file: File): Promise<GrammarCsvBundle> {
   const zip = await JSZip.loadAsync(file);
   const files: Record<string, string> = {};
-  const entries = Object.values(zip.files).filter((entry) => !entry.dir);
+  const entries = Object.values(zip.files).filter(
+    (entry) => !entry.dir && !entry.name.startsWith('__MACOSX/') && !entry.name.includes('/__MACOSX/')
+  );
   for (const entry of entries) {
-    const baseName = entry.name.split('/').pop() || entry.name;
+    const baseName = entry.name.split(/[\\/]/).pop() || entry.name;
     if (!Object.values(GRAMMAR_CSV_FILES).includes(baseName as never)) continue;
     files[baseName] = await entry.async('string');
   }
@@ -105,7 +107,7 @@ async function readZip(file: File): Promise<GrammarCsvBundle> {
 async function readFiles(files: File[]): Promise<GrammarCsvBundle> {
   const bundle: GrammarCsvBundle = { files: {} };
   for (const file of files) {
-    const baseName = file.name.split('/').pop() || file.name;
+    const baseName = file.name.split(/[\\/]/).pop() || file.name;
     if (!Object.values(GRAMMAR_CSV_FILES).includes(baseName as never)) continue;
     bundle.files[baseName] = await file.text();
   }
@@ -167,7 +169,12 @@ export function parseGrammarCsvBundle(bundle: GrammarCsvBundle): GrammarCsvParse
   stats.comparisons = comparisonRows.length;
   stats.relations = relationRows.length;
 
-  const examplesByGrammar = new Map<string, GrammarExample[]>();
+  const sortOrdered = <T,>(items: Array<{ item: T; order: number; index: number }>): T[] =>
+    items
+      .sort((a, b) => a.order - b.order || a.index - b.index)
+      .map((entry) => entry.item);
+
+  const orderedExamples = new Map<string, Array<{ item: GrammarExample; order: number; index: number }>>();
   for (const [index, row] of exampleRows.entries()) {
     const grammarId = row.grammar_id;
     if (!grammarId) {
@@ -178,67 +185,89 @@ export function parseGrammarCsvBundle(bundle: GrammarCsvBundle): GrammarCsvParse
       id: row.example_id || `ex_${index + 1}`,
       jp: row.jp || '',
       vi: row.vi || '',
-      highlight: row.highlight || undefined,
-      breakdown: row.breakdown || undefined,
-      note: row.note || undefined
+      ...(row.highlight ? { highlight: row.highlight } : {}),
+      ...(row.breakdown ? { breakdown: row.breakdown } : {}),
+      ...(row.note ? { note: row.note } : {})
     };
-    const list = examplesByGrammar.get(grammarId) || [];
-    list.push(example);
-    examplesByGrammar.set(grammarId, list);
+    const list = orderedExamples.get(grammarId) || [];
+    list.push({ item: example, order: toNumber(row.order) ?? index, index });
+    orderedExamples.set(grammarId, list);
   }
-  for (const [grammarId, examples] of examplesByGrammar) {
-    examplesByGrammar.set(
-      grammarId,
-      examples.sort((a, b) => {
-        const aOrder = exampleRows.find((row) => row.grammar_id === grammarId && row.example_id === a.id)?.order;
-        const bOrder = exampleRows.find((row) => row.grammar_id === grammarId && row.example_id === b.id)?.order;
-        return Number(aOrder || 0) - Number(bOrder || 0);
-      })
-    );
+  const examplesByGrammar = new Map<string, GrammarExample[]>();
+  for (const [grammarId, list] of orderedExamples) {
+    examplesByGrammar.set(grammarId, sortOrdered(list));
   }
 
-  const formationByGrammar = new Map<string, GrammarFormation[]>();
+  const orderedFormation = new Map<string, Array<{ item: GrammarFormation; order: number; index: number }>>();
   for (const [index, row] of formationRows.entries()) {
     if (!row.grammar_id) {
       issues.push({ file: GRAMMAR_CSV_FILES.formation, row: index + 2, message: 'Thiếu grammar_id.' });
       continue;
     }
-    const list = formationByGrammar.get(row.grammar_id) || [];
-    list.push({ rule: row.rule || '', example: row.example || undefined, note: row.note || undefined });
-    formationByGrammar.set(row.grammar_id, list);
+    const list = orderedFormation.get(row.grammar_id) || [];
+    list.push({
+      item: {
+        rule: row.rule || '',
+        ...(row.example ? { example: row.example } : {}),
+        ...(row.note ? { note: row.note } : {})
+      },
+      order: toNumber(row.order) ?? index,
+      index
+    });
+    orderedFormation.set(row.grammar_id, list);
+  }
+  const formationByGrammar = new Map<string, GrammarFormation[]>();
+  for (const [grammarId, list] of orderedFormation) {
+    formationByGrammar.set(grammarId, sortOrdered(list));
   }
 
-  const usageByGrammar = new Map<string, GrammarUsage[]>();
+  const orderedUsage = new Map<string, Array<{ item: GrammarUsage; order: number; index: number }>>();
   for (const [index, row] of usageRows.entries()) {
     if (!row.grammar_id) {
       issues.push({ file: GRAMMAR_CSV_FILES.usage, row: index + 2, message: 'Thiếu grammar_id.' });
       continue;
     }
-    const list = usageByGrammar.get(row.grammar_id) || [];
+    const list = orderedUsage.get(row.grammar_id) || [];
     list.push({
-      situation: row.situation || '',
-      explanationVi: row.explanation_vi || '',
-      exampleIds: splitList(row.example_ids)
+      item: {
+        situation: row.situation || '',
+        explanationVi: row.explanation_vi || '',
+        exampleIds: splitList(row.example_ids)
+      },
+      order: toNumber(row.order) ?? index,
+      index
     });
-    usageByGrammar.set(row.grammar_id, list);
+    orderedUsage.set(row.grammar_id, list);
+  }
+  const usageByGrammar = new Map<string, GrammarUsage[]>();
+  for (const [grammarId, list] of orderedUsage) {
+    usageByGrammar.set(grammarId, sortOrdered(list));
   }
 
-  const mistakesByGrammar = new Map<string, GrammarMistake[]>();
+  const orderedMistakes = new Map<string, Array<{ item: GrammarMistake; order: number; index: number }>>();
   for (const [index, row] of mistakeRows.entries()) {
     if (!row.grammar_id) {
       issues.push({ file: GRAMMAR_CSV_FILES.mistakes, row: index + 2, message: 'Thiếu grammar_id.' });
       continue;
     }
-    const list = mistakesByGrammar.get(row.grammar_id) || [];
+    const list = orderedMistakes.get(row.grammar_id) || [];
     list.push({
-      mistake: row.mistake || '',
-      correction: row.correction || '',
-      explanationVi: row.explanation_vi || undefined
+      item: {
+        mistake: row.mistake || '',
+        correction: row.correction || '',
+        ...(row.explanation_vi ? { explanationVi: row.explanation_vi } : {})
+      },
+      order: toNumber(row.order) ?? index,
+      index
     });
-    mistakesByGrammar.set(row.grammar_id, list);
+    orderedMistakes.set(row.grammar_id, list);
+  }
+  const mistakesByGrammar = new Map<string, GrammarMistake[]>();
+  for (const [grammarId, list] of orderedMistakes) {
+    mistakesByGrammar.set(grammarId, sortOrdered(list));
   }
 
-  const comparisonsByGrammar = new Map<string, GrammarComparison[]>();
+  const orderedComparisons = new Map<string, Array<{ item: GrammarComparison; order: number; index: number }>>();
   for (const [index, row] of comparisonRows.entries()) {
     if (!row.grammar_id) {
       issues.push({ file: GRAMMAR_CSV_FILES.comparisons, row: index + 2, message: 'Thiếu grammar_id.' });
@@ -252,17 +281,24 @@ export function parseGrammarCsvBundle(bundle: GrammarCsvBundle): GrammarCsvParse
       });
       continue;
     }
-    const list = comparisonsByGrammar.get(row.grammar_id) || [];
+    const list = orderedComparisons.get(row.grammar_id) || [];
     list.push({
-      grammarId: row.compare_grammar_id || undefined,
-      pattern: row.pattern,
-      differenceVi: row.difference_vi,
-      example:
-        row.example_jp && row.example_vi
-          ? { jp: row.example_jp, vi: row.example_vi }
-          : undefined
+      item: {
+        ...(row.compare_grammar_id ? { grammarId: row.compare_grammar_id } : {}),
+        pattern: row.pattern,
+        differenceVi: row.difference_vi,
+        ...(row.example_jp && row.example_vi
+          ? { example: { jp: row.example_jp, vi: row.example_vi } }
+          : {})
+      },
+      order: toNumber(row.order) ?? index,
+      index
     });
-    comparisonsByGrammar.set(row.grammar_id, list);
+    orderedComparisons.set(row.grammar_id, list);
+  }
+  const comparisonsByGrammar = new Map<string, GrammarComparison[]>();
+  for (const [grammarId, list] of orderedComparisons) {
+    comparisonsByGrammar.set(grammarId, sortOrdered(list));
   }
 
   const relationsByGrammar = new Map<string, string[]>();

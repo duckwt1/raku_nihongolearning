@@ -50,7 +50,7 @@ export function KanjiModal({ char, onClose, onSelectWord }: KanjiModalProps) {
             <div>
               <div className="text-[10px] text-slate-400 uppercase">Cấp độ</div>
               <div className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-0.5">
-                {kanji?.jlpt || 'N3'}
+                {kanji?.jlpt || '—'}
               </div>
             </div>
             <div>
