@@ -52,17 +52,17 @@ jobs:
         run: npx expo prebuild --platform android --non-interactive
 
       # Biên dịch ra file Debug APK
-      - name: Build Debug APK
+      - name: Build Release APK
         working-directory: apps/mobile/android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleRelease
 
       # Đổi tên file APK kèm mã commit để dễ phân biệt
       - name: Rename APK
         run: |
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          cp apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk Raku-Mobile-${SHORT_SHA}.apk
+          cp apps/mobile/android/app/build/outputs/apk/release/app-release.apk Raku-Mobile-${SHORT_SHA}.apk
           echo "APK_NAME=Raku-Mobile-${SHORT_SHA}.apk" >> $GITHUB_ENV
 
       # Đẩy lên GitHub Releases kèm link tải trực tiếp
