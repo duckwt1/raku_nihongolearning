@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, ChangeEvent } from 'react';
+﻿import { useState, useMemo, useEffect, ChangeEvent } from 'react';
 import {
   Upload,
   FileText,
@@ -393,7 +393,7 @@ export function ImportView({
   return (
     <div className="space-y-6">
       {/* Target Folder & Deck Selection Panel (Local-First) */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-xs space-y-4">
+      <div className="bg-raku-surface rounded-2xl border border-raku-line p-5 sm:p-6 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center space-x-2.5">
             <div className="p-2.5 bg-sky-50 dark:bg-sky-950/70 text-sky-600 dark:text-sky-400 rounded-2xl border border-sky-100 dark:border-sky-900">
@@ -547,7 +547,7 @@ export function ImportView({
       </div>
 
       {/* Main Input Card: Paste Text / File Upload / AI */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs">
+      <div className="bg-raku-surface rounded-2xl border border-raku-line p-6 shadow-xs">
         <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-2">
           <Upload className="w-5 h-5 text-sky-600 dark:text-sky-400" />
           <span>Nhập từ vựng (Kiểu Quizlet &amp; AI)</span>
@@ -575,7 +575,7 @@ Ví dụ:
 
 3. Rút gọn Quizlet (2 - 4 cột):
 預かる	あずかる	nhận giữ; chăm sóc	Động từ`}
-            className="w-full p-4 font-mono text-xs bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-hidden focus:ring-2 focus:ring-sky-500 text-slate-800 dark:text-slate-100"
+            className="w-full p-4 font-mono text-xs bg-slate-50 dark:bg-slate-800/60 border border-raku-line-strong rounded-2xl focus:outline-hidden focus:ring-2 focus:ring-sky-500 text-slate-800 dark:text-slate-100"
           />
 
           <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
@@ -646,7 +646,7 @@ Ví dụ:
           aria-modal="true"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
         >
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 max-w-md w-full shadow-2xl space-y-4">
+          <div className="bg-raku-surface rounded-2xl border border-raku-line p-6 max-w-md w-full shadow-lg space-y-4">
             <div className="flex items-center space-x-2 text-sky-600 dark:text-sky-400">
               <Sparkles className="w-6 h-6" />
               <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
@@ -683,7 +683,7 @@ Ví dụ:
 
       {/* Live Preview & Screening Table */}
       {records.length > 0 && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs space-y-4">
+        <div className="bg-raku-surface rounded-2xl border border-raku-line p-6 shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
               <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
@@ -769,7 +769,7 @@ Ví dụ:
           </div>
 
           {/* Table Container */}
-          <div className="overflow-x-auto max-h-96 border border-slate-200 dark:border-slate-800 rounded-2xl">
+          <div className="overflow-x-auto max-h-96 border border-raku-line rounded-2xl">
             <table className="w-full text-left text-xs text-slate-700 dark:text-slate-200">
               <thead className="bg-slate-50 dark:bg-slate-800/80 uppercase text-[10px] text-slate-400 font-semibold sticky top-0">
                 <tr>
@@ -829,7 +829,7 @@ Ví dụ:
 
       {/* Import History & Undo */}
       {importHistory.length > 0 && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs space-y-3">
+        <div className="bg-raku-surface rounded-2xl border border-raku-line p-6 shadow-xs space-y-3">
           <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center space-x-2">
             <RotateCcw className="w-4 h-4 text-sky-600 dark:text-sky-400" />
             <span>Lịch sử nhập &amp; Khả năng hoàn tác</span>

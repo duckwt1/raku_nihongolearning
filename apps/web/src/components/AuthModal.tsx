@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import {
   X,
   LogIn,
@@ -120,27 +120,33 @@ export function AuthModal({ isOpen, onClose, onSignOut }: AuthModalProps) {
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-raku-ink/45 p-4 backdrop-blur-[2px]"
     >
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-sm w-full p-6 space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-          <div className="flex items-center space-x-2 text-sky-600 dark:text-sky-400">
-            <LogIn className="w-5 h-5" />
-            <h2 className="text-base font-bold text-slate-800 dark:text-slate-100">
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="raku-card w-full max-w-sm space-y-4 p-6 animate-raku-enter"
+      >
+        <div className="flex items-center justify-between border-b border-raku-line pb-3">
+          <div className="flex items-center gap-2 text-raku-accent">
+            <LogIn className="h-4 w-4" />
+            <h2 className="text-base font-bold text-raku-ink">
               {currentUser && !currentUser.isAnonymous
-                ? 'Thông tin tài khoản'
+                ? 'Tài khoản'
                 : currentUser?.isAnonymous
-                ? 'Liên kết tài khoản vĩnh viễn'
+                ? 'Liên kết tài khoản'
                 : isRegister
                 ? 'Tạo tài khoản mới'
                 : 'Đăng nhập'}
             </h2>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg"
+            aria-label="Đóng"
+            className="rounded-lg p-1 text-raku-muted hover:bg-raku-subtle hover:text-raku-ink"
           >
-            <X className="w-5 h-5" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
@@ -214,9 +220,9 @@ export function AuthModal({ isOpen, onClose, onSignOut }: AuthModalProps) {
             </button>
 
             <div className="flex items-center my-2">
-              <div className="flex-1 border-t border-slate-200 dark:border-slate-800" />
+              <div className="flex-1 border-t border-raku-line" />
               <span className="px-2 text-[10px] text-slate-400 uppercase">Hoặc email</span>
-              <div className="flex-1 border-t border-slate-200 dark:border-slate-800" />
+              <div className="flex-1 border-t border-raku-line" />
             </div>
 
             {/* Email form */}
@@ -231,7 +237,7 @@ export function AuthModal({ isOpen, onClose, onSignOut }: AuthModalProps) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="email@example.com"
-                    className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800 dark:text-slate-100"
+                    className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-raku-line-strong rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800 dark:text-slate-100"
                   />
                 </div>
               </div>
@@ -247,7 +253,7 @@ export function AuthModal({ isOpen, onClose, onSignOut }: AuthModalProps) {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Ít nhất 6 ký tự"
-                    className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800 dark:text-slate-100"
+                    className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-raku-line-strong rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800 dark:text-slate-100"
                   />
                 </div>
               </div>

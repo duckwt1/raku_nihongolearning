@@ -2,7 +2,6 @@ import { useState } from 'react';
 import {
   Folder as FolderIcon,
   FolderOpen,
-  Layers,
   Plus,
   Play,
   ChevronDown,
@@ -10,15 +9,13 @@ import {
   BookOpen,
   Languages,
   PenTool,
-  Sparkles,
+  Layers,
   Trash2,
   FileUp,
-  HardDrive,
   Globe,
   Lock
 } from 'lucide-react';
-import type { Deck, Folder } from '@raku/core';
-import type { StudyCard } from '@raku/core';
+import type { Deck, Folder, StudyCard } from '@raku/core';
 import { calculateDeckCounts, calculateFolderCounts, canDeleteDeck } from '@raku/core';
 
 interface DeckFolderViewProps {
@@ -53,7 +50,10 @@ interface DeckFolderViewProps {
     }
   ) => void;
   onNavigateToImport?: (deckId: string, folderId?: string) => void;
+  onOpenImport?: () => void;
 }
+
+const FOLDER_PALETTE = ['#245C52', '#3B6D8C', '#A46822', '#B84A39', '#5E546E', '#4F6354'];
 
 export function DeckFolderView({
   folders,
@@ -68,22 +68,18 @@ export function DeckFolderView({
   onDeleteFolder,
   onToggleDeckVisibility,
   onAddCard,
-  onNavigateToImport
+  onNavigateToImport,
+  onOpenImport
 }: DeckFolderViewProps) {
-  // Collapsed/expanded folders state
   const [collapsedFolders, setCollapsedFolders] = useState<Record<string, boolean>>({});
-
-  // Modals state
   const [isNewFolderOpen, setIsNewFolderOpen] = useState(false);
   const [isNewDeckOpen, setIsNewDeckOpen] = useState(false);
   const [isAddCardOpen, setIsAddCardOpen] = useState(false);
 
-  // New Folder form state
   const [folderName, setFolderName] = useState('');
   const [folderDesc, setFolderDesc] = useState('');
-  const [folderColor, setFolderColor] = useState('#0284c7');
+  const [folderColor, setFolderColor] = useState(FOLDER_PALETTE[0]!);
 
-  // New Deck form state
   const [deckName, setDeckName] = useState('');
   const [deckDesc, setDeckDesc] = useState('');
   const [deckFolderId, setDeckFolderId] = useState<string>('');
@@ -93,7 +89,6 @@ export function DeckFolderView({
   const [deckNewPerDay, setDeckNewPerDay] = useState(20);
   const [deckMaxReviews, setDeckMaxReviews] = useState(50);
 
-  // Add Card form state
   const [cardTargetDeckId, setCardTargetDeckId] = useState<string>('');
   const [cardSurface, setCardSurface] = useState('');
   const [cardReading, setCardReading] = useState('');
@@ -148,21 +143,19 @@ export function DeckFolderView({
     }
     const finalDeckId = cardTargetDeckId || decks[0]?.id;
     if (!finalDeckId) {
-      alert('Vui lòng tạo hoặc chọn một bộ thẻ (Deck) trước.');
+      alert('Vui lòng tạo hoặc chọn một bộ thẻ trước.');
       return;
     }
 
-    if (onAddCard) {
-      onAddCard(finalDeckId, {
-        surface: cardSurface.trim(),
-        reading: cardReading.trim() || cardSurface.trim(),
-        meaningVi: cardMeaningVi.trim(),
-        hanViet: cardHanViet.trim() || undefined,
-        pos: cardPos,
-        exampleJp: cardExampleJp.trim() || undefined,
-        exampleVi: cardExampleVi.trim() || undefined
-      });
-    }
+    onAddCard?.(finalDeckId, {
+      surface: cardSurface.trim(),
+      reading: cardReading.trim() || cardSurface.trim(),
+      meaningVi: cardMeaningVi.trim(),
+      hanViet: cardHanViet.trim() || undefined,
+      pos: cardPos,
+      exampleJp: cardExampleJp.trim() || undefined,
+      exampleVi: cardExampleVi.trim() || undefined
+    });
 
     setCardSurface('');
     setCardReading('');
@@ -176,13 +169,13 @@ export function DeckFolderView({
   const getDeckIcon = (type: string) => {
     switch (type) {
       case 'word':
-        return <Languages className="w-4 h-4 text-sky-500" />;
+        return <Languages className="h-4 w-4 text-raku-muted" aria-hidden="true" />;
       case 'kanji':
-        return <PenTool className="w-4 h-4 text-emerald-500" />;
+        return <PenTool className="h-4 w-4 text-raku-muted" aria-hidden="true" />;
       case 'grammar':
-        return <BookOpen className="w-4 h-4 text-amber-500" />;
+        return <BookOpen className="h-4 w-4 text-raku-muted" aria-hidden="true" />;
       default:
-        return <Sparkles className="w-4 h-4 text-purple-500" />;
+        return <Layers className="h-4 w-4 text-raku-muted" aria-hidden="true" />;
     }
   };
 
@@ -202,142 +195,124 @@ export function DeckFolderView({
     return (
       <div
         key={deck.id}
-        className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-2.5 gap-y-2 px-3 py-3 transition hover:bg-slate-50/60 dark:hover:bg-slate-800/20 sm:flex sm:items-center sm:justify-between sm:gap-0 sm:rounded-r-xl sm:py-3 sm:pl-0 sm:pr-4"
+        className="flex flex-col gap-2.5 px-4 py-3 transition-colors hover:bg-raku-subtle/50 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
       >
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 sm:mr-3 sm:h-7 sm:w-7">
-          {getDeckIcon(deck.cardType)}
-        </div>
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-raku-canvas">
+            {getDeckIcon(deck.cardType)}
+          </span>
 
-        <div className="min-w-0 sm:flex-1 sm:pr-2">
-          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5 sm:gap-y-1">
-            <span
-              className="w-full min-w-0 break-words text-sm font-semibold leading-snug text-slate-800 dark:text-slate-100 sm:w-auto sm:flex-1"
-              title={deck.name}
-            >
-              {deck.name}
-            </span>
-
-            {isCommunityDeck ? (
-              <span
-                className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-0.5"
-                title={
-                  deck.authorName
-                    ? `Bộ thẻ cộng đồng của ${deck.authorName}`
-                    : 'Bộ thẻ cộng đồng'
-                }
-              >
-                <Globe className="w-2.5 h-2.5" />
-                <span>Cộng đồng</span>
-              </span>
-            ) : !isBuiltin && onToggleDeckVisibility ? (
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <button
                 type="button"
-                onClick={() => onToggleDeckVisibility(deck.id)}
-                className={
-                  deck.visibility === 'community'
-                    ? 'shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-0.5 hover:bg-emerald-100 dark:hover:bg-emerald-900 transition'
-                    : 'shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 dark:bg-slate-800 dark:hover:bg-emerald-950 text-slate-500 border border-slate-200 dark:border-slate-700 flex items-center gap-0.5 transition'
-                }
-                title={
-                  deck.visibility === 'community'
-                    ? 'Đang chia sẻ cộng đồng (Bấm để chuyển về riêng tư)'
-                    : 'Đang riêng tư trên máy (Bấm để chia sẻ lên cộng đồng)'
-                }
-                aria-label={
-                  deck.visibility === 'community'
-                    ? `Gỡ chia sẻ cộng đồng bộ thẻ ${deck.name}`
-                    : `Chia sẻ bộ thẻ ${deck.name} lên cộng đồng`
-                }
+                onClick={() => onSelectDeckToStudy(deck)}
+                className="truncate text-left text-sm font-semibold text-raku-ink hover:text-raku-accent"
+                title={deck.name}
               >
-                {deck.visibility === 'community' ? (
-                  <Globe className="w-2.5 h-2.5" />
-                ) : (
-                  <Lock className="w-2.5 h-2.5" />
-                )}
-                <span>{deck.visibility === 'community' ? 'Cộng đồng' : 'Riêng tư'}</span>
+                {deck.name}
               </button>
-            ) : null}
 
-            <span className="shrink-0 text-[10px] text-slate-400 dark:text-slate-500 font-mono">
-              ({counts.totalCards} thẻ)
-            </span>
+              {isCommunityDeck ? (
+                <span
+                  className="inline-flex items-center gap-1 rounded-md bg-raku-accent-soft px-1.5 py-0.5 text-[10px] font-semibold text-raku-accent"
+                  title={deck.authorName ? `Bộ thẻ cộng đồng của ${deck.authorName}` : 'Bộ thẻ cộng đồng'}
+                >
+                  <Globe className="h-2.5 w-2.5" aria-hidden="true" />
+                  Cộng đồng
+                </span>
+              ) : !isBuiltin && onToggleDeckVisibility ? (
+                <button
+                  type="button"
+                  onClick={() => onToggleDeckVisibility(deck.id)}
+                  className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
+                    deck.visibility === 'community'
+                      ? 'bg-raku-accent-soft text-raku-accent'
+                      : 'bg-raku-subtle text-raku-muted hover:text-raku-ink'
+                  }`}
+                  title={
+                    deck.visibility === 'community'
+                      ? 'Đang chia sẻ cộng đồng (Bấm để chuyển riêng tư)'
+                      : 'Đang riêng tư trên máy (Bấm để chia sẻ cộng đồng)'
+                  }
+                >
+                  {deck.visibility === 'community' ? (
+                    <Globe className="h-2.5 w-2.5" aria-hidden="true" />
+                  ) : (
+                    <Lock className="h-2.5 w-2.5" aria-hidden="true" />
+                  )}
+                  {deck.visibility === 'community' ? 'Cộng đồng' : 'Riêng tư'}
+                </button>
+              ) : null}
+
+              <span className="text-xs text-raku-muted tabular-nums">
+                {counts.totalCards} thẻ
+              </span>
+            </div>
           </div>
         </div>
 
-        <div className="col-span-2 flex flex-wrap items-center justify-between gap-2 sm:contents">
-          {/* Deck Anki counts */}
-          <div className="flex min-w-0 items-center gap-1.5 text-xs font-mono font-bold sm:order-2 sm:shrink-0 sm:gap-1.5">
-            <span
-              title="Thẻ mới hôm nay"
-              aria-label={`${counts.newCount} thẻ mới`}
-              className="min-w-7 px-1 text-center py-0.5 rounded text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 text-xs tabular-nums sm:min-w-8"
-            >
+        <div className="flex items-center justify-between gap-3 pl-11 sm:justify-end sm:pl-0">
+          {/* Calm Anki 3-count readout: New / Learn / Due */}
+          <div className="flex items-center gap-3 text-xs font-semibold tabular-nums">
+            <span title="Thẻ mới hôm nay" className="min-w-6 text-right text-raku-easy">
               {counts.newCount}
             </span>
-            <span
-              title="Đang học lại"
-              aria-label={`${counts.learnCount} thẻ đang học lại`}
-              className="min-w-7 px-1 text-center py-0.5 rounded text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 text-xs tabular-nums sm:min-w-8"
-            >
+            <span title="Đang học lại" className="min-w-6 text-right text-raku-signal">
               {counts.learnCount}
             </span>
-            <span
-              title="Đến hạn ôn hôm nay"
-              aria-label={`${counts.dueCount} thẻ đến hạn ôn`}
-              className="min-w-7 px-1 text-center py-0.5 rounded text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 text-xs tabular-nums sm:min-w-8"
-            >
+            <span title="Đến hạn ôn" className="min-w-6 text-right text-raku-accent">
               {counts.dueCount}
             </span>
           </div>
 
-          {/* Deck Actions */}
-          <div className="ml-auto flex shrink-0 items-center gap-1 sm:order-3 sm:ml-0 sm:gap-2">
-            {/* Quick Add Card to this deck */}
+          <div className="flex items-center gap-1">
             {onAddCard && (
               <button
+                type="button"
                 onClick={() => {
                   setCardTargetDeckId(deck.id);
                   setIsAddCardOpen(true);
                 }}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition sm:h-auto sm:w-auto sm:p-1.5"
-                title={`Thêm từ vựng vào deck ${deck.name}`}
-                aria-label={`Thêm từ vựng vào deck ${deck.name}`}
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-raku-muted transition-colors hover:bg-raku-subtle hover:text-raku-ink"
+                title={`Thêm từ vào ${deck.name}`}
+                aria-label={`Thêm từ vào ${deck.name}`}
               >
-                <Plus className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                <Plus className="h-4 w-4" />
               </button>
             )}
 
-            {/* Quick Jump to Import for this deck */}
             {onNavigateToImport && (
               <button
+                type="button"
                 onClick={() => onNavigateToImport(deck.id, deck.folderId ?? undefined)}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-950/40 transition sm:h-auto sm:w-auto sm:p-1.5"
-                title={`Nhập danh sách từ vào deck ${deck.name}`}
-                aria-label={`Nhập danh sách từ vào deck ${deck.name}`}
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-raku-muted transition-colors hover:bg-raku-subtle hover:text-raku-ink"
+                title={`Nhập từ vào ${deck.name}`}
+                aria-label={`Nhập từ vào ${deck.name}`}
               >
-                <FileUp className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                <FileUp className="h-4 w-4" />
               </button>
             )}
 
-            {/* Start Study */}
             <button
+              type="button"
               onClick={() => onSelectDeckToStudy(deck)}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 shadow-xs transition hover:bg-sky-600 hover:text-white dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-sky-600 sm:h-auto sm:w-auto sm:space-x-1 sm:px-3 sm:py-1.5 sm:text-xs sm:font-bold touch-target"
-              title={`Học deck ${deck.name}`}
-              aria-label={`Học deck ${deck.name}`}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-raku-line-strong bg-raku-surface px-3 text-xs font-semibold text-raku-ink transition-colors hover:border-raku-accent hover:bg-raku-accent hover:text-raku-on-accent"
+              aria-label={`Học bộ thẻ ${deck.name}`}
             >
-              <Play className="w-4 h-4 fill-current sm:w-3 sm:h-3" />
-              <span className="hidden sm:inline">Học</span>
+              <Play className="h-3 w-3 fill-current" aria-hidden="true" />
+              <span>Học</span>
             </button>
 
             {showDelete && onDeleteDeck && (
               <button
+                type="button"
                 onClick={() => onDeleteDeck(deck.id)}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 sm:h-auto sm:w-auto sm:p-1.5"
-                title="Xoá deck"
-                aria-label={`Xoá deck ${deck.name}`}
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-raku-muted transition-colors hover:bg-raku-signal-soft hover:text-raku-signal"
+                title="Xoá bộ thẻ"
+                aria-label={`Xoá bộ thẻ ${deck.name}`}
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 className="h-3.5 w-3.5" />
               </button>
             )}
           </div>
@@ -347,59 +322,69 @@ export function DeckFolderView({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Top action buttons: Add Folder & Add Deck & Add Card */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-2.5">
+    <section aria-labelledby="decks-heading" className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-raku-accent">Chọn một chặng</p>
-          <h2 className="mt-1 flex items-center gap-2 text-xl font-bold tracking-tight text-raku-ink">
-            <Layers className="h-5 w-5 text-raku-accent" aria-hidden="true" />
-            <span>Bộ học tập của bạn</span>
+          <h2 id="decks-heading" className="text-lg font-bold tracking-tight text-raku-ink">
+            Bộ thẻ của bạn
           </h2>
-          <p className="mt-1 text-sm text-raku-muted">
-            Học theo chủ đề, cấp độ hoặc bộ thẻ bạn tự tạo. Lưu trữ cục bộ trên máy.
+          <p className="mt-0.5 text-xs text-raku-muted">
+            Cột số theo thứ tự: <span className="font-medium text-raku-easy">Mới</span> ·{' '}
+            <span className="font-medium text-raku-signal">Học lại</span> ·{' '}
+            <span className="font-medium text-raku-accent">Đến hạn</span>
           </p>
         </div>
 
-        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
-          {/* Add Card Button */}
+        <div className="flex flex-wrap items-center gap-2">
           {onAddCard && (
             <button
+              type="button"
               onClick={() => {
                 setCardTargetDeckId(decks[0]?.id || '');
                 setIsAddCardOpen(true);
               }}
-              className="px-3 py-1.5 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-semibold hover:bg-emerald-100 transition flex items-center justify-center space-x-1.5 touch-target shadow-xs"
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-raku-line-strong bg-raku-surface px-3 text-xs font-semibold text-raku-ink transition-colors hover:bg-raku-subtle"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Thêm Thẻ Mới</span>
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>Thêm thẻ</span>
+            </button>
+          )}
+
+          {onOpenImport && (
+            <button
+              type="button"
+              onClick={onOpenImport}
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-raku-line-strong bg-raku-surface px-3 text-xs font-semibold text-raku-ink transition-colors hover:bg-raku-subtle"
+            >
+              <FileUp className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>Nhập từ</span>
             </button>
           )}
 
           <button
+            type="button"
             onClick={() => setIsNewFolderOpen(true)}
-            className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-50 transition flex items-center justify-center space-x-1.5 touch-target shadow-xs"
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-raku-line-strong bg-raku-surface px-3 text-xs font-semibold text-raku-ink transition-colors hover:bg-raku-subtle"
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Thêm Thư Mục</span>
+            <FolderIcon className="h-3.5 w-3.5" aria-hidden="true" />
+            <span>Thư mục</span>
           </button>
 
           <button
+            type="button"
             onClick={() => {
               setDeckFolderId('');
               setIsNewDeckOpen(true);
             }}
-            className={`px-3.5 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white text-xs font-semibold shadow-xs transition flex items-center justify-center space-x-1.5 touch-target ${
-              onAddCard ? 'col-span-2 sm:col-span-1' : ''
-            }`}
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-raku-accent px-3.5 text-xs font-semibold text-raku-on-accent transition-colors hover:bg-raku-accent-hover"
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Thêm Deck Mới</span>
+            <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+            <span>Bộ thẻ mới</span>
           </button>
         </div>
       </div>
 
-      {/* Folders & Decks Tree List */}
+      {/* Folders & Decks list */}
       <div className="space-y-3">
         {folders.map((folder) => {
           const isCollapsed = collapsedFolders[folder.id];
@@ -407,105 +392,71 @@ export function DeckFolderView({
           const folderCounts = calculateFolderCounts(cards, decks, folder.id);
 
           return (
-            <div
-              key={folder.id}
-              className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-xs"
-            >
-              {/* Folder Header */}
-              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-2 p-3.5 sm:flex sm:items-center sm:justify-between sm:gap-0 sm:p-4 bg-slate-50/70 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-800/80">
-                <div
+            <div key={folder.id} className="raku-card overflow-hidden">
+              <div className="flex items-center justify-between gap-2 border-b border-raku-line bg-raku-canvas/60 px-4 py-3">
+                <button
+                  type="button"
                   onClick={() => toggleFolder(folder.id)}
-                  className="col-start-1 row-start-1 flex min-w-0 items-center gap-2.5 cursor-pointer select-none sm:flex-1 sm:order-1"
+                  aria-expanded={!isCollapsed}
+                  className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
                 >
+                  {isCollapsed ? (
+                    <ChevronRight className="h-4 w-4 shrink-0 text-raku-muted" aria-hidden="true" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 shrink-0 text-raku-muted" aria-hidden="true" />
+                  )}
+
+                  <span
+                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: folder.color || '#245C52' }}
+                    aria-hidden="true"
+                  />
+
+                  <span className="truncate text-sm font-bold text-raku-ink">
+                    {folder.name}
+                  </span>
+                  <span className="shrink-0 text-xs text-raku-muted tabular-nums">
+                    ({childDecks.length})
+                  </span>
+                </button>
+
+                <div className="flex shrink-0 items-center gap-3">
+                  <div className="hidden items-center gap-3 text-xs font-semibold tabular-nums sm:flex">
+                    <span className="min-w-6 text-right text-raku-easy">{folderCounts.newCount}</span>
+                    <span className="min-w-6 text-right text-raku-signal">{folderCounts.learnCount}</span>
+                    <span className="min-w-6 text-right text-raku-accent">{folderCounts.dueCount}</span>
+                  </div>
+
                   <button
                     type="button"
-                    aria-label={`${isCollapsed ? 'Mở' : 'Thu gọn'} thư mục ${folder.name}`}
-                    aria-expanded={!isCollapsed}
-                    className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                  >
-                    {isCollapsed ? (
-                      <ChevronRight className="w-4 h-4" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4" />
-                    )}
-                  </button>
-
-                  <div
-                    className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs shadow-xs"
-                    style={{ backgroundColor: folder.color || '#0284c7' }}
-                  >
-                    {isCollapsed ? (
-                      <FolderIcon className="w-4 h-4" />
-                    ) : (
-                      <FolderOpen className="w-4 h-4" />
-                    )}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5 sm:gap-y-1">
-                      <h3 className="min-w-0 flex-1 break-words text-sm font-bold leading-snug text-slate-900 dark:text-slate-100" title={folder.name}>
-                        {folder.name}
-                      </h3>
-                      <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium">
-                        {childDecks.length} deck
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Anki 3 counts: Blue (New), Red (Learn), Green (Due) */}
-                <div className="col-start-1 row-start-2 ml-10 flex min-w-0 items-center gap-1.5 text-xs font-mono font-bold sm:order-2 sm:ml-0 sm:gap-2">
-                  <span
-                    title="Thẻ mới (New)"
-                    className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900"
-                  >
-                    {folderCounts.newCount}
-                  </span>
-                  <span
-                    title="Đang học lại (Learn)"
-                    className="px-2 py-0.5 rounded-md bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900"
-                  >
-                    {folderCounts.learnCount}
-                  </span>
-                  <span
-                    title="Đến hạn ôn (Due)"
-                    className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900"
-                  >
-                    {folderCounts.dueCount}
-                  </span>
-                </div>
-
-                {/* Folder actions */}
-                <div className="col-start-2 row-span-2 flex flex-col items-center justify-center gap-1 sm:order-3 sm:ml-2 sm:flex-row sm:gap-2">
-                  {/* Study Folder Button */}
-                  <button
                     onClick={() => onSelectFolderToStudy(folder)}
-                    title={`Học toàn bộ thư mục ${folder.name}`}
-                    aria-label={`Học toàn bộ thư mục ${folder.name}`}
-                    className="p-2 rounded-xl bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white shadow-xs touch-target flex items-center space-x-1"
+                    title={`Ôn cả thư mục ${folder.name}`}
+                    aria-label={`Ôn cả thư mục ${folder.name}`}
+                    className="inline-flex h-8 items-center gap-1 rounded-lg bg-raku-accent-soft px-2.5 text-xs font-semibold text-raku-accent transition-colors hover:bg-raku-accent hover:text-raku-on-accent"
                   >
-                    <Play className="w-3.5 h-3.5 fill-current" />
+                    <Play className="h-3 w-3 fill-current" aria-hidden="true" />
+                    <span className="hidden sm:inline">Ôn tất cả</span>
                   </button>
 
                   {!folder.parentId && !folder.isDefault && onDeleteFolder && (
                     <button
+                      type="button"
                       onClick={() => onDeleteFolder(folder.id)}
-                      className="flex items-center justify-center p-2 rounded-lg text-slate-400 hover:text-rose-600 touch-target sm:min-h-0 sm:min-w-0 sm:p-1.5"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-raku-muted hover:bg-raku-signal-soft hover:text-raku-signal"
                       title="Xoá thư mục"
                       aria-label={`Xoá thư mục ${folder.name}`}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   )}
                 </div>
               </div>
 
-              {/* Child Decks in Folder */}
               {!isCollapsed && (
-                <div className="divide-y divide-slate-100 dark:divide-slate-800/60 pl-2 sm:pl-8">
+                <div className="divide-y divide-raku-line">
                   {childDecks.length === 0 ? (
-                    <div className="py-4 pr-4 text-center text-xs text-slate-400">
-                      Chưa có deck nào trong thư mục này. Bấm "Thêm Deck Mới" để tạo.
+                    <div className="px-4 py-5 text-center text-xs text-raku-muted">
+                      Chưa có bộ thẻ nào trong thư mục này.
                     </div>
                   ) : (
                     childDecks.map(renderDeckRow)
@@ -516,67 +467,54 @@ export function DeckFolderView({
           );
         })}
 
-        {/* Decks không thuộc thư mục nào */}
         {unfiledDecks.length > 0 && (
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-xs">
-            <div className="flex items-center justify-between gap-2 p-3.5 sm:p-4 bg-slate-50/70 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-800/80">
-              <div className="flex min-w-0 items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-xs bg-slate-500">
-                  <FolderIcon className="w-4 h-4" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="break-words text-sm font-bold leading-snug text-slate-900 dark:text-slate-100">
-                    Chưa phân loại
-                  </h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    {unfiledDecks.length} deck
-                  </p>
-                </div>
-              </div>
+          <div className="raku-card overflow-hidden">
+            <div className="flex items-center gap-2 border-b border-raku-line bg-raku-canvas/60 px-4 py-3">
+              <FolderOpen className="h-4 w-4 text-raku-muted" aria-hidden="true" />
+              <h3 className="text-sm font-bold text-raku-ink">Chưa phân loại</h3>
+              <span className="text-xs text-raku-muted tabular-nums">({unfiledDecks.length})</span>
             </div>
-            <div className="divide-y divide-slate-100 dark:divide-slate-800/60 pl-2 sm:pl-4">
-              {unfiledDecks.map(renderDeckRow)}
-            </div>
+            <div className="divide-y divide-raku-line">{unfiledDecks.map(renderDeckRow)}</div>
           </div>
         )}
       </div>
 
-      {/* MODAL: THÊM THẺ / TỪ MỚI (LƯU LOCAL) */}
+      {/* MODAL: THÊM THẺ MỚI */}
       {isAddCardOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setIsAddCardOpen(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-raku-ink/45 p-4 backdrop-blur-[2px]"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="raku-card w-full max-w-md space-y-4 p-6 animate-raku-enter"
+          >
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center space-x-2">
-                <Plus className="w-5 h-5 text-emerald-600" />
-                <span>Thêm Thẻ Mới (Lưu Cục Bộ)</span>
-              </h3>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
-                <HardDrive className="w-3 h-3" />
-                <span>Lưu trên máy</span>
-              </span>
+              <h3 className="text-base font-bold text-raku-ink">Thêm thẻ mới</h3>
+              <span className="text-xs text-raku-muted">Lưu trên máy</span>
             </div>
 
-            <form onSubmit={handleAddCardSubmit} className="space-y-3.5">
+            <form onSubmit={handleAddCardSubmit} className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Chọn Bộ Thẻ (Deck)
-                </label>
+                <label className="mb-1 block text-xs font-medium text-raku-muted">Bộ thẻ</label>
                 <select
                   value={cardTargetDeckId}
                   onChange={(e) => setCardTargetDeckId(e.target.value)}
-                  className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-slate-100 font-medium"
+                  className="w-full rounded-xl border border-raku-line-strong bg-raku-canvas px-3 py-2 text-sm text-raku-ink focus:border-raku-accent focus:outline-none"
                 >
                   {decks.map((d) => (
                     <option key={d.id} value={d.id}>
-                      🗂️ {d.name}
+                      {d.name}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Từ Vựng / Kanji <span className="text-rose-500">*</span>
+                <label className="mb-1 block text-xs font-medium text-raku-muted">
+                  Từ vựng / Kanji <span className="text-raku-signal">*</span>
                 </label>
                 <input
                   type="text"
@@ -585,26 +523,26 @@ export function DeckFolderView({
                   onChange={(e) => setCardSurface(e.target.value)}
                   placeholder="Ví dụ: 荷物, 預かる..."
                   autoFocus
-                  className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-slate-100"
+                  className="w-full rounded-xl border border-raku-line-strong bg-raku-canvas px-3 py-2 font-jp text-sm text-raku-ink focus:border-raku-accent focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Cách Đọc (Hiragana)
+                <label className="mb-1 block text-xs font-medium text-raku-muted">
+                  Cách đọc (Hiragana)
                 </label>
                 <input
                   type="text"
                   value={cardReading}
                   onChange={(e) => setCardReading(e.target.value)}
                   placeholder="Ví dụ: にもつ, あずかる..."
-                  className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-slate-100"
+                  className="w-full rounded-xl border border-raku-line-strong bg-raku-canvas px-3 py-2 font-jp text-sm text-raku-ink focus:border-raku-accent focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Nghĩa Tiếng Việt <span className="text-rose-500">*</span>
+                <label className="mb-1 block text-xs font-medium text-raku-muted">
+                  Nghĩa tiếng Việt <span className="text-raku-signal">*</span>
                 </label>
                 <input
                   type="text"
@@ -612,31 +550,29 @@ export function DeckFolderView({
                   value={cardMeaningVi}
                   onChange={(e) => setCardMeaningVi(e.target.value)}
                   placeholder="Ví dụ: hành lý; đồ đạc mang theo..."
-                  className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-slate-100"
+                  className="w-full rounded-xl border border-raku-line-strong bg-raku-canvas px-3 py-2 text-sm text-raku-ink focus:border-raku-accent focus:outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Âm Hán Việt (Tùy chọn)
+                  <label className="mb-1 block text-xs font-medium text-raku-muted">
+                    Hán Việt (tuỳ chọn)
                   </label>
                   <input
                     type="text"
                     value={cardHanViet}
                     onChange={(e) => setCardHanViet(e.target.value)}
-                    placeholder="Ví dụ: HÀ VẬT"
-                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-slate-100"
+                    placeholder="HÀ VẬT"
+                    className="w-full rounded-xl border border-raku-line-strong bg-raku-canvas px-3 py-2 text-xs text-raku-ink focus:border-raku-accent focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Loại Từ
-                  </label>
+                  <label className="mb-1 block text-xs font-medium text-raku-muted">Loại từ</label>
                   <select
                     value={cardPos}
                     onChange={(e) => setCardPos(e.target.value)}
-                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-slate-100"
+                    className="w-full rounded-xl border border-raku-line-strong bg-raku-canvas px-3 py-2 text-xs text-raku-ink focus:border-raku-accent focus:outline-none"
                   >
                     <option value="名詞">Danh từ (名詞)</option>
                     <option value="動詞">Động từ (動詞)</option>
@@ -649,44 +585,41 @@ export function DeckFolderView({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Ví Dụ Tiếng Nhật (Tùy chọn)
+                <label className="mb-1 block text-xs font-medium text-raku-muted">
+                  Ví dụ tiếng Nhật (tuỳ chọn)
                 </label>
                 <input
                   type="text"
                   value={cardExampleJp}
                   onChange={(e) => setCardExampleJp(e.target.value)}
-                  placeholder="Ví dụ: 荷物をフロントに預ける。"
-                  className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-slate-100 font-sans"
+                  placeholder="荷物をフロントに預ける。"
+                  className="w-full rounded-xl border border-raku-line-strong bg-raku-canvas px-3 py-2 font-jp text-xs text-raku-ink focus:border-raku-accent focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Dịch Nghĩa Câu Ví Dụ (Tùy chọn)
+                <label className="mb-1 block text-xs font-medium text-raku-muted">
+                  Nghĩa câu ví dụ (tuỳ chọn)
                 </label>
                 <input
                   type="text"
                   value={cardExampleVi}
                   onChange={(e) => setCardExampleVi(e.target.value)}
-                  placeholder="Ví dụ: Gửi hành lý ở quầy lễ tân."
-                  className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-slate-100"
+                  placeholder="Gửi hành lý ở quầy lễ tân."
+                  className="w-full rounded-xl border border-raku-line-strong bg-raku-canvas px-3 py-2 text-xs text-raku-ink focus:border-raku-accent focus:outline-none"
                 />
               </div>
 
-              <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-end gap-2 border-t border-raku-line pt-3">
                 <button
                   type="button"
                   onClick={() => setIsAddCardOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                  className="raku-btn-secondary min-h-10 px-4 text-xs"
                 >
                   Hủy
                 </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-xs transition"
-                >
-                  Lưu Thẻ Vào Máy
+                <button type="submit" className="raku-btn-primary min-h-10 px-5 text-xs">
+                  Lưu thẻ
                 </button>
               </div>
             </form>
@@ -694,54 +627,61 @@ export function DeckFolderView({
         </div>
       )}
 
-      {/* MODAL: TẠO THƯ MỤC MỚI */}
+      {/* MODAL: TẠO THƯ MỤC */}
       {isNewFolderOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
-            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center space-x-2">
-              <FolderIcon className="w-5 h-5 text-sky-600" />
-              <span>Tạo Thư Mục Mới (Folder)</span>
-            </h3>
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setIsNewFolderOpen(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-raku-ink/45 p-4 backdrop-blur-[2px]"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="raku-card w-full max-w-md space-y-4 p-6 animate-raku-enter"
+          >
+            <h3 className="text-base font-bold text-raku-ink">Tạo thư mục mới</h3>
 
             <form onSubmit={handleCreateFolderSubmit} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Tên Thư Mục (Ví dụ: JLPT N2, Từ Vựng IT...)
+                <label className="mb-1 block text-xs font-medium text-raku-muted">
+                  Tên thư mục
                 </label>
                 <input
                   type="text"
                   required
                   value={folderName}
                   onChange={(e) => setFolderName(e.target.value)}
-                  placeholder="Nhập tên thư mục..."
-                  className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-sky-500 text-slate-900 dark:text-slate-100"
+                  placeholder="Ví dụ: JLPT N2, Từ vựng IT..."
+                  className="w-full rounded-xl border border-raku-line-strong bg-raku-canvas px-3 py-2 text-sm text-raku-ink focus:border-raku-accent focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Mô Tả (Tùy chọn)
+                <label className="mb-1 block text-xs font-medium text-raku-muted">
+                  Mô tả (tuỳ chọn)
                 </label>
                 <input
                   type="text"
                   value={folderDesc}
                   onChange={(e) => setFolderDesc(e.target.value)}
-                  placeholder="Mô tả nội dung thư mục..."
-                  className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-sky-500 text-slate-900 dark:text-slate-100"
+                  placeholder="Ghi chú ngắn..."
+                  className="w-full rounded-xl border border-raku-line-strong bg-raku-canvas px-3 py-2 text-sm text-raku-ink focus:border-raku-accent focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Màu Nhận Diện
+                <label className="mb-1.5 block text-xs font-medium text-raku-muted">
+                  Màu dấu chấm
                 </label>
-                <div className="flex items-center gap-2 pt-0.5">
-                  {['#0284c7', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899'].map((c) => (
+                <div className="flex items-center gap-2.5">
+                  {FOLDER_PALETTE.map((c) => (
                     <button
                       key={c}
                       type="button"
                       onClick={() => setFolderColor(c)}
-                      className={`w-6 h-6 rounded-full transition-transform ${folderColor === c ? 'scale-125 ring-2 ring-offset-2 ring-sky-500' : 'hover:scale-110'}`}
+                      className={`h-6 w-6 rounded-full transition-transform ${
+                        folderColor === c ? 'scale-110 ring-2 ring-raku-ink ring-offset-2 ring-offset-raku-surface' : ''
+                      }`}
                       style={{ backgroundColor: c }}
                       aria-label={`Chọn màu ${c}`}
                     />
@@ -749,19 +689,16 @@ export function DeckFolderView({
                 </div>
               </div>
 
-              <div className="flex items-center justify-end space-x-2 pt-2">
+              <div className="flex items-center justify-end gap-2 border-t border-raku-line pt-3">
                 <button
                   type="button"
                   onClick={() => setIsNewFolderOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  className="raku-btn-secondary min-h-10 px-4 text-xs"
                 >
                   Hủy
                 </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-xl shadow-xs"
-                >
-                  Tạo Thư Mục
+                <button type="submit" className="raku-btn-primary min-h-10 px-5 text-xs">
+                  Tạo thư mục
                 </button>
               </div>
             </form>
@@ -769,68 +706,69 @@ export function DeckFolderView({
         </div>
       )}
 
-      {/* MODAL: TẠO DECK MỚI */}
+      {/* MODAL: TẠO BỘ THẺ */}
       {isNewDeckOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
-            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center space-x-2">
-              <Layers className="w-5 h-5 text-sky-600" />
-              <span>Tạo Deck Mới</span>
-            </h3>
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setIsNewDeckOpen(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-raku-ink/45 p-4 backdrop-blur-[2px]"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="raku-card w-full max-w-md space-y-4 p-6 animate-raku-enter"
+          >
+            <h3 className="text-base font-bold text-raku-ink">Tạo bộ thẻ mới</h3>
 
             <form onSubmit={handleCreateDeckSubmit} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Thuộc Thư Mục
-                </label>
+                <label className="mb-1 block text-xs font-medium text-raku-muted">Thư mục</label>
                 <select
                   value={deckFolderId}
                   onChange={(e) => setDeckFolderId(e.target.value)}
-                  className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-sky-500 text-slate-900 dark:text-slate-100"
+                  className="w-full rounded-xl border border-raku-line-strong bg-raku-canvas px-3 py-2 text-sm text-raku-ink focus:border-raku-accent focus:outline-none"
                 >
-                  <option value="">📂 Không thuộc thư mục nào</option>
+                  <option value="">Không thuộc thư mục nào</option>
                   {folders.map((f) => (
                     <option key={f.id} value={f.id}>
-                      📁 {f.name}
+                      {f.name}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Tên Deck (Ví dụ: Mimikara Bài 1-5, Kanji Bộ Thủ...)
+                <label className="mb-1 block text-xs font-medium text-raku-muted">
+                  Tên bộ thẻ
                 </label>
                 <input
                   type="text"
                   required
                   value={deckName}
                   onChange={(e) => setDeckName(e.target.value)}
-                  placeholder="Nhập tên deck..."
-                  className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-sky-500 text-slate-900 dark:text-slate-100"
+                  placeholder="Ví dụ: Mimikara Bài 1-5..."
+                  className="w-full rounded-xl border border-raku-line-strong bg-raku-canvas px-3 py-2 text-sm text-raku-ink focus:border-raku-accent focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Loại Thẻ Trong Deck
-                </label>
+                <label className="mb-1 block text-xs font-medium text-raku-muted">Loại thẻ</label>
                 <select
                   value={deckCardType}
                   onChange={(e) => setDeckCardType(e.target.value as any)}
-                  className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-sky-500 text-slate-900 dark:text-slate-100"
+                  className="w-full rounded-xl border border-raku-line-strong bg-raku-canvas px-3 py-2 text-sm text-raku-ink focus:border-raku-accent focus:outline-none"
                 >
-                  <option value="word">Từ vựng (Word)</option>
+                  <option value="word">Từ vựng</option>
                   <option value="kanji">Chữ Hán (Kanji)</option>
-                  <option value="grammar">Ngữ pháp (Grammar)</option>
-                  <option value="custom">Tự do / Nhập ngoài (Custom)</option>
+                  <option value="grammar">Ngữ pháp</option>
+                  <option value="custom">Tự do</option>
                 </select>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Thẻ Mới / Ngày
+                  <label className="mb-1 block text-xs font-medium text-raku-muted">
+                    Thẻ mới / ngày
                   </label>
                   <input
                     type="number"
@@ -838,12 +776,12 @@ export function DeckFolderView({
                     max="200"
                     value={deckNewPerDay}
                     onChange={(e) => setDeckNewPerDay(Number(e.target.value))}
-                    className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-sky-500 text-slate-900 dark:text-slate-100"
+                    className="w-full rounded-xl border border-raku-line-strong bg-raku-canvas px-3 py-2 text-sm text-raku-ink tabular-nums focus:border-raku-accent focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Ôn Tối Đa / Ngày
+                  <label className="mb-1 block text-xs font-medium text-raku-muted">
+                    Ôn tối đa / ngày
                   </label>
                   <input
                     type="number"
@@ -851,30 +789,27 @@ export function DeckFolderView({
                     max="500"
                     value={deckMaxReviews}
                     onChange={(e) => setDeckMaxReviews(Number(e.target.value))}
-                    className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-hidden focus:ring-2 focus:ring-sky-500 text-slate-900 dark:text-slate-100"
+                    className="w-full rounded-xl border border-raku-line-strong bg-raku-canvas px-3 py-2 text-sm text-raku-ink tabular-nums focus:border-raku-accent focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end space-x-2 pt-2">
+              <div className="flex items-center justify-end gap-2 border-t border-raku-line pt-3">
                 <button
                   type="button"
                   onClick={() => setIsNewDeckOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  className="raku-btn-secondary min-h-10 px-4 text-xs"
                 >
                   Hủy
                 </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-xl shadow-xs"
-                >
-                  Tạo Deck
+                <button type="submit" className="raku-btn-primary min-h-10 px-5 text-xs">
+                  Tạo bộ thẻ
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 }

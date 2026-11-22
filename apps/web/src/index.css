@@ -10,29 +10,41 @@
     --sal: env(safe-area-inset-left, 0px);
   }
 
+  /* Washi · Sumi · Hanko tokens (synced with @raku/design-tokens) */
   .raku-app-shell {
-    /* Washi paper, forest ink, and a vermilion hanko give Raku its own voice. */
-    --raku-canvas: 246 243 235; /* #F6F3EB */
-    --raku-surface: 255 252 245; /* #FFFCF5 */
-    --raku-subtle: 238 232 219; /* #EEE8DB */
-    --raku-ink: 36 52 48; /* #243430 */
-    --raku-muted: 83 100 94; /* #53645E */
-    --raku-accent: 40 102 91; /* #28665B */
-    --raku-accent-soft: 220 235 224; /* #DCEBE0 */
-    --raku-signal: 184 78 58; /* #B84E3A */
-    --raku-line: 221 212 197; /* #DDD4C5 */
-    --raku-on-accent: 255 252 245; /* #FFFCF5 */
+    --raku-canvas: 246 243 235;
+    --raku-surface: 255 252 247;
+    --raku-subtle: 239 233 220;
+    --raku-ink: 31 45 41;
+    --raku-body: 54 70 64;
+    --raku-muted: 91 107 101;
+    --raku-line: 226 218 203;
+    --raku-line-strong: 207 197 178;
+    --raku-accent: 36 92 82;
+    --raku-accent-hover: 28 75 66;
+    --raku-accent-soft: 226 236 229;
+    --raku-on-accent: 255 252 247;
+    --raku-signal: 184 74 57;
+    --raku-signal-soft: 247 230 226;
+    --raku-again: 184 74 57;
+    --raku-again-soft: 247 230 226;
+    --raku-hard: 164 104 34;
+    --raku-hard-soft: 246 236 216;
+    --raku-good: 36 92 82;
+    --raku-good-soft: 226 236 229;
+    --raku-easy: 59 109 140;
+    --raku-easy-soft: 227 238 244;
     --raku-neutral-50: 246 243 235;
-    --raku-neutral-100: 238 232 219;
-    --raku-neutral-200: 221 212 197;
-    --raku-neutral-300: 173 177 163;
-    --raku-neutral-400: 115 131 123;
-    --raku-neutral-500: 99 115 108;
-    --raku-neutral-600: 83 100 94;
-    --raku-neutral-700: 67 84 77;
-    --raku-neutral-800: 51 67 61;
-    --raku-neutral-900: 36 52 48;
-    --raku-neutral-950: 23 33 31;
+    --raku-neutral-100: 239 233 220;
+    --raku-neutral-200: 226 218 203;
+    --raku-neutral-300: 197 190 175;
+    --raku-neutral-400: 139 153 147;
+    --raku-neutral-500: 107 123 116;
+    --raku-neutral-600: 91 107 101;
+    --raku-neutral-700: 68 84 78;
+    --raku-neutral-800: 49 64 59;
+    --raku-neutral-900: 31 45 41;
+    --raku-neutral-950: 21 29 27;
     color-scheme: light;
     min-height: 100dvh;
     background: rgb(var(--raku-canvas));
@@ -41,37 +53,176 @@
 
   .raku-app-shell.dark {
     color-scheme: dark;
-    --raku-canvas: 23 33 31; /* #17211F */
-    --raku-surface: 32 44 40; /* #202C28 */
-    --raku-subtle: 41 58 52; /* #293A34 */
-    --raku-ink: 243 241 232; /* #F3F1E8 */
-    --raku-muted: 188 199 188; /* #BCC7BC */
-    --raku-accent: 155 208 173; /* #9BD0AD */
-    --raku-accent-soft: 46 64 56; /* #2E4038 */
-    --raku-signal: 240 139 114; /* #F08B72 */
-    --raku-line: 58 74 67; /* #3A4A43 */
-    --raku-on-accent: 25 37 31; /* #19251F */
-    --raku-neutral-50: 243 241 232;
-    --raku-neutral-100: 220 226 216;
-    --raku-neutral-200: 188 199 188;
-    --raku-neutral-300: 155 172 160;
-    --raku-neutral-400: 137 157 145;
-    --raku-neutral-500: 123 145 132;
-    --raku-neutral-600: 103 127 113;
-    --raku-neutral-700: 78 101 89;
-    --raku-neutral-800: 50 70 61;
-    --raku-neutral-900: 32 44 40;
-    --raku-neutral-950: 23 33 31;
+    --raku-canvas: 21 29 27;
+    --raku-surface: 29 39 36;
+    --raku-subtle: 37 51 47;
+    --raku-ink: 242 239 230;
+    --raku-body: 211 221 214;
+    --raku-muted: 150 168 158;
+    --raku-line: 46 62 57;
+    --raku-line-strong: 62 82 75;
+    --raku-accent: 140 201 164;
+    --raku-accent-hover: 162 214 182;
+    --raku-accent-soft: 35 55 47;
+    --raku-on-accent: 21 29 27;
+    --raku-signal: 238 139 117;
+    --raku-signal-soft: 58 37 33;
+    --raku-again: 238 139 117;
+    --raku-again-soft: 58 37 33;
+    --raku-hard: 227 180 111;
+    --raku-hard-soft: 54 45 31;
+    --raku-good: 140 201 164;
+    --raku-good-soft: 35 55 47;
+    --raku-easy: 136 187 217;
+    --raku-easy-soft: 33 50 61;
+    --raku-neutral-50: 242 239 230;
+    --raku-neutral-100: 220 227 220;
+    --raku-neutral-200: 184 197 188;
+    --raku-neutral-300: 150 168 158;
+    --raku-neutral-400: 125 146 135;
+    --raku-neutral-500: 99 121 110;
+    --raku-neutral-600: 75 97 87;
+    --raku-neutral-700: 58 78 70;
+    --raku-neutral-800: 37 51 47;
+    --raku-neutral-900: 29 39 36;
+    --raku-neutral-950: 21 29 27;
   }
 
   body {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans JP", sans-serif;
+    font-family: "Be Vietnam Pro", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     padding-top: var(--sat);
     padding-bottom: var(--sab);
     padding-left: var(--sal);
     padding-right: var(--sar);
   }
+}
 
+@layer components {
+  .raku-card {
+    border: 1px solid rgb(var(--raku-line));
+    border-radius: 1rem;
+    background: rgb(var(--raku-surface));
+  }
+
+  .raku-btn-primary {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 0.75rem;
+    background: rgb(var(--raku-accent));
+    color: rgb(var(--raku-on-accent));
+    padding: 0 1.125rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color 140ms ease, transform 110ms ease, opacity 140ms ease;
+  }
+
+  .raku-btn-primary:hover:not(:disabled) {
+    background: rgb(var(--raku-accent-hover));
+  }
+
+  .raku-btn-primary:active:not(:disabled) {
+    transform: scale(0.985);
+  }
+
+  .raku-btn-primary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .raku-btn-secondary {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px solid rgb(var(--raku-line-strong));
+    border-radius: 0.75rem;
+    background: rgb(var(--raku-surface));
+    color: rgb(var(--raku-ink));
+    padding: 0 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color 140ms ease, border-color 140ms ease, transform 110ms ease;
+  }
+
+  .raku-btn-secondary:hover:not(:disabled) {
+    background: rgb(var(--raku-subtle));
+  }
+
+  .raku-btn-secondary:active:not(:disabled) {
+    transform: scale(0.985);
+  }
+
+  .raku-btn-secondary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .raku-chip {
+    display: inline-flex;
+    min-height: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgb(var(--raku-line-strong));
+    border-radius: 0.75rem;
+    background: rgb(var(--raku-surface));
+    color: rgb(var(--raku-ink));
+    padding: 0.5rem 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: border-color 140ms ease, background-color 140ms ease, transform 110ms ease;
+  }
+
+  .raku-chip:hover:not(:disabled) {
+    border-color: rgb(var(--raku-accent));
+    background: rgb(var(--raku-subtle));
+  }
+
+  .raku-chip:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  .raku-chip-selected {
+    border-color: rgb(var(--raku-accent)) !important;
+    background: rgb(var(--raku-accent-soft)) !important;
+    color: rgb(var(--raku-accent)) !important;
+  }
+
+  .raku-progress-track {
+    height: 0.375rem;
+    overflow: hidden;
+    border-radius: 9999px;
+    background: rgb(var(--raku-subtle));
+  }
+
+  .raku-progress-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: rgb(var(--raku-accent));
+    transition: width 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Subtle tactile seal used sparingly for brand mark & session completion */
+  .raku-hanko-seal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid rgb(var(--raku-signal));
+    border-radius: 0.5rem;
+    color: rgb(var(--raku-signal));
+    font-family: "Zen Kaku Gothic New", "Noto Sans JP", sans-serif;
+    font-weight: 700;
+    line-height: 1;
+  }
 }
 
 @layer utilities {
@@ -83,387 +234,63 @@
   .raku-brand-mark {
     position: relative;
     overflow: hidden;
-    background: #243430;
-    color: #ffffff;
+    background: rgb(var(--raku-ink));
+    color: rgb(var(--raku-surface));
+    font-family: "Zen Kaku Gothic New", "Noto Sans JP", sans-serif;
   }
 
   .raku-brand-mark::after {
     position: absolute;
-    right: 6px;
-    bottom: 6px;
-    width: 7px;
-    height: 7px;
-    border: 1px solid #ffffff;
+    right: 5px;
+    bottom: 5px;
+    width: 6px;
+    height: 6px;
     border-radius: 9999px;
-    background: #b84e3a;
+    background: rgb(var(--raku-signal));
     content: "";
-  }
-
-  .dark .raku-brand-mark {
-    background: #f3f1e8;
-    color: #243430;
   }
 
   .raku-app-shell :focus-visible {
-    outline: 3px solid rgb(var(--raku-signal)) !important;
+    outline: 2px solid rgb(var(--raku-accent)) !important;
     outline-offset: 2px !important;
   }
+}
 
-  .raku-daily-card {
-    position: relative;
-    isolation: isolate;
-    overflow: hidden;
-    border: 1px solid rgb(var(--raku-line));
-    border-radius: 1.75rem;
-    background: linear-gradient(125deg, rgb(var(--raku-surface)) 0%, rgb(var(--raku-subtle)) 145%);
-    box-shadow: 0 12px 34px rgb(36 52 48 / 0.07);
+/* Grounded micro-animations (calm, never flashy) */
+@keyframes raku-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
   }
-
-  .raku-daily-card::before {
-    position: absolute;
-    z-index: -1;
-    inset: 0 0 auto auto;
-    width: 42%;
-    height: 100%;
-    background-image: radial-gradient(rgb(var(--raku-signal) / 0.12) 1px, transparent 1.5px);
-    background-position: 0 0;
-    background-size: 16px 16px;
-    content: "";
-    mask-image: linear-gradient(90deg, transparent, #000 65%);
-  }
-
-  .raku-daily-card__main {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 1rem;
-    padding: 1.25rem;
-  }
-
-  .raku-daily-copy {
-    min-width: 0;
-  }
-
-  .raku-daily-kicker {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: rgb(var(--raku-accent));
-    font-size: 0.8125rem;
-    font-weight: 750;
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
-  }
-
-  .raku-daily-kicker__seal {
-    display: inline-flex;
-    width: 1.5rem;
-    height: 1.5rem;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid rgb(var(--raku-signal));
-    border-radius: 50%;
-    color: rgb(var(--raku-signal));
-    font-size: 0.875rem;
-    letter-spacing: 0;
-  }
-
-  .raku-daily-date {
-    color: rgb(var(--raku-muted));
-    font-size: 0.875rem;
-    text-transform: capitalize;
-  }
-
-  .raku-daily-title {
-    margin-top: 0.9rem;
-    color: rgb(var(--raku-ink));
-    font-size: clamp(1.65rem, 4vw, 2.45rem);
-    font-weight: 750;
-    letter-spacing: -0.045em;
-    line-height: 1.12;
-  }
-
-  .raku-daily-description {
-    margin-top: 0.55rem;
-    max-width: 37rem;
-    color: rgb(var(--raku-muted));
-    font-size: 1rem;
-    line-height: 1.55;
-  }
-
-  .raku-daily-progress {
-    display: grid;
-    gap: 0.55rem;
-    max-width: 34rem;
-    margin-top: 1.25rem;
-  }
-
-  .raku-progress-track {
-    height: 0.625rem;
-    overflow: hidden;
-    border-radius: 999px;
-    background: rgb(var(--raku-line));
-  }
-
-  .raku-progress-fill {
-    height: 100%;
-    border-radius: inherit;
-    background: linear-gradient(90deg, rgb(var(--raku-accent)), rgb(var(--raku-signal)));
-    transition: width 350ms ease;
-  }
-
-  .raku-daily-action,
-  .raku-daily-more {
-    display: inline-flex;
-    min-height: 2.875rem;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    border-radius: 0.9rem;
-    padding: 0 1rem;
-    font-size: 0.9375rem;
-    font-weight: 700;
-    transition: transform 160ms ease, background-color 160ms ease;
-  }
-
-  .raku-daily-action {
-    background: rgb(var(--raku-accent));
-    color: rgb(var(--raku-on-accent));
-    box-shadow: 0 3px 0 rgb(var(--raku-ink) / 0.22);
-  }
-
-  .raku-daily-action:hover {
-    transform: translateY(-1px);
-    background: rgb(var(--raku-accent) / 0.9);
-  }
-
-  .raku-daily-action:active {
-    transform: translateY(2px);
-    box-shadow: none;
-  }
-
-  .raku-daily-more {
-    border: 1px solid rgb(var(--raku-line));
-    background: rgb(var(--raku-surface) / 0.75);
-    color: rgb(var(--raku-ink));
-  }
-
-  .raku-daily-more:hover {
-    background: rgb(var(--raku-subtle));
-  }
-
-  .raku-daily-complete {
-    display: inline-flex;
-    min-height: 2.75rem;
-    align-items: center;
-    gap: 0.5rem;
-    border-radius: 0.9rem;
-    background: rgb(var(--raku-accent-soft));
-    padding: 0 0.875rem;
-    color: rgb(var(--raku-accent));
-    font-size: 0.9375rem;
-    font-weight: 700;
-  }
-
-  .raku-study-stamp {
-    position: relative;
-    display: flex;
-    width: 4.5rem;
-    height: 4.5rem;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid rgb(var(--raku-signal));
-    border-radius: 50%;
-    color: rgb(var(--raku-signal));
-    transform: rotate(7deg);
-  }
-
-  .raku-study-stamp::before {
-    position: absolute;
-    inset: 0.3rem;
-    border: 1px solid rgb(var(--raku-signal) / 0.7);
-    border-radius: 50%;
-    content: "";
-  }
-
-  .raku-study-stamp__character {
-    font-size: 2rem;
-    font-weight: 800;
-    line-height: 1;
-  }
-
-  .raku-study-stamp__caption {
-    display: none;
-    margin-top: 0.2rem;
-    font-size: 0.6875rem;
-    font-weight: 750;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .raku-daily-stats {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    border-top: 1px solid rgb(var(--raku-line));
-    background: rgb(var(--raku-surface) / 0.68);
-  }
-
-  .raku-daily-stat {
-    display: flex;
-    min-width: 0;
-    min-height: 5.25rem;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.875rem 1rem;
-  }
-
-  .raku-daily-stat:nth-child(even) {
-    border-left: 1px solid rgb(var(--raku-line));
-  }
-
-  .raku-daily-stat:nth-child(n + 3) {
-    border-top: 1px solid rgb(var(--raku-line));
-  }
-
-  .raku-daily-stat__icon {
-    display: inline-flex;
-    width: 2.5rem;
-    height: 2.5rem;
-    flex: 0 0 auto;
-    align-items: center;
-    justify-content: center;
-    border-radius: 0.85rem;
-  }
-
-  .raku-daily-stat__icon svg {
-    width: 1.2rem;
-    height: 1.2rem;
-  }
-
-  .raku-daily-stat__icon--green {
-    background: rgb(var(--raku-accent-soft));
-    color: rgb(var(--raku-accent));
-  }
-
-  .raku-daily-stat__icon--red {
-    background: rgb(var(--raku-signal) / 0.12);
-    color: rgb(var(--raku-signal));
-  }
-
-  .raku-daily-stat__icon--gold {
-    background: #f4ead1;
-    color: #7f5b1f;
-  }
-
-  .raku-daily-stat__icon--ink {
-    background: rgb(var(--raku-subtle));
-    color: rgb(var(--raku-ink));
-  }
-
-  .raku-daily-stat__icon--fire {
-    background: rgb(var(--raku-signal) / 0.12);
-    color: rgb(var(--raku-signal));
-  }
-
-  .raku-daily-stat--streak {
-    background: rgb(var(--raku-signal) / 0.045);
-  }
-
-  .raku-daily-stat__label {
-    display: block;
-    color: rgb(var(--raku-muted));
-    font-size: 0.875rem;
-    line-height: 1.25;
-  }
-
-  .raku-daily-stat strong {
-    display: block;
-    margin-top: 0.125rem;
-    color: rgb(var(--raku-ink));
-    font-size: 1.25rem;
-    font-weight: 750;
-    line-height: 1.25;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .raku-daily-stat strong small {
-    color: rgb(var(--raku-muted));
-    font-size: 0.8125rem;
-    font-weight: 500;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-@media (min-width: 640px) {
-  .raku-daily-card__main {
-    gap: 2rem;
-    padding: 1.75rem 2rem;
-  }
+.animate-raku-enter {
+  animation: raku-enter 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
 
-  .raku-study-stamp {
-    width: 7.25rem;
-    height: 7.25rem;
+@keyframes raku-shake {
+  0%, 100% {
+    transform: translateX(0);
   }
-
-  .raku-study-stamp__character {
-    font-size: 3.25rem;
+  25% {
+    transform: translateX(-5px);
   }
-
-  .raku-study-stamp__caption {
-    display: block;
+  55% {
+    transform: translateX(5px);
   }
-
-  .raku-daily-stat {
-    min-height: 5.75rem;
-    padding: 1rem 1.25rem;
+  80% {
+    transform: translateX(-2px);
   }
 }
 
-@media (max-width: 420px) {
-  .raku-progress-summary {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .raku-study-stamp {
-    width: 3.5rem;
-    height: 3.5rem;
-  }
-
-  .raku-study-stamp__character {
-    font-size: 1.6rem;
-  }
+.animate-raku-shake {
+  animation: raku-shake 260ms ease-out both;
 }
 
-@media (min-width: 768px) {
-  .raku-daily-card__main {
-    padding: 2rem 2.25rem;
-  }
-
-  .raku-daily-stats {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  .raku-daily-stat + .raku-daily-stat,
-  .raku-daily-stat:nth-child(even),
-  .raku-daily-stat:nth-child(n + 3) {
-    border-top: 0;
-    border-left: 1px solid rgb(var(--raku-line));
-  }
-}
-
-.dark .raku-daily-card {
-  background: linear-gradient(125deg, rgb(var(--raku-surface)) 0%, rgb(var(--raku-subtle)) 145%);
-  box-shadow: 0 12px 34px rgb(0 0 0 / 0.18);
-}
-
-.dark .raku-daily-stat__icon--gold {
-  background: #453b26;
-  color: #e8cb85;
-}
-
-/* Reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
   *,
   ::before,
@@ -482,320 +309,26 @@
   }
 }
 
-/* Match the page backdrop to the app theme, including the safe-area and
-   reserved space behind the fixed mobile navigation. Keep this unlayered so
-   it overrides the static body background utility in index.html. */
-body:has(.raku-app-shell) {
-  background-color: #f3f7f5;
-}
-
-body:has(.raku-app-shell.dark) {
-  background-color: #17211f;
-}
-
 body:has(.raku-app-shell:not(.dark)) {
   background-color: #f6f3eb;
 }
 
+body:has(.raku-app-shell.dark) {
+  background-color: #151d1b;
+}
+
 @media (prefers-contrast: more) {
   .raku-app-shell:not(.dark) {
-    --raku-muted: 62 76 69;
-    --raku-accent: 30 84 74;
-    --raku-signal: 158 52 38;
-    --raku-line: 170 164 148;
+    --raku-muted: 58 72 66;
+    --raku-accent: 24 72 63;
+    --raku-signal: 158 50 36;
+    --raku-line: 175 166 150;
   }
 
   .raku-app-shell.dark {
-    --raku-muted: 220 228 218;
-    --raku-accent: 185 234 195;
-    --raku-signal: 255 170 145;
-    --raku-line: 105 121 111;
+    --raku-muted: 215 224 216;
+    --raku-accent: 172 224 190;
+    --raku-signal: 255 168 148;
+    --raku-line: 98 116 108;
   }
 }
-
-/* ==========================================================================
-   Duolingo-Style Smooth & Tactile Animations
-   ========================================================================== */
-
-/* 1. Tactile 3D Buttons (Push-down mechanical feel) */
-.duo-btn-3d {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  border-radius: 1rem;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform 90ms cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 90ms cubic-bezier(0.4, 0, 0.2, 1),
-              filter 120ms ease,
-              background-color 150ms ease;
-}
-
-.duo-btn-3d:active:not(:disabled) {
-  transform: translateY(3px) !important;
-}
-
-.duo-btn-3d:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  box-shadow: none !important;
-  transform: none !important;
-}
-
-/* Color Themes for 3D Buttons */
-.duo-btn-sky {
-  background-color: #0284c7;
-  color: #ffffff;
-  box-shadow: 0 4px 0 #0369a1;
-}
-.duo-btn-sky:hover:not(:disabled) {
-  filter: brightness(1.08);
-}
-.duo-btn-sky:active:not(:disabled) {
-  box-shadow: 0 1px 0 #0369a1 !important;
-}
-
-.duo-btn-emerald {
-  background-color: #059669;
-  color: #ffffff;
-  box-shadow: 0 4px 0 #047857;
-}
-.duo-btn-emerald:hover:not(:disabled) {
-  filter: brightness(1.08);
-}
-.duo-btn-emerald:active:not(:disabled) {
-  box-shadow: 0 1px 0 #047857 !important;
-}
-
-.duo-btn-amber {
-  background-color: #d97706;
-  color: #ffffff;
-  box-shadow: 0 4px 0 #b45309;
-}
-.duo-btn-amber:hover:not(:disabled) {
-  filter: brightness(1.08);
-}
-.duo-btn-amber:active:not(:disabled) {
-  box-shadow: 0 1px 0 #b45309 !important;
-}
-
-.duo-btn-rose {
-  background-color: #e11d48;
-  color: #ffffff;
-  box-shadow: 0 4px 0 #be123c;
-}
-.duo-btn-rose:hover:not(:disabled) {
-  filter: brightness(1.08);
-}
-.duo-btn-rose:active:not(:disabled) {
-  box-shadow: 0 1px 0 #be123c !important;
-}
-
-.duo-btn-neutral {
-  background-color: #ffffff;
-  color: #334155;
-  border: 2px solid #e2e8f0;
-  box-shadow: 0 3px 0 #cbd5e1;
-}
-.dark .duo-btn-neutral {
-  background-color: #1e293b;
-  color: #f1f5f9;
-  border-color: #334155;
-  box-shadow: 0 3px 0 #0f172a;
-}
-.duo-btn-neutral:hover:not(:disabled) {
-  background-color: #f8fafc;
-}
-.dark .duo-btn-neutral:hover:not(:disabled) {
-  background-color: #334155;
-}
-.duo-btn-neutral:active:not(:disabled) {
-  transform: translateY(2px) !important;
-  box-shadow: 0 1px 0 #cbd5e1 !important;
-}
-.dark .duo-btn-neutral:active:not(:disabled) {
-  box-shadow: 0 1px 0 #0f172a !important;
-}
-
-/* 2. Interactive Choice Chips (Sentence scramble & MCQs) */
-.duo-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 0.85rem;
-  border: 2px solid #e2e8f0;
-  background-color: #ffffff;
-  color: #1e293b;
-  box-shadow: 0 3px 0 #cbd5e1;
-  font-weight: 600;
-  cursor: pointer;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform 100ms cubic-bezier(0.34, 1.56, 0.64, 1),
-              box-shadow 100ms ease,
-              border-color 150ms ease,
-              background-color 150ms ease;
-}
-
-.dark .duo-chip {
-  background-color: #1e293b;
-  color: #f1f5f9;
-  border-color: #334155;
-  box-shadow: 0 3px 0 #0f172a;
-}
-
-.duo-chip:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 0 #cbd5e1;
-}
-.dark .duo-chip:hover:not(:disabled) {
-  box-shadow: 0 4px 0 #0f172a;
-}
-
-.duo-chip:active:not(:disabled) {
-  transform: translateY(2px) !important;
-  box-shadow: 0 1px 0 #cbd5e1 !important;
-}
-.dark .duo-chip:active:not(:disabled) {
-  box-shadow: 0 1px 0 #0f172a !important;
-}
-
-.duo-chip-selected {
-  border-color: #0284c7 !important;
-  background-color: #f0f9ff !important;
-  color: #0369a1 !important;
-  box-shadow: 0 2px 0 #0284c7 !important;
-}
-.dark .duo-chip-selected {
-  background-color: #0c4a6e !important;
-  border-color: #38bdf8 !important;
-  color: #e0f2fe !important;
-  box-shadow: 0 2px 0 #0284c7 !important;
-}
-
-/* 3. Glossy Spring Progress Bar */
-.duo-progress-track {
-  height: 0.85rem;
-  border-radius: 9999px;
-  background-color: #e2e8f0;
-  overflow: hidden;
-  position: relative;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
-}
-.dark .duo-progress-track {
-  background-color: #1e293b;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25);
-}
-
-.duo-progress-fill {
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
-  transition: width 450ms cubic-bezier(0.34, 1.4, 0.64, 1);
-  position: relative;
-}
-
-.duo-progress-fill::after {
-  content: "";
-  position: absolute;
-  top: 2px;
-  left: 6px;
-  right: 6px;
-  height: 3px;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.45);
-}
-
-/* 4. Keyframe Animations */
-
-/* Pop Bounce (Correct answer / reward celebration) */
-@keyframes duo-pop {
-  0% {
-    opacity: 0;
-    transform: scale(0.75);
-  }
-  45% {
-    opacity: 1;
-    transform: scale(1.1);
-  }
-  75% {
-    transform: scale(0.96);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-.animate-duo-pop {
-  animation: duo-pop 380ms cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
-}
-
-/* Gentle Head Shake (Empathetic mistake feedback) */
-@keyframes duo-shake {
-  0%, 100% {
-    transform: translateX(0);
-  }
-  20% {
-    transform: translateX(-7px);
-  }
-  40% {
-    transform: translateX(7px);
-  }
-  60% {
-    transform: translateX(-4px);
-  }
-  80% {
-    transform: translateX(4px);
-  }
-}
-.animate-duo-shake {
-  animation: duo-shake 400ms ease-in-out both;
-}
-
-/* Smooth Card Entry */
-@keyframes duo-card-enter {
-  0% {
-    opacity: 0;
-    transform: translateY(12px) scale(0.98);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-.animate-duo-enter {
-  animation: duo-card-enter 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-/* Slide Up Bottom Sheet / Feedback Banner */
-@keyframes duo-slide-up {
-  0% {
-    opacity: 0;
-    transform: translateY(24px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.animate-duo-slide-up {
-  animation: duo-slide-up 260ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
-}
-
-/* Sparkle Celebration Particle */
-@keyframes duo-sparkle {
-  0%, 100% {
-    transform: scale(0) rotate(0deg);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.25) rotate(180deg);
-    opacity: 1;
-  }
-}
-.animate-duo-sparkle {
-  animation: duo-sparkle 1400ms ease-in-out infinite;
-}
-

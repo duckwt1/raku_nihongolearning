@@ -1,4 +1,4 @@
-import { UploadCloud, RefreshCw, AlertTriangle, X } from 'lucide-react';
+﻿import { UploadCloud, RefreshCw, AlertTriangle, X } from 'lucide-react';
 
 interface CloudConflictModalProps {
   isOpen: boolean;
@@ -25,7 +25,7 @@ export function CloudConflictModal({
       aria-modal="true"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
     >
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-md w-full p-6 space-y-5 animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-raku-surface rounded-2xl border border-raku-line shadow-lg max-w-md w-full p-6 space-y-5 animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <div className="flex items-center space-x-2.5 text-amber-600 dark:text-amber-400">
@@ -92,7 +92,7 @@ export function CloudConflictModal({
               onResetToCloud();
               onClose();
             }}
-            className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 hover:bg-rose-50 hover:border-rose-300 dark:hover:bg-rose-950/40 dark:hover:border-rose-900 text-left transition flex items-start space-x-3 group touch-target"
+            className="w-full p-3.5 rounded-2xl border border-raku-line bg-slate-50 dark:bg-slate-800/40 hover:bg-rose-50 hover:border-rose-300 dark:hover:bg-rose-950/40 dark:hover:border-rose-900 text-left transition flex items-start space-x-3 group touch-target"
           >
             <div className="p-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 group-hover:bg-rose-600 group-hover:text-white shrink-0 shadow-sm mt-0.5 transition">
               <RefreshCw className="w-5 h-5" />

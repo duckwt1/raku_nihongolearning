@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@raku/core": "*",
+    "@raku/design-tokens": "*",
     "@tanstack/react-query": "^5.66.9",
     "clsx": "^2.1.1",
     "firebase": "^11.4.0",

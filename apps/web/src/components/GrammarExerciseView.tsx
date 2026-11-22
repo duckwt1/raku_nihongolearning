@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   FileText,
   ListChecks,
@@ -366,7 +366,7 @@ export function GrammarExerciseView({
     return (
       <div
         key={exercise.id}
-        className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900"
+        className="rounded-2xl border border-raku-line bg-raku-surface p-4 shadow-xs "
       >
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-700 dark:bg-sky-950 dark:text-sky-300">
@@ -441,7 +441,7 @@ export function GrammarExerciseView({
   if (practice) {
     return (
       <div className="space-y-5">
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
+        <div className="rounded-2xl border border-slate-200 bg-raku-surface p-5 sm:p-6">
           <GrammarExercisePlayer
             exercises={practice.exercises}
             title={practice.title}
@@ -482,7 +482,7 @@ export function GrammarExerciseView({
 
   return (
     <div className="space-y-5">
-      <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
+      <div className="rounded-2xl border border-slate-200 bg-raku-surface p-5 sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="flex items-center gap-2 text-xl font-bold text-slate-800 dark:text-slate-100">
@@ -659,12 +659,12 @@ export function GrammarExerciseView({
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center gap-2 rounded-3xl border border-slate-200 bg-white py-12 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex items-center justify-center gap-2 rounded-2xl border border-raku-line bg-raku-surface py-12 text-sm text-slate-500 ">
           <RefreshCw className="h-4 w-4 animate-spin" />
           Đang tải bài tập...
         </div>
       ) : filtered.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center dark:border-slate-700 dark:bg-slate-900">
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center dark:border-slate-700 dark:bg-slate-900">
           <ListChecks className="mx-auto h-8 w-8 text-slate-300" />
           <p className="mt-2 text-sm font-semibold text-slate-600 dark:text-slate-300">
             Chưa có bài tập cho mục này.

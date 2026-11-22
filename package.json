@@ -12,6 +12,7 @@
   ],
   "scripts": {
     "dev": "npm run dev --workspace=@raku/web",
+    "dev:mobile": "npm run start --workspace=@raku/mobile",
     "dev:worker": "npm run dev --workspace=@raku/worker",
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",

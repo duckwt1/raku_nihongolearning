@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
-import { CalendarCheck2, Flame, Trophy } from 'lucide-react';
+import { Flame } from 'lucide-react';
 import { buildHeatmapWeeks, getTodayDateString } from '@raku/core';
 
 interface StudyHeatmapProps {
@@ -20,9 +20,9 @@ const FULL_DATE_FORMATTER = new Intl.DateTimeFormat('vi-VN', {
 function cellColor(count: number, goal: number, future: boolean): string {
   if (future) return 'bg-transparent';
   if (count === 0) return 'bg-raku-subtle';
-  if (count >= goal) return 'bg-raku-accent ring-1 ring-raku-accent/35';
-  if (count >= Math.ceil((goal * 2) / 3)) return 'bg-raku-accent/75';
-  if (count >= Math.ceil(goal / 3)) return 'bg-raku-accent/50';
+  if (count >= goal) return 'bg-raku-accent';
+  if (count >= Math.ceil((goal * 2) / 3)) return 'bg-raku-accent/70';
+  if (count >= Math.ceil(goal / 3)) return 'bg-raku-accent/45';
   return 'bg-raku-accent/25';
 }
 
@@ -53,7 +53,7 @@ export function StudyHeatmap({
       const month = new Date(`${first.date}T12:00:00`).getMonth();
       if (month === previousMonth) return '';
       previousMonth = month;
-      return String(month + 1);
+      return `Th${month + 1}`;
     });
   }, [weeks]);
 
@@ -96,86 +96,56 @@ export function StudyHeatmap({
   return (
     <section
       aria-labelledby="study-streak-title"
-      className="overflow-hidden rounded-3xl border border-raku-line bg-raku-surface p-4 shadow-[0_8px_24px_rgba(36,52,48,0.05)] sm:p-5"
+      className="raku-card overflow-hidden p-5"
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <h3
-            id="study-streak-title"
-            className="flex items-center gap-2 text-base font-bold text-raku-ink"
-          >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-raku-signal/10 text-raku-signal">
-              <Flame className="h-5 w-5" aria-hidden="true" />
-            </span>
-            Chuỗi học tập
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 id="study-streak-title" className="text-base font-bold text-raku-ink">
+            Lịch sử học tập
           </h3>
-          <p className="mt-2 text-sm leading-5 text-raku-muted">
-            Mỗi ô là một ngày học từ mới; đủ {goal} từ sẽ tính một ngày giữ chuỗi.
+          <p className="mt-0.5 text-xs text-raku-muted">
+            Mục tiêu {goal} từ mới mỗi ngày để duy trì chuỗi.
           </p>
         </div>
-        <span className="inline-flex min-h-9 w-fit items-center gap-2 rounded-full bg-raku-accent-soft px-3 text-xs font-medium text-raku-accent">
-          Mục tiêu <strong className="tabular-nums">{goal} từ/ngày</strong>
-        </span>
-      </div>
 
-      <div className="mt-4 grid grid-cols-6 gap-3 sm:grid-cols-3">
-        <div className="col-span-6 flex min-h-[4.5rem] items-center gap-3 rounded-2xl border border-raku-accent/20 bg-raku-accent-soft p-4 sm:col-span-1">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-raku-surface text-raku-signal shadow-sm">
-            <Flame className="h-5 w-5" aria-hidden="true" />
-          </span>
-          <div className="min-w-0">
-            <span className="block text-xs font-medium text-raku-muted">Chuỗi hiện tại</span>
-            <strong className="mt-0.5 block text-lg font-bold leading-6 text-raku-ink tabular-nums">
-              {currentStreak} <span className="text-sm font-medium">ngày</span>
-            </strong>
+        {/* Clean inline stats strip instead of nested boxed cards */}
+        <dl className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs tabular-nums">
+          <div className="flex items-center gap-1.5">
+            <Flame
+              className={`h-4 w-4 ${currentStreak > 0 ? 'text-raku-signal' : 'text-raku-muted'}`}
+              aria-hidden="true"
+            />
+            <dt className="text-raku-muted">Chuỗi:</dt>
+            <dd className="font-bold text-raku-ink">{currentStreak} ngày</dd>
           </div>
-          <span className="ml-auto hidden text-xs font-medium text-raku-muted sm:block lg:text-right">
-            {currentStreak > 0 ? 'Đang nối tiếp' : 'Bắt đầu hôm nay'}
-          </span>
-        </div>
-
-        <div className="col-span-3 flex min-h-[4.5rem] items-center gap-2 rounded-2xl border border-raku-line bg-raku-canvas/60 px-3 py-3 sm:col-span-1 sm:gap-3 sm:px-4">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-raku-subtle text-raku-muted">
-            <Trophy className="h-4 w-4" aria-hidden="true" />
-          </span>
-          <div className="min-w-0">
-            <span className="block truncate text-xs font-medium text-raku-muted">Dài nhất</span>
-            <strong className="mt-0.5 block text-lg font-bold leading-5 text-raku-ink tabular-nums">
-              {longestStreak} <span className="text-xs font-medium text-raku-muted">ngày</span>
-            </strong>
+          <div className="flex items-center gap-1.5">
+            <dt className="text-raku-muted">Dài nhất:</dt>
+            <dd className="font-semibold text-raku-ink">{longestStreak} ngày</dd>
           </div>
-        </div>
-
-        <div className="col-span-3 flex min-h-[4.5rem] items-center gap-2 rounded-2xl border border-raku-line bg-raku-canvas/60 px-3 py-3 sm:col-span-1 sm:gap-3 sm:px-4">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-raku-subtle text-raku-accent">
-            <CalendarCheck2 className="h-4 w-4" aria-hidden="true" />
-          </span>
-          <div className="min-w-0">
-            <span className="block truncate text-xs font-medium text-raku-muted">Ngày đạt</span>
-            <strong className="mt-0.5 block text-lg font-bold leading-5 text-raku-ink tabular-nums">
-              {completedDays} <span className="text-xs font-medium text-raku-muted">ngày</span>
-            </strong>
+          <div className="flex items-center gap-1.5">
+            <dt className="text-raku-muted">Ngày đạt:</dt>
+            <dd className="font-semibold text-raku-accent">{completedDays}</dd>
           </div>
-        </div>
+        </dl>
       </div>
 
       <div className="mt-5 flex gap-2">
         <div
           aria-hidden="true"
-          className="mt-6 grid shrink-0 grid-rows-7 gap-1 text-xs font-medium leading-none text-raku-muted"
+          className="mt-6 grid shrink-0 grid-rows-7 gap-1 text-[11px] font-medium leading-none text-raku-muted"
         >
           {DAY_LABELS.map((label) => (
-            <span key={label} className="flex h-4 items-center">
+            <span key={label} className="flex h-3.5 items-center">
               {label}
             </span>
           ))}
         </div>
 
         <div className="min-w-0 flex-1 overflow-x-auto overscroll-x-contain pb-2">
-          <div className="min-w-max">
-            <div aria-hidden="true" className="mb-2 flex h-4 gap-1 text-xs leading-4 text-raku-muted">
+          <div className="min-w-max pr-4">
+            <div aria-hidden="true" className="mb-2 flex h-4 gap-1 text-[11px] leading-4 text-raku-muted">
               {monthLabels.map((label, index) => (
-                <span key={index} className="w-4 shrink-0 overflow-visible whitespace-nowrap">
+                <span key={index} className="w-3.5 shrink-0 overflow-visible whitespace-nowrap">
                   {label}
                 </span>
               ))}
@@ -209,15 +179,15 @@ export function StudyHeatmap({
                         tabIndex={cell.future || !isTabStop ? -1 : 0}
                         onClick={cell.future ? undefined : () => selectCell(cell)}
                         onKeyDown={(event) => handleCellKeyDown(event, cellIndex)}
-                        className={`h-4 w-4 rounded-[4px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-raku-signal focus-visible:ring-offset-1 ${cellColor(
+                        className={`h-3.5 w-3.5 rounded-[3px] transition-colors ${cellColor(
                           cell.count,
                           goal,
                           cell.future
                         )} ${
                           cell.future
                             ? 'cursor-default'
-                            : 'cursor-pointer hover:ring-2 hover:ring-raku-signal/50'
-                        } ${isSelected ? 'ring-2 ring-raku-signal ring-offset-1' : ''}`}
+                            : 'cursor-pointer hover:ring-1 hover:ring-raku-ink/50'
+                        } ${isSelected ? 'ring-2 ring-raku-signal ring-offset-1 ring-offset-raku-surface' : ''}`}
                       />
                     );
                   })}
@@ -228,27 +198,26 @@ export function StudyHeatmap({
         </div>
       </div>
 
-      <div className="mt-3 flex flex-col gap-3 border-t border-raku-line pt-3 sm:flex-row sm:items-center sm:justify-between">
-        <p role="status" className="min-h-5 text-xs font-medium leading-5 text-raku-muted">
+      <div className="mt-3 flex flex-col gap-2 border-t border-raku-line pt-3 sm:flex-row sm:items-center sm:justify-between">
+        <p role="status" className="min-h-5 text-xs text-raku-muted tabular-nums">
           {selectedLabel
             ? `${selectedLabel}: ${selected?.count ?? 0} từ mới${
-                selected?.completed ? ' · đã đạt mục tiêu' : ''
+                selected?.completed ? ' · đạt mục tiêu' : ''
               }`
             : `Hôm nay ${todayCount}/${goal} từ mới${
-                todayCount >= goal ? ' · đã giữ được chuỗi' : ` · còn ${goal - todayCount} từ để đạt mục tiêu`
+                todayCount >= goal ? ' · đã giữ chuỗi' : ` · còn ${goal - todayCount} từ`
               }`}
         </p>
-        <div className="flex shrink-0 items-center gap-1.5 text-xs font-medium text-raku-muted">
+        <div className="flex shrink-0 items-center gap-1.5 text-[11px] text-raku-muted">
           <span>Ít</span>
-          <span className="h-3 w-3 rounded-[3px] bg-raku-subtle" />
-          <span className="h-3 w-3 rounded-[3px] bg-raku-accent/25" />
-          <span className="h-3 w-3 rounded-[3px] bg-raku-accent/50" />
-          <span className="h-3 w-3 rounded-[3px] bg-raku-accent/75" />
-          <span className="h-3 w-3 rounded-[3px] bg-raku-accent" />
+          <span className="h-3 w-3 rounded-[2px] bg-raku-subtle" />
+          <span className="h-3 w-3 rounded-[2px] bg-raku-accent/25" />
+          <span className="h-3 w-3 rounded-[2px] bg-raku-accent/45" />
+          <span className="h-3 w-3 rounded-[2px] bg-raku-accent/70" />
+          <span className="h-3 w-3 rounded-[2px] bg-raku-accent" />
           <span>Nhiều</span>
         </div>
       </div>
-      <p className="mt-1 text-xs text-raku-muted sm:hidden">Vuốt ngang để xem đủ 53 tuần.</p>
     </section>
   );
 }

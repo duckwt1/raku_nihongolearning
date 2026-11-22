@@ -1,4 +1,4 @@
-import {
+﻿import {
   BookOpenCheck,
   ChevronDown,
   ListChecks,
@@ -115,7 +115,7 @@ export function GrammarExerciseSetsView({
 
   return (
     <div className="space-y-5">
-      <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
+      <div className="rounded-2xl border border-slate-200 bg-raku-surface p-5 sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="flex items-center gap-2 text-xl font-bold text-slate-800 dark:text-slate-100">
@@ -150,7 +150,7 @@ export function GrammarExerciseSetsView({
       </div>
 
       {target && target.exercises.length > 0 && (
-        <div className="rounded-3xl border border-violet-200 bg-violet-50/60 p-5 shadow-sm dark:border-violet-900 dark:bg-violet-950/20 sm:p-6">
+        <div className="rounded-2xl border border-violet-200 bg-violet-50/60 p-5 shadow-sm dark:border-violet-900 dark:bg-violet-950/20 sm:p-6">
           <div className="flex items-center gap-2 text-xs font-bold text-violet-700 dark:text-violet-300">
             <Sparkles className="h-4 w-4" />
             Bài tập cho mẫu ngữ pháp
@@ -166,12 +166,12 @@ export function GrammarExerciseSetsView({
       )}
 
       {isLoading ? (
-        <div className="flex items-center justify-center gap-2 rounded-3xl border border-slate-200 bg-white py-12 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex items-center justify-center gap-2 rounded-2xl border border-raku-line bg-raku-surface py-12 text-sm text-slate-500 ">
           <RefreshCw className="h-4 w-4 animate-spin" />
           Đang tải bài tập...
         </div>
       ) : exercises.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center dark:border-slate-700 dark:bg-slate-900">
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center dark:border-slate-700 dark:bg-slate-900">
           <BookOpenCheck className="mx-auto h-8 w-8 text-slate-300" />
           <p className="mt-2 text-sm font-semibold text-slate-600 dark:text-slate-300">
             Chưa có bài tập ngữ pháp.
@@ -191,7 +191,7 @@ export function GrammarExerciseSetsView({
               return (
                 <div
                   key={level}
-                  className="flex flex-col justify-between rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                  className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-raku-surface p-5"
                 >
                   <div>
                     <div className="flex items-center justify-between gap-2">
@@ -235,7 +235,7 @@ export function GrammarExerciseSetsView({
           </div>
 
           {recentSessions.length > 0 && (
-            <details className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+            <details className="rounded-2xl border border-raku-line bg-raku-surface p-4 ">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
                 <span className="flex items-center gap-1.5">
                   <ChevronDown className="h-3.5 w-3.5" />

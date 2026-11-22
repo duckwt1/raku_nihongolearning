@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import {
   X,
   Sparkles,
@@ -93,29 +93,35 @@ export function AiQuizGeneratorModal({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-raku-ink/45 p-4 backdrop-blur-[2px]"
     >
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="raku-card flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden animate-raku-enter"
+      >
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center space-x-2 text-sky-600 dark:text-sky-400">
-            <Sparkles className="w-6 h-6" />
-            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
-              AI Tạo Bộ Câu Hỏi Trắc Nghiệm (Mục 8)
+        <div className="flex items-center justify-between border-b border-raku-line px-5 py-4">
+          <div className="flex items-center gap-2 text-raku-accent">
+            <Sparkles className="h-5 w-5" />
+            <h2 className="text-base font-bold text-raku-ink">
+              Tạo câu hỏi trắc nghiệm bằng AI
             </h2>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+            aria-label="Đóng"
+            className="rounded-lg p-1.5 text-raku-muted hover:bg-raku-subtle hover:text-raku-ink"
           >
-            <X className="w-5 h-5" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Content */}
         <div className="p-5 sm:p-6 overflow-y-auto space-y-4 text-xs text-slate-600 dark:text-slate-300">
           {/* Prompt builder form */}
-          <div className="space-y-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+          <div className="space-y-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-raku-line-strong">
             <label className="block font-semibold text-slate-700 dark:text-slate-200">
               Yêu cầu nội dung (từ vựng, đoạn văn tiếng Nhật, hoặc chủ đề):
             </label>
@@ -124,7 +130,7 @@ export function AiQuizGeneratorModal({
               value={promptInput}
               onChange={(e) => setPromptInput(e.target.value)}
               placeholder="Ví dụ: Tạo câu hỏi trắc nghiệm phân biệt cách đọc các từ có chứa chữ 生 hoặc đoạn văn ngắn về sinh hoạt hàng ngày..."
-              className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
+              className="w-full p-3 bg-raku-surface border border-raku-line-strong rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
             />
 
             <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
@@ -134,7 +140,7 @@ export function AiQuizGeneratorModal({
                   <select
                     value={jlpt}
                     onChange={(e) => setJlpt(e.target.value)}
-                    className="p-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg"
+                    className="p-1.5 bg-raku-surface border border-raku-line-strong rounded-lg"
                   >
                     <option value="N5">N5</option>
                     <option value="N4">N4</option>
@@ -154,7 +160,7 @@ export function AiQuizGeneratorModal({
                       const val = Number(e.target.value);
                       setCount(Number.isFinite(val) ? Math.min(Math.max(Math.trunc(val), 1), 10) : 1);
                     }}
-                    className="w-16 p-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-center"
+                    className="w-16 p-1.5 bg-raku-surface border border-raku-line-strong rounded-lg text-center"
                   />
                 </div>
               </div>
@@ -199,7 +205,7 @@ export function AiQuizGeneratorModal({
                 {draftQuestions.map((q, idx) => (
                   <div
                     key={`${q.id || 'q'}_${idx}`}
-                    className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-2 relative"
+                    className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-raku-line-strong space-y-2 relative"
                   >
                     <div className="flex items-center justify-between">
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-200 flex items-center space-x-1">
@@ -229,7 +235,7 @@ export function AiQuizGeneratorModal({
                               className={`p-2 rounded-lg border text-xs ${
                                 isAns
                                   ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 font-semibold'
-                                  : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900'
+                                  : 'border-raku-line-strong bg-slate-50 dark:bg-slate-900'
                               }`}
                             >
                               {c} {isAns && '✓ (Đáp án)'}

@@ -1,4 +1,5 @@
-import { X } from 'lucide-react';
+import { useEffect } from 'react';
+import { Volume2, X } from 'lucide-react';
 import { KANJI_BY_CHAR, getWordsByKanji } from '@raku/core';
 
 interface KanjiModalProps {
@@ -7,81 +8,116 @@ interface KanjiModalProps {
   onSelectWord?: (wordId: string) => void;
 }
 
+function speakWord(text: string) {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window) || !text) return;
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ja-JP';
+    u.rate = 0.92;
+    window.speechSynthesis.speak(u);
+  } catch {
+    // Ignore unsupported TTS
+  }
+}
+
 export function KanjiModal({ char, onClose, onSelectWord }: KanjiModalProps) {
+  useEffect(() => {
+    if (!char) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [char, onClose]);
+
   if (!char) return null;
 
   const kanji = KANJI_BY_CHAR.get(char);
   const words = getWordsByKanji(char);
+  const canSpeak = typeof window !== 'undefined' && 'speechSynthesis' in window;
 
   return (
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+      aria-label={`Chi tiết chữ Hán ${char}`}
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-end justify-center bg-raku-ink/45 backdrop-blur-[2px] sm:items-stretch sm:justify-end"
     >
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-lg w-full max-h-[85vh] flex flex-col overflow-hidden">
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="flex max-h-[85dvh] w-full flex-col overflow-hidden rounded-t-2xl border-t border-raku-line bg-raku-surface sm:h-full sm:max-h-none sm:max-w-md sm:rounded-none sm:border-l sm:border-t-0 animate-raku-enter"
+      >
+        {/* Mobile grab handle */}
+        <div className="flex justify-center pt-2.5 sm:hidden" aria-hidden="true">
+          <span className="h-1 w-10 rounded-full bg-raku-line-strong" />
+        </div>
+
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center space-x-3">
-            <span className="text-3xl font-black text-sky-600 dark:text-sky-400 font-sans">
+        <div className="flex items-start justify-between gap-3 border-b border-raku-line px-5 py-4">
+          <div className="flex items-center gap-4">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-raku-line bg-raku-canvas font-jp text-4xl font-bold text-raku-ink">
               {char}
-            </span>
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                Hán Việt: {kanji?.hanViet.join(', ') || 'Chưa có'}
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs font-medium text-raku-muted">Hán Việt</div>
+              <h2 className="text-lg font-bold text-raku-accent">
+                {kanji?.hanViet.join(' · ') || 'Chưa có'}
               </h2>
-              <span className="text-xs text-slate-500 dark:text-slate-400">
-                {kanji?.meaningVi}
-              </span>
+              <p className="mt-0.5 text-sm text-raku-body">{kanji?.meaningVi || '—'}</p>
             </div>
           </div>
+
           <button
+            type="button"
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+            aria-label="Đóng chi tiết Kanji"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-raku-muted transition-colors hover:bg-raku-subtle hover:text-raku-ink"
           >
-            <X className="w-5 h-5" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-5 sm:p-6 overflow-y-auto space-y-4 text-xs text-slate-600 dark:text-slate-300">
-          {/* Kanji metadata grid */}
-          <div className="grid grid-cols-3 gap-2.5 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-center">
-            <div>
-              <div className="text-[10px] text-slate-400 uppercase">Cấp độ</div>
-              <div className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-0.5">
+        {/* Body */}
+        <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5 text-sm text-raku-body">
+          {/* Compact metadata row */}
+          <dl className="grid grid-cols-3 divide-x divide-raku-line rounded-xl border border-raku-line bg-raku-canvas text-center">
+            <div className="py-2.5">
+              <dt className="text-[11px] text-raku-muted">Cấp độ</dt>
+              <dd className="mt-0.5 font-semibold text-raku-ink tabular-nums">
                 {kanji?.jlpt || '—'}
-              </div>
+              </dd>
             </div>
-            <div>
-              <div className="text-[10px] text-slate-400 uppercase">Số nét</div>
-              <div className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-0.5">
-                {kanji?.strokeCount || '-'} nét
-              </div>
+            <div className="py-2.5">
+              <dt className="text-[11px] text-raku-muted">Số nét</dt>
+              <dd className="mt-0.5 font-semibold text-raku-ink tabular-nums">
+                {kanji?.strokeCount || '—'}
+              </dd>
             </div>
-            <div>
-              <div className="text-[10px] text-slate-400 uppercase">Từ chứa chữ này</div>
-              <div className="text-sm font-bold text-sky-600 dark:text-sky-400 mt-0.5">
-                {words.length} từ
-              </div>
+            <div className="py-2.5">
+              <dt className="text-[11px] text-raku-muted">Từ ghép</dt>
+              <dd className="mt-0.5 font-semibold text-raku-accent tabular-nums">
+                {words.length}
+              </dd>
             </div>
-          </div>
+          </dl>
 
-          {/* Onyomi / Kunyomi */}
+          {/* Readings */}
           {(kanji?.onyomi?.length || kanji?.kunyomi?.length) ? (
-            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 space-y-2">
+            <div className="space-y-2 rounded-xl border border-raku-line bg-raku-canvas px-4 py-3 text-xs">
               {kanji.onyomi.length > 0 && (
-                <div>
-                  <span className="text-[10px] font-semibold text-slate-400 uppercase mr-2">Onyomi:</span>
-                  <span className="text-slate-800 dark:text-slate-200 font-medium font-sans">
+                <div className="flex items-baseline gap-2">
+                  <span className="w-16 shrink-0 font-semibold text-raku-muted">Onyomi</span>
+                  <span className="font-jp text-sm font-medium text-raku-ink">
                     {kanji.onyomi.join('、')}
                   </span>
                 </div>
               )}
               {kanji.kunyomi.length > 0 && (
-                <div>
-                  <span className="text-[10px] font-semibold text-slate-400 uppercase mr-2">Kunyomi:</span>
-                  <span className="text-slate-800 dark:text-slate-200 font-medium font-sans">
+                <div className="flex items-baseline gap-2">
+                  <span className="w-16 shrink-0 font-semibold text-raku-muted">Kunyomi</span>
+                  <span className="font-jp text-sm font-medium text-raku-ink">
                     {kanji.kunyomi.join('、')}
                   </span>
                 </div>
@@ -89,17 +125,15 @@ export function KanjiModal({ char, onClose, onSelectWord }: KanjiModalProps) {
             </div>
           ) : null}
 
-          {/* Lookalikes (chữ dễ nhầm) */}
+          {/* Lookalikes */}
           {kanji?.lookalikes && kanji.lookalikes.length > 0 && (
             <div>
-              <h4 className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
-                Chữ dễ nhầm (Lookalikes):
-              </h4>
-              <div className="flex items-center space-x-2">
+              <h3 className="mb-2 text-xs font-semibold text-raku-muted">Chữ dễ nhầm</h3>
+              <div className="flex flex-wrap gap-2">
                 {kanji.lookalikes.map((lk) => (
                   <span
                     key={lk}
-                    className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 font-bold font-sans text-sm"
+                    className="rounded-lg border border-raku-hard/30 bg-raku-hard-soft px-2.5 py-1 font-jp text-base font-bold text-raku-hard"
                   >
                     {lk}
                   </span>
@@ -108,32 +142,49 @@ export function KanjiModal({ char, onClose, onSelectWord }: KanjiModalProps) {
             </div>
           )}
 
-          {/* Words containing this kanji */}
+          {/* Related words */}
           <div>
-            <h4 className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
-              Các từ vựng trong kho chứa chữ「{char}」({words.length} từ):
-            </h4>
-            <div className="space-y-1.5 max-h-60 overflow-y-auto">
-              {words.map((w) => (
-                <div
-                  key={w.id}
-                  onClick={() => onSelectWord && onSelectWord(w.id)}
-                  className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:bg-sky-50 dark:hover:bg-sky-950/40 border border-slate-100 dark:border-slate-800 flex items-center justify-between transition cursor-pointer"
-                >
-                  <div>
-                    <span className="font-bold text-slate-900 dark:text-slate-100 font-sans mr-2">
-                      {w.surface}
-                    </span>
-                    <span className="text-sky-600 dark:text-sky-400 font-medium">
-                      ({w.readings.join(', ')})
-                    </span>
-                    <div className="text-slate-500 dark:text-slate-400 mt-0.5">
-                      {w.meaningVi}
+            <h3 className="mb-2 text-xs font-semibold text-raku-muted">
+              Từ vựng chứa「{char}」({words.length})
+            </h3>
+            {words.length === 0 ? (
+              <p className="text-xs text-raku-muted">Chưa có từ vựng nào trong kho chứa chữ này.</p>
+            ) : (
+              <div className="divide-y divide-raku-line overflow-hidden rounded-xl border border-raku-line bg-raku-canvas">
+                {words.map((w) => (
+                  <div
+                    key={w.id}
+                    onClick={() => onSelectWord?.(w.id)}
+                    className={`flex items-center justify-between gap-3 px-3.5 py-2.5 ${
+                      onSelectWord ? 'cursor-pointer hover:bg-raku-subtle' : ''
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-baseline gap-x-2">
+                        <span className="font-jp text-sm font-bold text-raku-ink">{w.surface}</span>
+                        <span className="font-jp text-xs text-raku-accent">
+                          {w.readings.join(' ・ ')}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-xs text-raku-muted">{w.meaningVi}</p>
                     </div>
+                    {canSpeak && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          speakWord(w.readings[0] || w.surface);
+                        }}
+                        aria-label={`Nghe ${w.surface}`}
+                        className="shrink-0 rounded-lg p-1.5 text-raku-muted hover:bg-raku-subtle hover:text-raku-ink"
+                      >
+                        <Volume2 className="h-3.5 w-3.5" aria-hidden="true" />
+                      </button>
+                    )}
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

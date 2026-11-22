@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+﻿import { useMemo, useState } from 'react';
 import { ArrowRight, CheckCircle2, Plus, RotateCcw, XCircle } from 'lucide-react';
 import type { GrammarExercise } from '@raku/core';
 
@@ -94,7 +94,7 @@ export function GrammarExercisePlayer({
 
   if (!exercise) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+      <div className="rounded-2xl border border-raku-line bg-raku-surface p-6 text-center text-sm text-slate-500  dark:text-slate-400">
         Chưa có bài tập để luyện.
       </div>
     );
@@ -179,28 +179,30 @@ export function GrammarExercisePlayer({
     const total = results.length;
     const percentage = total > 0 ? Math.round((correctCount / total) * 100) : 0;
     return (
-      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center dark:border-emerald-800 dark:bg-emerald-950/40">
-        <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600 dark:text-emerald-400" />
-        <h3 className="mt-3 text-lg font-bold text-slate-900 dark:text-slate-100">
-          Hoàn thành phiên luyện tập!
+      <div className="raku-card mx-auto max-w-md p-7 text-center animate-raku-enter">
+        <div className="raku-hanko-seal mx-auto h-12 w-12 text-xl" aria-hidden="true">
+          済
+        </div>
+        <h3 className="mt-4 text-lg font-bold text-raku-ink">
+          Xong phiên luyện tập
         </h3>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-          Đúng <strong>{correctCount}</strong> / {total} câu · {percentage}%
+        <p className="mt-1 text-sm text-raku-body tabular-nums">
+          Đúng <strong className="text-raku-accent">{correctCount}</strong> / {total} câu · {percentage}%
         </p>
-        <p className="mt-1 text-xs text-slate-400">{title}</p>
+        <p className="mt-1 text-xs text-raku-muted">{title}</p>
         <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
           <button
             type="button"
             onClick={restartSession}
-            className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700"
+            className="raku-btn-primary min-h-10 px-4 text-xs"
           >
             <RotateCcw className="h-3.5 w-3.5" />
-            Làm lại từ đầu
+            Làm lại
           </button>
           <button
             type="button"
             onClick={onExit}
-            className="rounded-xl border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+            className="raku-btn-secondary min-h-10 px-4 text-xs"
           >
             Thoát
           </button>

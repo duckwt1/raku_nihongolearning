@@ -13,12 +13,24 @@ export default {
           surface: 'rgb(var(--raku-surface) / <alpha-value>)',
           subtle: 'rgb(var(--raku-subtle) / <alpha-value>)',
           ink: 'rgb(var(--raku-ink) / <alpha-value>)',
+          body: 'rgb(var(--raku-body) / <alpha-value>)',
           muted: 'rgb(var(--raku-muted) / <alpha-value>)',
-          accent: 'rgb(var(--raku-accent) / <alpha-value>)',
-          'accent-soft': 'rgb(var(--raku-accent-soft) / <alpha-value>)',
-          signal: 'rgb(var(--raku-signal) / <alpha-value>)',
           line: 'rgb(var(--raku-line) / <alpha-value>)',
-          'on-accent': 'rgb(var(--raku-on-accent) / <alpha-value>)'
+          'line-strong': 'rgb(var(--raku-line-strong) / <alpha-value>)',
+          accent: 'rgb(var(--raku-accent) / <alpha-value>)',
+          'accent-hover': 'rgb(var(--raku-accent-hover) / <alpha-value>)',
+          'accent-soft': 'rgb(var(--raku-accent-soft) / <alpha-value>)',
+          'on-accent': 'rgb(var(--raku-on-accent) / <alpha-value>)',
+          signal: 'rgb(var(--raku-signal) / <alpha-value>)',
+          'signal-soft': 'rgb(var(--raku-signal-soft) / <alpha-value>)',
+          again: 'rgb(var(--raku-again) / <alpha-value>)',
+          'again-soft': 'rgb(var(--raku-again-soft) / <alpha-value>)',
+          hard: 'rgb(var(--raku-hard) / <alpha-value>)',
+          'hard-soft': 'rgb(var(--raku-hard-soft) / <alpha-value>)',
+          good: 'rgb(var(--raku-good) / <alpha-value>)',
+          'good-soft': 'rgb(var(--raku-good-soft) / <alpha-value>)',
+          easy: 'rgb(var(--raku-easy) / <alpha-value>)',
+          'easy-soft': 'rgb(var(--raku-easy-soft) / <alpha-value>)'
         },
         slate: {
           50: 'rgb(var(--raku-neutral-50) / <alpha-value>)',
@@ -34,21 +46,22 @@ export default {
           950: 'rgb(var(--raku-neutral-950) / <alpha-value>)'
         },
         sky: {
-          50: '#F2F5ED',
-          100: '#E6EDDE',
-          200: '#CADCC5',
-          300: '#ABC7A8',
-          400: '#83A989',
-          500: '#527F6A',
-          600: '#28665B',
-          700: '#205349',
-          800: '#194238',
-          900: '#15352F',
-          950: '#102722'
+          50: '#EEF4F0',
+          100: '#E2ECE5',
+          200: '#C4DACB',
+          300: '#9CC2AA',
+          400: '#6FA388',
+          500: '#42806A',
+          600: '#245C52',
+          700: '#1C4B42',
+          800: '#173C35',
+          900: '#13302B',
+          950: '#0E2320'
         }
       },
       fontFamily: {
-        sans: ['system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', '"Noto Sans JP"', 'sans-serif']
+        sans: ['"Be Vietnam Pro"', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        jp: ['"Zen Kaku Gothic New"', '"Noto Sans JP"', 'sans-serif']
       },
       minHeight: {
         touch: '44px'

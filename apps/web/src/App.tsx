@@ -1,24 +1,21 @@
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
 import {
+  ArrowLeft,
   BookOpen,
-  Layers,
-  FileUp,
-  Sparkles,
-  Settings,
+  Library,
+  Wand2,
   Wifi,
   WifiOff,
   Moon,
   Sun,
   Search,
   User as UserIcon,
-  Database,
   CloudUpload,
   RefreshCw,
   CheckCircle2,
   Cloud,
   ChevronDown,
   Download,
-  ListChecks,
   Swords
   // Lock // Khi cần bật lại mật khẩu Firestore: uncomment Lock
 } from 'lucide-react';
@@ -101,7 +98,9 @@ import { CloudConflictModal } from './components/CloudConflictModal';
 
 const ArenaView = lazy(() => import('./components/ArenaView').then(({ ArenaView: View }) => ({ default: View })));
 
-type AppTab = 'study' | 'kanji' | 'grammar' | 'exercises' | 'arena' | 'import' | 'settings';
+type AppTab = 'study' | 'library' | 'practice' | 'profile';
+type LibrarySection = 'kanji' | 'grammar';
+type PracticeSection = 'exercises' | 'arena';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -163,8 +162,13 @@ export function App() {
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
   const [activeTab, setActiveTab] = useState<AppTab>(() =>
-    new URLSearchParams(window.location.search).has('arena') ? 'arena' : 'study'
+    new URLSearchParams(window.location.search).has('arena') ? 'practice' : 'study'
   );
+  const [librarySection, setLibrarySection] = useState<LibrarySection>('kanji');
+  const [practiceSection, setPracticeSection] = useState<PracticeSection>(() =>
+    new URLSearchParams(window.location.search).has('arena') ? 'arena' : 'exercises'
+  );
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [hasVisitedArena, setHasVisitedArena] = useState(() =>
     new URLSearchParams(window.location.search).has('arena')
   );
@@ -175,20 +179,17 @@ export function App() {
   const [showInstallHelp, setShowInstallHelp] = useState(false);
 
   const navigationItems = [
-    { id: 'study' as const, label: 'Ôn từ', icon: BookOpen },
-    { id: 'kanji' as const, label: 'Kanji', icon: Layers },
-    { id: 'grammar' as const, label: 'Ngữ pháp', icon: Sparkles },
-    { id: 'exercises' as const, label: 'Bài tập', icon: ListChecks },
-    { id: 'arena' as const, label: 'Đấu trường', icon: Swords },
-    { id: 'import' as const, label: 'Nhập từ', icon: FileUp },
-    { id: 'settings' as const, label: 'Cài đặt', icon: Settings }
+    { id: 'study' as const, label: 'Học', icon: BookOpen },
+    { id: 'library' as const, label: 'Kho học', icon: Library },
+    { id: 'practice' as const, label: 'Luyện tập', icon: Swords },
+    { id: 'profile' as const, label: 'Hồ sơ', icon: UserIcon }
   ];
 
   const handleInstallApp = async () => {
     if (isAppInstalled) return;
     if (!installPrompt) {
       setShowInstallHelp(true);
-      setActiveTab('settings');
+      setActiveTab('profile');
       return;
     }
 
@@ -344,9 +345,18 @@ export function App() {
   const selectTab = (tab: AppTab) => {
     setStudySessionCards([]);
     setIsStudying(false);
-    if (tab === 'exercises') setExerciseTarget(null);
-    if (tab === 'arena') setHasVisitedArena(true);
+    setIsImportOpen(false);
+    if (tab === 'practice') {
+      setExerciseTarget(null);
+      if (practiceSection === 'arena') setHasVisitedArena(true);
+    }
     setActiveTab(tab);
+  };
+
+  const selectPracticeSection = (section: PracticeSection) => {
+    if (section === 'exercises') setExerciseTarget(null);
+    if (section === 'arena') setHasVisitedArena(true);
+    setPracticeSection(section);
   };
 
   // Kanji Explorer search
@@ -1363,10 +1373,13 @@ export function App() {
   const handleNavigateToImport = (deckId: string, folderId?: string) => {
     setImportTargetDeckId(deckId);
     setImportTargetFolderId(folderId || '');
-    setActiveTab('import');
+    setIsStudying(false);
+    setActiveTab('study');
+    setIsImportOpen(true);
   };
 
   const handleNavigateToStudy = (deckId: string) => {
+    setIsImportOpen(false);
     const targetDeck = decks.find((d) => d.id === deckId);
     if (targetDeck) {
       handleSelectDeckToStudy(targetDeck);
@@ -1376,7 +1389,8 @@ export function App() {
 
   const handleOpenExercises = (grammarId: string, level: JlptLevel) => {
     setExerciseTarget({ grammarId, level });
-    setActiveTab('exercises');
+    setPracticeSection('exercises');
+    setActiveTab('practice');
   };
 
   const handlePullFromFirestore = async () => {
@@ -1463,151 +1477,190 @@ export function App() {
     }
   };
 
+  const isFocusMode = activeTab === 'study' && isStudying;
+
   return (
     <div className={`raku-app-shell min-h-dvh flex flex-col ${darkMode ? 'dark' : ''}`}>
-      {/* Desktop navigation */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-raku-line bg-raku-surface lg:flex">
-        <div className="flex items-center gap-3 border-b border-raku-line px-5 py-5">
-          <div className="raku-brand-mark flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-xl font-bold">楽</div>
-          <div className="min-w-0">
-            <div className="truncate font-bold text-raku-ink">Raku Nihongo</div>
-            <div className="mt-0.5 text-sm text-raku-muted">Tự học tiếng Nhật</div>
+      {/* Desktop navigation (hidden in Focus Mode) */}
+      {!isFocusMode && (
+        <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-raku-line bg-raku-surface lg:flex">
+          <div className="flex items-center gap-3 px-5 py-5">
+            <div className="raku-brand-mark flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg font-bold">
+              楽
+            </div>
+            <div className="min-w-0">
+              <div className="truncate text-sm font-bold text-raku-ink">Raku Nihongo</div>
+              <div className="text-xs text-raku-muted">Tự học tiếng Nhật</div>
+            </div>
           </div>
-        </div>
-        <nav aria-label="Điều hướng chính" className="flex-1 space-y-1 px-3 py-5">
-          {navigationItems.map(({ id, label, icon: Icon }) => (
+
+          <nav aria-label="Điều hướng chính" className="flex-1 space-y-1 px-3 py-2">
+            {navigationItems.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => selectTab(id)}
+                aria-current={activeTab === id ? 'page' : undefined}
+                className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-3.5 text-sm font-medium transition-colors ${
+                  activeTab === id
+                    ? 'bg-raku-accent-soft font-semibold text-raku-accent'
+                    : 'text-raku-muted hover:bg-raku-subtle hover:text-raku-ink'
+                }`}
+              >
+                <Icon className="h-[18px] w-[18px] shrink-0" />
+                <span>{label}</span>
+              </button>
+            ))}
+          </nav>
+
+          <div className="border-t border-raku-line p-3">
             <button
-              key={id}
-              onClick={() => selectTab(id)}
-              aria-current={activeTab === id ? 'page' : undefined}
-              className={`flex min-h-12 w-full items-center gap-3 rounded-xl px-4 text-sm font-medium transition-colors ${activeTab === id ? 'bg-raku-accent-soft text-raku-accent' : 'text-raku-muted hover:bg-raku-subtle hover:text-raku-ink'}`}
+              type="button"
+              onClick={() => setIsAiQuizModalOpen(true)}
+              className="flex min-h-10 w-full items-center gap-2.5 rounded-xl px-3 text-xs font-medium text-raku-muted transition-colors hover:bg-raku-subtle hover:text-raku-ink"
             >
-              <Icon className="h-5 w-5 shrink-0" />
-              <span>{label}</span>
+              <Wand2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>Tạo câu hỏi AI</span>
             </button>
-          ))}
-        </nav>
-      </aside>
-      <div className="flex min-h-dvh min-w-0 flex-1 flex-col lg:ml-60">
+          </div>
+        </aside>
+      )}
+
+      <div className={`flex min-h-dvh min-w-0 flex-1 flex-col ${isFocusMode ? '' : 'lg:ml-56'}`}>
       {/* Top Header */}
-      <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-raku-line bg-raku-surface px-3 py-2.5 sm:px-6 sm:py-3 lg:px-8">
-        <div className="flex min-w-0 items-center gap-2 sm:gap-2.5 lg:hidden">
-          <div className="raku-brand-mark flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-lg font-bold">
-            楽
-          </div>
-          <div className="min-w-0">
-            <h1 className="truncate whitespace-nowrap text-base font-bold leading-tight text-raku-ink sm:text-lg">
-              Raku Nihongo
-            </h1>
-            <span className="hidden text-sm text-raku-muted sm:block">
-              Kanji – Từ vựng – Ngữ pháp
-            </span>
-          </div>
-        </div>
-        <div className="hidden min-w-0 flex-1 text-sm font-semibold text-raku-ink lg:block">
-          {navigationItems.find((item) => item.id === activeTab)?.label}
-        </div>
-
-        <div className="flex shrink-0 items-center gap-0.5 sm:gap-2">
-          {/* Offline-First Sync Status indicator */}
-          <div
-            role="status"
-            aria-label={!isOnline ? 'Đang ngoại tuyến' : syncStatus === 'syncing' ? 'Đang đồng bộ' : pendingCount > 0 ? `${pendingCount} lượt ôn tập đang chờ đồng bộ` : 'Đã sao lưu an toàn'}
-            className={`inline-flex h-11 w-11 items-center justify-center rounded-full text-sm font-medium transition-colors sm:h-auto sm:w-auto sm:px-3 sm:py-2 ${
-              !isOnline
-                ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300/50 dark:border-amber-800'
-                : syncStatus === 'syncing'
-                ? 'bg-raku-accent-soft text-raku-accent border border-raku-accent/20'
-                : pendingCount > 0
-                ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-200/50 dark:border-amber-800'
-                : 'bg-raku-accent-soft text-raku-accent border border-raku-accent/20'
-            }`}
-            title={
-              !isOnline
-                ? `Đang ngoại tuyến. ${pendingCount > 0 ? `${pendingCount} lượt ôn tập đang lưu tại máy.` : 'Dữ liệu được lưu an toàn tại máy.'}`
-                : syncStatus === 'syncing'
-                ? 'Đang đồng bộ dữ liệu lên Firebase...'
-                : pendingCount > 0
-                ? `${pendingCount} lượt ôn tập đã lưu tại máy, sẵn sàng sao lưu lên đám mây khi bạn bấm Đồng bộ.`
-                : 'Đã sao lưu an toàn'
-            }
-          >
-            {!isOnline ? (
-              <>
-                <WifiOff className="h-4 w-4 text-amber-600 dark:text-amber-400 sm:mr-1.5 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
-                <span className="hidden sm:inline">Ngoại tuyến{pendingCount > 0 ? ` (${pendingCount})` : ''}</span>
-              </>
-            ) : syncStatus === 'syncing' ? (
-              <>
-                <RefreshCw className="h-4 w-4 animate-spin text-sky-600 dark:text-sky-400 sm:mr-1.5 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
-                <span className="hidden sm:inline">Đang đồng bộ...</span>
-              </>
-            ) : pendingCount > 0 ? (
-              <>
-                <Cloud className="h-4 w-4 text-amber-600 dark:text-amber-400 sm:mr-1.5 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
-                <span className="hidden sm:inline">Lưu máy ({pendingCount})</span>
-              </>
-            ) : (
-              <>
-                <Wifi className="h-4 w-4 text-emerald-600 dark:text-emerald-400 sm:mr-1.5 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
-                <span className="hidden sm:inline">Đã sao lưu</span>
-              </>
-            )}
-          </div>
-
-          {/* AI Quiz generator button */}
+      {isFocusMode ? (
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-raku-line bg-raku-surface/95 px-4 py-3 backdrop-blur-sm sm:px-6">
           <button
-            onClick={() => setIsAiQuizModalOpen(true)}
-            className="hidden h-11 w-11 items-center justify-center rounded-xl text-raku-accent transition-colors hover:bg-raku-accent-soft focus:outline-none focus:ring-2 focus:ring-raku-accent sm:flex"
-            title="AI tạo bộ câu hỏi"
-            aria-label="AI tạo câu hỏi"
+            type="button"
+            onClick={() => {
+              setStudySessionCards([]);
+              setIsStudying(false);
+            }}
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-xl px-2.5 text-sm font-medium text-raku-muted transition-colors hover:bg-raku-subtle hover:text-raku-ink"
           >
-            <Sparkles className="w-5 h-5" />
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            <span>Thoát</span>
           </button>
 
-          {/* User profile / login button */}
-          <button
-            onClick={() => setIsAuthModalOpen(true)}
-            className="flex h-11 w-11 items-center justify-center rounded-xl p-2 text-raku-muted transition-colors hover:bg-raku-subtle hover:text-raku-ink focus:outline-none focus:ring-2 focus:ring-raku-accent"
-            title={user ? (user.isAnonymous ? 'Khách ẩn danh' : user.email || 'Tài khoản') : 'Đăng nhập'}
-            aria-label="Tài khoản"
-          >
-            <UserIcon className="w-5 h-5" />
-          </button>
+          <span className="min-w-0 truncate text-sm font-semibold text-raku-ink">
+            {activeStudyTarget?.title || 'Phiên ôn tập'}
+          </span>
 
-          {/* Dark mode toggle */}
           <button
+            type="button"
             onClick={toggleDarkMode}
-            className="flex h-11 w-11 items-center justify-center rounded-xl p-2 text-raku-muted transition-colors hover:bg-raku-subtle hover:text-raku-ink focus:outline-none focus:ring-2 focus:ring-raku-accent"
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-raku-muted transition-colors hover:bg-raku-subtle hover:text-raku-ink"
             aria-label="Chuyển chế độ sáng/tối"
           >
-            {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
-        </div>
-      </header>
+        </header>
+      ) : (
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-raku-line bg-raku-surface/95 px-4 py-2.5 backdrop-blur-sm sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-2.5 lg:hidden">
+            <div className="raku-brand-mark flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-base font-bold">
+              楽
+            </div>
+            <h1 className="truncate text-base font-bold text-raku-ink">Raku Nihongo</h1>
+          </div>
 
-      {/* Auto-Sync Toast Notification */}
+          <div className="hidden min-w-0 flex-1 text-sm font-semibold text-raku-ink lg:block">
+            {isImportOpen && activeTab === 'study'
+              ? 'Nhập từ vựng'
+              : navigationItems.find((item) => item.id === activeTab)?.label}
+          </div>
+
+          <div className="flex shrink-0 items-center gap-1">
+            {/* Minimal sync status indicator — opens Profile/Sync */}
+            <button
+              type="button"
+              onClick={() => selectTab('profile')}
+              role="status"
+              aria-label={
+                !isOnline
+                  ? 'Đang ngoại tuyến'
+                  : syncStatus === 'syncing'
+                    ? 'Đang đồng bộ'
+                    : pendingCount > 0
+                      ? `${pendingCount} lượt ôn tập đang chờ đồng bộ`
+                      : 'Đã đồng bộ'
+              }
+              title={
+                !isOnline
+                  ? 'Đang ngoại tuyến — dữ liệu lưu trên máy'
+                  : syncStatus === 'syncing'
+                    ? 'Đang đồng bộ lên đám mây...'
+                    : pendingCount > 0
+                      ? `${pendingCount} mục đang chờ sao lưu`
+                      : 'Dữ liệu đã sao lưu'
+              }
+              className="inline-flex h-10 items-center gap-2 rounded-xl px-2.5 text-xs font-medium text-raku-muted transition-colors hover:bg-raku-subtle hover:text-raku-ink"
+            >
+              {syncStatus === 'syncing' ? (
+                <RefreshCw className="h-3.5 w-3.5 animate-spin text-raku-accent" aria-hidden="true" />
+              ) : (
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    !isOnline || pendingCount > 0 ? 'bg-raku-hard' : 'bg-raku-accent'
+                  }`}
+                  aria-hidden="true"
+                />
+              )}
+              <span className="hidden sm:inline tabular-nums">
+                {!isOnline
+                  ? 'Ngoại tuyến'
+                  : syncStatus === 'syncing'
+                    ? 'Đang đồng bộ'
+                    : pendingCount > 0
+                      ? `Chờ lưu (${pendingCount})`
+                      : 'Đã lưu'}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsAuthModalOpen(true)}
+              className="flex h-10 w-10 items-center justify-center rounded-xl text-raku-muted transition-colors hover:bg-raku-subtle hover:text-raku-ink"
+              title={user ? (user.isAnonymous ? 'Khách ẩn danh' : user.email || 'Tài khoản') : 'Đăng nhập'}
+              aria-label="Tài khoản"
+            >
+              <UserIcon className="h-[18px] w-[18px]" />
+            </button>
+
+            <button
+              type="button"
+              onClick={toggleDarkMode}
+              className="flex h-10 w-10 items-center justify-center rounded-xl text-raku-muted transition-colors hover:bg-raku-subtle hover:text-raku-ink"
+              aria-label="Chuyển chế độ sáng/tối"
+            >
+              {darkMode ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
+            </button>
+          </div>
+        </header>
+      )}
+
+      {/* Sync Toast Notification */}
       {syncToast && (
         <div
           role="status"
           aria-live="polite"
-          className={`fixed top-16 left-1/2 -translate-x-1/2 z-50 max-w-md w-[92%] sm:w-auto px-4 py-3 rounded-2xl shadow-xl border text-sm font-medium flex items-center justify-between gap-3 transition-all animate-in fade-in slide-in-from-top-3 duration-300 ${
+          className={`fixed top-16 left-1/2 z-50 flex w-[92%] max-w-md -translate-x-1/2 items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm font-medium shadow-md animate-raku-enter sm:w-auto ${
             syncToast.type === 'success'
-              ? 'bg-emerald-50/95 dark:bg-emerald-950/95 border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200'
+              ? 'border-raku-good/30 bg-raku-surface text-raku-ink'
               : syncToast.type === 'warning'
-              ? 'bg-amber-50/95 dark:bg-amber-950/95 border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200'
-              : 'bg-sky-50/95 dark:bg-sky-950/95 border-sky-300 dark:border-sky-800 text-sky-900 dark:text-sky-200'
+                ? 'border-raku-hard/30 bg-raku-surface text-raku-ink'
+                : 'border-raku-line-strong bg-raku-surface text-raku-ink'
           }`}
         >
-          <div className="flex items-center space-x-2">
-            {syncToast.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />}
-            {syncToast.type === 'warning' && <WifiOff className="w-4 h-4 text-amber-600 shrink-0" />}
-            {syncToast.type === 'info' && <Cloud className="w-4 h-4 text-sky-600 shrink-0" />}
+          <div className="flex items-center gap-2">
+            {syncToast.type === 'success' && <CheckCircle2 className="h-4 w-4 shrink-0 text-raku-good" />}
+            {syncToast.type === 'warning' && <WifiOff className="h-4 w-4 shrink-0 text-raku-hard" />}
+            {syncToast.type === 'info' && <Cloud className="h-4 w-4 shrink-0 text-raku-accent" />}
             <span>{syncToast.message}</span>
           </div>
           <button
+            type="button"
             onClick={() => setSyncToast(null)}
-            className="ml-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-raku-subtle hover:text-raku-ink"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-raku-muted hover:bg-raku-subtle hover:text-raku-ink"
             aria-label="Đóng thông báo"
           >
             ✕
@@ -1616,32 +1669,40 @@ export function App() {
       )}
 
       {/* Main Content Area */}
-      <main className="mx-auto w-full max-w-7xl flex-1 px-3 py-4 pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] sm:px-6 sm:py-6 lg:px-8 lg:pb-10">
-        {/* User Auth banner for anonymous or unauthenticated users */}
-        {!user && (
-          <div className="mb-6 p-4 rounded-2xl bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
-            <div>
-              <p className="font-semibold text-sky-900 dark:text-sky-200">
-                Chào mừng bạn đến với Raku Nihongo!
+      <main
+        className={`mx-auto w-full flex-1 px-4 py-5 sm:px-6 sm:py-7 lg:px-8 ${
+          isFocusMode
+            ? 'max-w-2xl pb-10'
+            : 'max-w-5xl pb-[calc(5.75rem+env(safe-area-inset-bottom,0px))] lg:pb-12'
+        }`}
+      >
+        {/* Unauthenticated banner (hidden during Focus Mode) */}
+        {!user && !isFocusMode && (
+          <div className="raku-card mb-6 flex flex-col items-start justify-between gap-3 p-4 sm:flex-row sm:items-center">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-raku-ink">
+                Lưu tiến độ học trên thiết bị hoặc đồng bộ đám mây
               </p>
-              <p className="text-xs text-sky-700 dark:text-sky-300 mt-0.5">
-                Bạn có thể dùng thử ẩn danh ngay để lưu tiến độ ôn tập offline, hoặc đăng nhập để đồng bộ các thiết bị.
+              <p className="mt-0.5 text-xs text-raku-muted">
+                Dùng thử ngay không cần tạo tài khoản, hoặc đăng nhập để đồng bộ giữa Web và Mobile.
               </p>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex shrink-0 items-center gap-2">
               <button
+                type="button"
                 onClick={() => {
                   void signInAnonymously(auth).catch((err) =>
                     showSyncToast(`Không thể đăng nhập ẩn danh: ${err?.message || err}`, 'warning')
                   );
                 }}
-                className="px-4 py-2 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white text-xs font-semibold rounded-xl shadow-sm touch-target"
+                className="raku-btn-primary min-h-10 px-4 text-xs"
               >
-                Dùng thử ngay
+                Dùng thử
               </button>
               <button
+                type="button"
                 onClick={() => setIsAuthModalOpen(true)}
-                className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl hover:bg-slate-50 touch-target"
+                className="raku-btn-secondary min-h-10 px-4 text-xs"
               >
                 Đăng nhập
               </button>
@@ -1649,12 +1710,31 @@ export function App() {
           </div>
         )}
 
-        {/* TAB 1: STUDY FLASHCARDS & ANKI-STYLE DECKS/FOLDERS */}
+        {/* TAB 1: HỌC (Hôm nay + Bộ thẻ + Focus Mode + Nhập từ) */}
         {activeTab === 'study' && (
           <div className="space-y-6">
-            {!isStudying ? (
+            {isImportOpen ? (
+              <div className="space-y-4">
+                <button
+                  type="button"
+                  onClick={() => setIsImportOpen(false)}
+                  className="inline-flex min-h-10 items-center gap-1.5 rounded-xl px-2.5 text-sm font-medium text-raku-muted transition-colors hover:bg-raku-subtle hover:text-raku-ink"
+                >
+                  <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                  <span>Quay lại bộ thẻ</span>
+                </button>
+                <ImportView
+                  folders={folders}
+                  decks={decks}
+                  initialFolderId={importTargetFolderId}
+                  initialDeckId={importTargetDeckId}
+                  onImportCards={handleImportCards}
+                  onUndoImportCards={handleUndoImportCards}
+                  onNavigateToStudy={handleNavigateToStudy}
+                />
+              </div>
+            ) : !isStudying ? (
               <div className="space-y-6">
-                {/* 1. Today Study Statistics Bar */}
                 <TodayStatsBar
                   stats={studyStats}
                   totalDueToday={totalDueToday}
@@ -1667,14 +1747,6 @@ export function App() {
                   onStudyMoreNew={handleQuickStudyMoreNew}
                 />
 
-                <StudyHeatmap
-                  counts={dailyNewWords}
-                  goal={dailyNewWordGoal}
-                  currentStreak={streak.currentStreak}
-                  longestStreak={streak.longestStreak}
-                />
-
-                {/* 2. Hierarchical Decks & Folders View (Anki style) */}
                 <DeckFolderView
                   folders={folders}
                   decks={decks}
@@ -1689,50 +1761,43 @@ export function App() {
                   onToggleDeckVisibility={handleToggleDeckVisibility}
                   onAddCard={handleAddCard}
                   onNavigateToImport={handleNavigateToImport}
+                  onOpenImport={() => {
+                    setImportTargetDeckId('');
+                    setImportTargetFolderId('');
+                    setIsImportOpen(true);
+                  }}
                 />
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="flex items-center justify-between gap-2 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
-                  <button
-                    onClick={() => {
-                      setStudySessionCards([]);
-                      setIsStudying(false);
-                    }}
-                    className="shrink-0 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center space-x-1"
-                  >
-                    <span>← Dừng phiên ôn tập</span>
-                  </button>
-
-                  <span className="min-w-0 flex-1 break-words text-right text-xs font-bold text-sky-700 dark:text-sky-300">
-                    Đang học: {activeStudyTarget?.title || 'Tất cả thẻ'}
-                  </span>
-                </div>
-
                 {studySessionCards.length === 0 ? (
-                  <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
-                    <div className="text-4xl">🎉</div>
-                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
-                      Tuyệt vời! Bạn đã hoàn thành tất cả thẻ cần học hôm nay!
+                  <div className="raku-card mx-auto max-w-md space-y-4 p-8 text-center animate-raku-enter">
+                    <div className="raku-hanko-seal mx-auto h-14 w-14 text-2xl" aria-hidden="true">
+                      済
+                    </div>
+                    <h3 className="text-lg font-bold text-raku-ink">
+                      Đã xong thẻ hôm nay
                     </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
-                      Thuật toán FSRS đã lên lịch tối ưu cho các thẻ bạn vừa ôn. Các thẻ này sẽ được tạm ẩn và chỉ xuất hiện lại khi đến hạn ôn tập tiếp theo.
+                    <p className="text-sm leading-relaxed text-raku-muted">
+                      Không còn thẻ đến hạn trong bộ này. Bạn có thể quay lại hoặc mở thêm từ mới.
                     </p>
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                    <div className="flex flex-col items-center justify-center gap-2.5 pt-2 sm:flex-row">
                       <button
+                        type="button"
                         onClick={() => {
                           setStudySessionCards([]);
                           setIsStudying(false);
                         }}
-                        className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl shadow-xs touch-target"
+                        className="raku-btn-secondary w-full sm:w-auto"
                       >
-                        Trở về danh sách Deck
+                        Về danh sách
                       </button>
                       <button
+                        type="button"
                         onClick={handleLoadMoreNewCards}
-                        className="w-full sm:w-auto px-5 py-2.5 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white text-xs font-semibold rounded-xl shadow-xs transition flex items-center justify-center space-x-1.5 touch-target"
+                        className="raku-btn-primary w-full sm:w-auto"
                       >
-                        <span>➕ Học thêm 20 từ mới tiếp theo</span>
+                        Học thêm 20 từ mới
                       </button>
                     </div>
                   </div>
@@ -1752,137 +1817,261 @@ export function App() {
           </div>
         )}
 
-        {/* TAB 2: KANJI EXPLORER */}
-        {activeTab === 'kanji' && (
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-              <div>
-                <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-                  Mạng Liên Kết Kanji ({SEED_KANJI.length} chữ)
-                </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Bấm vào từng chữ để xem các từ vựng liên quan, Hán Việt và chữ dễ nhầm
-                </p>
-              </div>
-
-              {/* Search input */}
-              <div className="relative">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={kanjiSearch}
-                  onChange={(e) => setKanjiSearch(e.target.value)}
-                  placeholder="Tìm Kanji, Hán Việt, nghĩa..."
-                  className="pl-9 pr-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800 dark:text-slate-100 w-full sm:w-64"
-                />
-              </div>
+        {/* TAB 2: KHO HỌC (Kanji | Ngữ pháp) */}
+        {activeTab === 'library' && (
+          <div className="space-y-5">
+            <div
+              role="tablist"
+              aria-label="Phân mục Kho học"
+              className="inline-flex rounded-xl border border-raku-line bg-raku-subtle p-1"
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={librarySection === 'kanji'}
+                onClick={() => setLibrarySection('kanji')}
+                className={`min-h-9 rounded-lg px-4 text-sm font-semibold transition-colors ${
+                  librarySection === 'kanji'
+                    ? 'bg-raku-surface text-raku-ink shadow-xs'
+                    : 'text-raku-muted hover:text-raku-ink'
+                }`}
+              >
+                Kanji ({SEED_KANJI.length})
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={librarySection === 'grammar'}
+                onClick={() => setLibrarySection('grammar')}
+                className={`min-h-9 rounded-lg px-4 text-sm font-semibold transition-colors ${
+                  librarySection === 'grammar'
+                    ? 'bg-raku-surface text-raku-ink shadow-xs'
+                    : 'text-raku-muted hover:text-raku-ink'
+                }`}
+              >
+                Ngữ pháp JLPT
+              </button>
             </div>
 
-            {/* Kanji Grid */}
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2.5">
-              {filteredKanji.map((k) => (
-                <button
-                  key={k.char}
-                  onClick={() => setSelectedKanjiChar(k.char)}
-                  className="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-sky-400 text-center transition flex flex-col items-center justify-center touch-target shadow-sm"
-                >
-                  <span className="text-2xl font-bold text-slate-900 dark:text-slate-50 font-sans">
-                    {k.char}
-                  </span>
-                  <span className="text-xs font-semibold text-sky-600 dark:text-sky-400 mt-1">
-                    {k.hanViet[0] || ''}
-                  </span>
-                  <span className="text-[10px] text-slate-400 truncate max-w-full">
-                    {k.meaningVi}
-                  </span>
-                </button>
-              ))}
-            </div>
+            {librarySection === 'kanji' ? (
+              <div className="space-y-4">
+                <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
+                  <div>
+                    <h2 className="text-lg font-bold text-raku-ink">
+                      Tra cứu Kanji
+                    </h2>
+                    <p className="text-xs text-raku-muted">
+                      Chạm vào từng chữ để xem Hán Việt, cách đọc, chữ dễ nhầm và từ ghép.
+                    </p>
+                  </div>
+
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-raku-muted" />
+                    <input
+                      type="text"
+                      value={kanjiSearch}
+                      onChange={(e) => setKanjiSearch(e.target.value)}
+                      placeholder="Tìm Kanji, Hán Việt, nghĩa..."
+                      className="w-full rounded-xl border border-raku-line-strong bg-raku-surface py-2 pl-9 pr-3 text-sm text-raku-ink placeholder:text-raku-muted focus:border-raku-accent focus:outline-none sm:w-64"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 md:grid-cols-6">
+                  {filteredKanji.map((k) => (
+                    <button
+                      key={k.char}
+                      type="button"
+                      onClick={() => setSelectedKanjiChar(k.char)}
+                      className="flex flex-col items-center justify-center rounded-xl border border-raku-line bg-raku-surface p-3 text-center transition-colors hover:border-raku-accent touch-target"
+                    >
+                      <span className="font-jp text-2xl font-bold text-raku-ink">
+                        {k.char}
+                      </span>
+                      <span className="mt-1 text-xs font-semibold text-raku-accent">
+                        {k.hanViet[0] || ''}
+                      </span>
+                      <span className="max-w-full truncate text-[11px] text-raku-muted">
+                        {k.meaningVi}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <GrammarPracticeView
+                user={user}
+                onNotify={showSyncToast}
+                onOpenExercises={handleOpenExercises}
+              />
+            )}
           </div>
         )}
 
-        {/* TAB 3: GRAMMAR & EXERCISES (G4) */}
-        {activeTab === 'grammar' && (
-          <GrammarPracticeView
-            user={user}
-            onNotify={showSyncToast}
-            onOpenExercises={handleOpenExercises}
-          />
-        )}
+        {/* TAB 3: LUYỆN TẬP (Bài tập ngữ pháp | Đấu trường) */}
+        {activeTab === 'practice' && (
+          <div className="space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div
+                role="tablist"
+                aria-label="Phân mục Luyện tập"
+                className="inline-flex rounded-xl border border-raku-line bg-raku-subtle p-1"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={practiceSection === 'exercises'}
+                  onClick={() => selectPracticeSection('exercises')}
+                  className={`min-h-9 rounded-lg px-4 text-sm font-semibold transition-colors ${
+                    practiceSection === 'exercises'
+                      ? 'bg-raku-surface text-raku-ink shadow-xs'
+                      : 'text-raku-muted hover:text-raku-ink'
+                  }`}
+                >
+                  Bài tập ngữ pháp
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={practiceSection === 'arena'}
+                  onClick={() => selectPracticeSection('arena')}
+                  className={`min-h-9 rounded-lg px-4 text-sm font-semibold transition-colors ${
+                    practiceSection === 'arena'
+                      ? 'bg-raku-surface text-raku-ink shadow-xs'
+                      : 'text-raku-muted hover:text-raku-ink'
+                  }`}
+                >
+                  Đấu trường
+                </button>
+              </div>
 
-        {activeTab === 'exercises' && (
-          <GrammarExerciseView
-            user={user}
-            onNotify={showSyncToast}
-            initialTarget={exerciseTarget}
-          />
+              <button
+                type="button"
+                onClick={() => setIsAiQuizModalOpen(true)}
+                className="raku-btn-secondary min-h-9 px-3 text-xs lg:hidden"
+              >
+                <Wand2 className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>Tạo câu hỏi AI</span>
+              </button>
+            </div>
+
+            {practiceSection === 'exercises' && (
+              <GrammarExerciseView
+                user={user}
+                onNotify={showSyncToast}
+                initialTarget={exerciseTarget}
+              />
+            )}
+          </div>
         )}
 
         {hasVisitedArena && (
-          <Suspense fallback={<div className="rounded-2xl border border-raku-line bg-raku-surface px-4 py-6 text-center text-sm text-raku-muted" role="status">Đang mở Đấu trường…</div>}>
-            <div className={activeTab === 'arena' ? 'block' : 'hidden'}>
+          <Suspense
+            fallback={
+              <div
+                className="raku-card px-4 py-6 text-center text-sm text-raku-muted"
+                role="status"
+              >
+                Đang mở Đấu trường…
+              </div>
+            }
+          >
+            <div
+              className={
+                activeTab === 'practice' && practiceSection === 'arena' ? 'mt-5 block' : 'hidden'
+              }
+            >
               <ArenaView cards={allCards} decks={decks} />
             </div>
           </Suspense>
         )}
 
-        {/* TAB 4: IMPORT (G2b & G5b) */}
-        {activeTab === 'import' && (
-          <ImportView
-            folders={folders}
-            decks={decks}
-            initialFolderId={importTargetFolderId}
-            initialDeckId={importTargetDeckId}
-            onImportCards={handleImportCards}
-            onUndoImportCards={handleUndoImportCards}
-            onNavigateToStudy={handleNavigateToStudy}
-          />
-        )}
-
-        {/* TAB 5: SETTINGS */}
-        {activeTab === 'settings' && (
-          <div className="space-y-5">
+        {/* TAB 4: HỒ SƠ & CÀI ĐẶT */}
+        {activeTab === 'profile' && (
+          <div className="space-y-6">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-raku-accent">Dữ liệu · Thiết bị</p>
-              <h2 className="mt-1 text-2xl font-bold tracking-tight text-raku-ink sm:text-3xl">Cài đặt</h2>
-              <p className="mt-1 max-w-2xl text-sm leading-6 text-raku-muted">
-                Quản lý bản sao lưu, dữ liệu ngoại tuyến và ứng dụng trên thiết bị này.
+              <h2 className="text-xl font-bold tracking-tight text-raku-ink sm:text-2xl">
+                Hồ sơ & Cài đặt
+              </h2>
+              <p className="mt-1 text-sm text-raku-muted">
+                Theo dõi chuỗi học, mục tiêu hàng ngày và sao lưu dữ liệu.
               </p>
             </div>
 
+            <StudyHeatmap
+              counts={dailyNewWords}
+              goal={dailyNewWordGoal}
+              currentStreak={streak.currentStreak}
+              longestStreak={streak.longestStreak}
+            />
+
+            <section aria-labelledby="study-goal-title" className="raku-card p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 id="study-goal-title" className="text-base font-bold text-raku-ink">
+                    Mục tiêu từ mới mỗi ngày
+                  </h3>
+                  <p className="mt-0.5 text-xs text-raku-muted">
+                    Đạt đủ số từ mới trong ngày sẽ được tính một ngày giữ chuỗi.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {DAILY_NEW_WORD_GOAL_OPTIONS.map((goal) => (
+                    <button
+                      key={goal}
+                      type="button"
+                      onClick={() => handleDailyNewWordGoalChange(goal)}
+                      className={`min-h-10 rounded-xl border px-3.5 text-xs font-semibold tabular-nums transition-colors ${
+                        dailyNewWordGoal === goal
+                          ? 'border-raku-accent bg-raku-accent-soft text-raku-accent'
+                          : 'border-raku-line bg-raku-canvas text-raku-muted hover:text-raku-ink'
+                      }`}
+                    >
+                      {goal} từ/ngày
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </section>
+
             <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(19rem,0.85fr)]">
               {/* Sync and recovery */}
-              <section aria-labelledby="sync-settings-title" className="overflow-hidden rounded-2xl border border-raku-line bg-raku-surface">
-                <div className="flex flex-col gap-4 border-b border-raku-line p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-                  <div className="flex min-w-0 items-start gap-3">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-raku-accent-soft text-raku-accent">
-                      <Database className="h-5 w-5" aria-hidden="true" />
-                    </span>
-                    <div className="min-w-0">
-                      <h3 id="sync-settings-title" className="text-base font-bold text-raku-ink sm:text-lg">
-                        Đồng bộ và khôi phục
-                      </h3>
-                      <p className="mt-1 text-sm leading-5 text-raku-muted">
-                        Tiến độ được lưu trên thiết bị trước; bạn chủ động sao lưu khi cần.
-                      </p>
-                    </div>
+              <section aria-labelledby="sync-settings-title" className="raku-card overflow-hidden">
+                <div className="flex flex-col gap-3 border-b border-raku-line p-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <h3 id="sync-settings-title" className="text-base font-bold text-raku-ink">
+                      Đồng bộ và khôi phục
+                    </h3>
+                    <p className="mt-0.5 text-xs text-raku-muted">
+                      Tiến độ luôn được lưu ngoại tuyến trước; bạn chủ động đồng bộ khi cần.
+                    </p>
                   </div>
 
                   <span
                     role="status"
                     aria-live="polite"
-                    className={`inline-flex min-h-9 shrink-0 items-center gap-2 self-start rounded-full border px-3 text-sm font-semibold sm:self-auto ${
-                      !isOnline
-                        ? 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-200'
-                        : syncStatus === 'syncing'
-                        ? 'border-raku-accent/30 bg-raku-accent-soft text-raku-accent'
-                        : pendingCount > 0
-                        ? 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-200'
-                        : 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-200'
+                    className={`inline-flex min-h-8 shrink-0 items-center gap-1.5 self-start rounded-full px-3 text-xs font-semibold sm:self-auto ${
+                      !isOnline || pendingCount > 0
+                        ? 'bg-raku-hard-soft text-raku-hard'
+                        : 'bg-raku-accent-soft text-raku-accent'
                     }`}
                   >
-                    {!isOnline ? <WifiOff className="h-4 w-4" aria-hidden="true" /> : syncStatus === 'syncing' ? <RefreshCw className="h-4 w-4 animate-spin" aria-hidden="true" /> : pendingCount > 0 ? <Cloud className="h-4 w-4" aria-hidden="true" /> : <CheckCircle2 className="h-4 w-4" aria-hidden="true" />}
-                    {!isOnline ? 'Đang ngoại tuyến' : syncStatus === 'syncing' ? 'Đang đồng bộ' : pendingCount > 0 ? `${pendingCount} mục đang chờ` : 'Đã sao lưu'}
+                    {!isOnline ? (
+                      <WifiOff className="h-3.5 w-3.5" aria-hidden="true" />
+                    ) : syncStatus === 'syncing' ? (
+                      <RefreshCw className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                    ) : pendingCount > 0 ? (
+                      <Cloud className="h-3.5 w-3.5" aria-hidden="true" />
+                    ) : (
+                      <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                    )}
+                    {!isOnline
+                      ? 'Ngoại tuyến'
+                      : syncStatus === 'syncing'
+                        ? 'Đang đồng bộ'
+                        : pendingCount > 0
+                          ? `${pendingCount} mục chờ`
+                          : 'Đã sao lưu'}
                   </span>
                 </div>
 
@@ -2128,39 +2317,6 @@ export function App() {
               </div>
             </div>
 
-            <section
-              aria-labelledby="study-goal-title"
-              className="rounded-2xl border border-raku-line bg-raku-surface p-4 sm:p-5"
-            >
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h3 id="study-goal-title" className="flex items-center gap-2 text-base font-bold text-raku-ink">
-                    <Sparkles className="h-4 w-4 text-amber-500" aria-hidden="true" />
-                    Mục tiêu từ mới mỗi ngày
-                  </h3>
-                  <p className="mt-1 text-sm leading-5 text-raku-muted">
-                    Chuỗi ngày chỉ được tính khi bạn học đủ số từ mới này trong ngày.
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {DAILY_NEW_WORD_GOAL_OPTIONS.map((goal) => (
-                    <button
-                      key={goal}
-                      type="button"
-                      onClick={() => handleDailyNewWordGoalChange(goal)}
-                      className={`min-h-10 rounded-xl border px-3.5 text-xs font-semibold transition ${
-                        dailyNewWordGoal === goal
-                          ? 'border-emerald-400 bg-emerald-50 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-200'
-                          : 'border-raku-line bg-white text-raku-muted hover:bg-raku-subtle dark:bg-slate-800'
-                      }`}
-                    >
-                      {goal} từ/ngày
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </section>
-
             <GrammarAdminPanel user={user} onNotify={showSyncToast} />
           </div>
         )}
@@ -2226,28 +2382,31 @@ export function App() {
       />
       */}
 
-      {/* Mobile bottom navigation */}
-      <nav
-        aria-label="Thanh điều hướng chính"
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-raku-line bg-raku-surface px-1 pt-1 pb-[calc(0.25rem+env(safe-area-inset-bottom,0px))] lg:hidden"
-      >
-        <div className="mx-auto grid max-w-xl grid-cols-7">
-          {navigationItems.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => selectTab(id)}
-              aria-current={activeTab === id ? 'page' : undefined}
-              aria-label={label}
-              className={`flex min-h-14 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 transition-colors ${activeTab === id ? 'bg-raku-accent-soft font-semibold text-raku-accent' : 'text-raku-muted hover:bg-raku-subtle hover:text-raku-ink'}`}
-            >
-              <Icon className="h-5 w-5 shrink-0" />
-              <span className="max-w-full truncate text-[10px] leading-tight sm:text-[12px]">
-                {id === 'arena' ? <><span className="sm:hidden">Đấu</span><span className="hidden sm:inline">{label}</span></> : label}
-              </span>
-            </button>
-          ))}
-        </div>
-      </nav>
+      {/* Mobile bottom navigation — 4 crisp tabs, hidden during Focus Mode */}
+      {!isFocusMode && (
+        <nav
+          aria-label="Thanh điều hướng chính"
+          className="fixed inset-x-0 bottom-0 z-30 border-t border-raku-line bg-raku-surface/95 px-2 pt-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom,0px))] backdrop-blur-sm lg:hidden"
+        >
+          <div className="mx-auto grid max-w-md grid-cols-4 gap-1">
+            {navigationItems.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => selectTab(id)}
+                aria-current={activeTab === id ? 'page' : undefined}
+                className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1 transition-colors ${
+                  activeTab === id
+                    ? 'bg-raku-accent-soft font-semibold text-raku-accent'
+                    : 'text-raku-muted hover:text-raku-ink'
+                }`}
+              >
+                <Icon className="h-[19px] w-[19px] shrink-0" />
+                <span className="truncate text-[11px] leading-tight">{label}</span>
+              </button>
+            ))}
+          </div>
+        </nav>
+      )}
     </div>
   );
 }

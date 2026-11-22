@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock3, Flame, Layers3, BookOpen, Sparkles } from 'lucide-react';
+import { ArrowRight, Check, Clock3, Flame, Plus } from 'lucide-react';
 import { getTodayDateString, type UserStudyStats } from '@raku/core';
 
 interface TodayStatsBarProps {
@@ -29,132 +29,132 @@ export function TodayStatsBar({
   const studySeconds = isStatsToday ? stats.todayStats.studySeconds : 0;
   const reviewedCount = isStatsToday ? stats.todayStats.reviewedCount : 0;
   const minutes = Math.floor(studySeconds / 60);
-  const formattedTime = minutes > 0
-    ? `${minutes} phút học`
-    : studySeconds > 0
-      ? 'Dưới 1 phút học'
-      : 'Chưa học hôm nay';
+  const formattedTime =
+    minutes > 0 ? `${minutes} phút` : studySeconds > 0 ? '< 1 phút' : '0 phút';
+
   const isDailyGoalFinished =
     newItemsLearnedToday >= newWordGoal &&
     (reviewedCount > 0 || newItemsLearnedToday > 0) &&
     totalDueToday === 0 &&
     totalNewToday === 0;
-  const hasWorkToday = totalDueToday > 0 || totalNewToday > 0;
-  const totalToday = reviewedCount + totalDueToday + totalNewToday;
+
+  const remainingTotal = totalDueToday + totalNewToday;
+  const hasWorkToday = remainingTotal > 0;
+  const totalToday = reviewedCount + remainingTotal;
   const progress = totalToday > 0 ? Math.round((reviewedCount / totalToday) * 100) : 0;
+
   const todayLabel = new Intl.DateTimeFormat('vi-VN', {
     weekday: 'long',
     day: 'numeric',
     month: 'long'
   }).format(new Date());
 
+  const headline = isDailyGoalFinished
+    ? 'Đã xong mục tiêu hôm nay'
+    : totalDueToday > 0
+      ? `Còn ${totalDueToday} thẻ đến hạn`
+      : totalNewToday > 0
+        ? `${totalNewToday} thẻ mới sẵn sàng`
+        : 'Không có thẻ đến hạn';
+
   return (
-    <section aria-labelledby="today-focus-title" className="raku-daily-card">
-      <div className="raku-daily-card__main">
-        <div className="raku-daily-copy">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <p className="raku-daily-kicker">
-              <span className="raku-daily-kicker__seal" aria-hidden="true">楽</span>
-              Nhịp học hôm nay
-            </p>
-            <span className="raku-daily-date">{todayLabel}</span>
-          </div>
-
-          <h2 id="today-focus-title" className="raku-daily-title">
-            Mỗi ngày một nét mới.
-          </h2>
-          <p className="raku-daily-description">
-            Ôn bài đến hạn trước. Khi xong, bạn có thể mở thêm thẻ mới.
-          </p>
-
-          <div className="raku-daily-progress">
-            <div className="raku-progress-summary flex items-center justify-between gap-3 text-sm">
-              <span className="font-semibold text-raku-ink">Tiến độ hôm nay</span>
-              <span className="shrink-0 text-raku-muted tabular-nums">
-                {reviewedCount} / {totalToday} thẻ
-              </span>
-            </div>
-            <div
-              className="raku-progress-track"
-              role="progressbar"
-              aria-label="Tiến độ học hôm nay"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={progress}
+    <section
+      aria-labelledby="today-focus-title"
+      className="raku-card p-5 sm:p-6"
+    >
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 space-y-1.5">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-raku-muted">
+            <span className="capitalize">{todayLabel}</span>
+            <span aria-hidden="true">·</span>
+            <span
+              className="inline-flex items-center gap-1 font-medium text-raku-ink tabular-nums"
+              title={`Chuỗi dài nhất: ${longestStreak} ngày`}
             >
-              <div className="raku-progress-fill" style={{ width: `${progress}%` }} />
-            </div>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-raku-muted">
-              <span className="inline-flex items-center gap-1.5">
-                <Clock3 className="h-4 w-4" aria-hidden="true" /> {formattedTime}
-              </span>
-            </div>
+              <Flame
+                className={`h-3.5 w-3.5 ${currentStreak > 0 ? 'text-raku-signal' : 'text-raku-muted'}`}
+                aria-hidden="true"
+              />
+              {currentStreak} ngày liên tiếp
+            </span>
           </div>
 
-          <div className="mt-5 flex flex-wrap items-center gap-3">
-            {hasWorkToday && onQuickStudy && (
-              <button
-                onClick={onQuickStudy}
-                className="raku-daily-action"
-              >
-                {reviewedCount > 0 ? 'Tiếp tục ôn tập' : 'Bắt đầu ôn tập'}
-                <span aria-hidden="true">→</span>
-              </button>
-            )}
-            {isDailyGoalFinished && (
-              <span className="raku-daily-complete">
-                <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-                Hôm nay đã trọn vẹn
-              </span>
-            )}
-            {!hasWorkToday && !isDailyGoalFinished && (
-              <span className="text-sm font-medium text-raku-muted">Hôm nay chưa có thẻ đến hạn.</span>
-            )}
-            {onStudyMoreNew && !hasWorkToday && (
-              <button onClick={onStudyMoreNew} className="raku-daily-more">
-                <Sparkles className="h-4 w-4" aria-hidden="true" />
-                Mở thêm 20 từ
-              </button>
-            )}
+          <h2
+            id="today-focus-title"
+            className="text-xl font-bold tracking-tight text-raku-ink sm:text-2xl tabular-nums"
+          >
+            {headline}
+          </h2>
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-raku-muted tabular-nums">
+            <span>
+              Đã ôn <strong className="font-semibold text-raku-ink">{reviewedCount}</strong>
+            </span>
+            <span>
+              Từ mới{' '}
+              <strong className="font-semibold text-raku-ink">
+                {newItemsLearnedToday}/{newWordGoal}
+              </strong>
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
+              {formattedTime}
+            </span>
           </div>
         </div>
 
-        <div className="raku-study-stamp" aria-hidden="true">
-          <span className="raku-study-stamp__character">楽</span>
-          <span className="raku-study-stamp__caption">raku · học vui</span>
+        <div className="flex shrink-0 flex-wrap items-center gap-2.5">
+          {hasWorkToday && onQuickStudy && (
+            <button
+              type="button"
+              onClick={onQuickStudy}
+              className="raku-btn-primary w-full sm:w-auto"
+            >
+              <span>{reviewedCount > 0 ? 'Tiếp tục ôn' : 'Ôn ngay'}</span>
+              <span className="rounded-md bg-raku-on-accent/15 px-1.5 py-0.5 text-xs tabular-nums">
+                {remainingTotal}
+              </span>
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </button>
+          )}
+
+          {isDailyGoalFinished && (
+            <span className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-raku-accent-soft px-3.5 text-sm font-semibold text-raku-accent">
+              <Check className="h-4 w-4" aria-hidden="true" />
+              Hoàn tất
+            </span>
+          )}
+
+          {onStudyMoreNew && !hasWorkToday && (
+            <button
+              type="button"
+              onClick={onStudyMoreNew}
+              className="raku-btn-secondary w-full sm:w-auto"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              <span>Học thêm 20 từ mới</span>
+            </button>
+          )}
         </div>
       </div>
 
-      <div className="raku-daily-stats" role="group" aria-label="Tổng kết học tập hôm nay">
-        <div className="raku-daily-stat">
-          <span className="raku-daily-stat__icon raku-daily-stat__icon--green"><CheckCircle2 aria-hidden="true" /></span>
-          <div>
-            <span className="raku-daily-stat__label">Đã ôn</span>
-            <strong>{reviewedCount}<small> thẻ</small></strong>
-          </div>
+      {/* Slim, calm single-tone progress indicator */}
+      <div className="mt-5 space-y-1.5">
+        <div
+          className="raku-progress-track"
+          role="progressbar"
+          aria-label="Tiến độ học hôm nay"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={progress}
+        >
+          <div className="raku-progress-fill" style={{ width: `${progress}%` }} />
         </div>
-        <div className="raku-daily-stat">
-          <span className="raku-daily-stat__icon raku-daily-stat__icon--red"><Layers3 aria-hidden="true" /></span>
-          <div>
-            <span className="raku-daily-stat__label">Cần ôn</span>
-            <strong>{totalDueToday}<small> thẻ</small></strong>
-          </div>
-        </div>
-        <div className="raku-daily-stat">
-          <span className="raku-daily-stat__icon raku-daily-stat__icon--gold"><BookOpen aria-hidden="true" /></span>
-          <div>
-            <span className="raku-daily-stat__label">Từ mới đã học</span>
-            <strong>{newItemsLearnedToday}<small>/{newWordGoal} từ</small></strong>
-          </div>
-        </div>
-        <div className="raku-daily-stat raku-daily-stat--streak">
-          <span className="raku-daily-stat__icon raku-daily-stat__icon--fire"><Flame aria-hidden="true" /></span>
-          <div>
-            <span className="raku-daily-stat__label">Chuỗi hiện tại</span>
-            <strong title={`Chuỗi dài nhất: ${longestStreak} ngày`}>
-              {currentStreak}<small> ngày</small>
-            </strong>
-          </div>
+        <div className="flex items-center justify-between text-xs text-raku-muted tabular-nums">
+          <span>
+            {totalToday > 0 ? `${reviewedCount} / ${totalToday} thẻ hôm nay` : 'Chưa có lượt ôn hôm nay'}
+          </span>
+          <span>{progress}%</span>
         </div>
       </div>
     </section>

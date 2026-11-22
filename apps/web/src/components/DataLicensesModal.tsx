@@ -1,4 +1,4 @@
-import { X, ExternalLink, ShieldCheck, AlertTriangle } from 'lucide-react';
+﻿import { X, ExternalLink, ShieldCheck, AlertTriangle } from 'lucide-react';
 
 interface DataLicensesModalProps {
   isOpen: boolean;
@@ -15,9 +15,9 @@ export function DataLicensesModal({ isOpen, onClose }: DataLicensesModalProps) {
       aria-labelledby="licenses-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
     >
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl max-w-lg w-full max-h-[85vh] flex flex-col overflow-hidden">
+      <div className="bg-raku-surface rounded-2xl border border-raku-line shadow-xl max-w-lg w-full max-h-[85vh] flex flex-col overflow-hidden">
         {/* Modal Header */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
+        <div className="flex items-center justify-between p-4 border-b border-raku-line">
           <div className="flex items-center space-x-2">
             <ShieldCheck className="w-5 h-5 text-sky-600 dark:text-sky-400" />
             <h2 id="licenses-title" className="text-lg font-bold text-slate-900 dark:text-slate-100">
@@ -95,7 +95,7 @@ export function DataLicensesModal({ isOpen, onClose }: DataLicensesModalProps) {
         </div>
 
         {/* Modal Footer */}
-        <div className="p-3 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+        <div className="p-3 border-t border-raku-line flex justify-end">
           <button
             onClick={onClose}
             className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-lg touch-target flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-sky-400"

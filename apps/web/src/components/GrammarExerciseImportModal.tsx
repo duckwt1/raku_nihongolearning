@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Download, FileText, Upload, X } from 'lucide-react';
 import type { Grammar, GrammarExercise } from '@raku/core';
 import {
@@ -75,7 +75,7 @@ export function GrammarExerciseImportModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
-      <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-raku-line bg-raku-surface shadow-lg ">
         <div className="flex items-center justify-between border-b border-slate-100 p-5 dark:border-slate-800">
           <div className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-emerald-600" />
