@@ -24,7 +24,7 @@ jobs:
           node-version: '20'
 
       - name: Setup Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -53,15 +53,54 @@ jobs:
         working-directory: apps/mobile
         run: npx expo prebuild --platform android --non-interactive
 
-      # Nạp Keystore cố định đè lên debug.keystore để giữ nguyên chữ ký SHA-1
-      - name: Restore Signing Keystore
+      # Nạp Keystore cố định, kiểm tra nhanh bằng keytool và cấu hình signing cho Release APK
+      - name: Restore & Configure Signing Keystore
         working-directory: apps/mobile/android/app
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > debug.keystore
+          set -euo pipefail
+          if [ -z "${ANDROID_KEYSTORE_BASE64:-}" ]; then
+            echo "::error::Missing ANDROID_KEYSTORE_BASE64 secret"
+            exit 1
+          fi
+
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d '\r\n ' | base64 -d > release.keystore
+
+          STORE_PASS="${ANDROID_KEYSTORE_PASSWORD:-android}"
+          KEY_ALIAS="${ANDROID_KEY_ALIAS:-androiddebugkey}"
+
+          # Kiểm tra keystore ngay trước khi build (fail trong 5 giây nếu sai pass/alias)
+          keytool -list -keystore release.keystore -storepass "$STORE_PASS" -alias "$KEY_ALIAS" > /dev/null
+          echo "Verified keystore alias '$KEY_ALIAS' successfully."
+
+          # Cập nhật signingConfigs trong build.gradle để đọc trực tiếp từ env
+          node -e '
+            const fs = require("fs");
+            const file = "build.gradle";
+            let src = fs.readFileSync(file, "utf8");
+            const next = src
+              .replace(/storeFile\s+file\([\x27"]debug\.keystore[\x27"]\)/g, "storeFile file(\x27release.keystore\x27)")
+              .replace(/storePassword\s+[\x27"]android[\x27"]/g, "storePassword System.getenv(\x27ANDROID_KEYSTORE_PASSWORD\x27) ?: \x27android\x27")
+              .replace(/keyAlias\s+[\x27"]androiddebugkey[\x27"]/g, "keyAlias System.getenv(\x27ANDROID_KEY_ALIAS\x27) ?: \x27androiddebugkey\x27")
+              .replace(/keyPassword\s+[\x27"]android[\x27"]/g, "keyPassword System.getenv(\x27ANDROID_KEY_PASSWORD\x27) ?: (System.getenv(\x27ANDROID_KEYSTORE_PASSWORD\x27) ?: \x27android\x27)");
+            if (next === src) {
+              console.error("Failed to patch signingConfigs in build.gradle");
+              process.exit(1);
+            }
+            fs.writeFileSync(file, next);
+          '
 
       # Biên dịch ra file Release APK
       - name: Build Release APK
         working-directory: apps/mobile/android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
           ./gradlew assembleRelease
