@@ -28,7 +28,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'gradle'
+
 
       # Cài đặt dependencies từ thư mục gốc của Monorepo
       - name: Install Monorepo dependencies
