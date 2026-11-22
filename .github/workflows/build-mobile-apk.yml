@@ -70,7 +70,7 @@ jobs:
 
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d '\r\n ' | base64 -d > release.keystore
 
-          STORE_PASS="${ANDROID_KEYSTORE_PASSWORD:-android}"
+          STORE_PASS="${ANDROID_KEYSTORE_PASSWORD:-${ANDROID_KEY_PASSWORD:-android}}"
           KEY_ALIAS="${ANDROID_KEY_ALIAS:-androiddebugkey}"
 
           # Kiểm tra keystore ngay trước khi build (fail trong 5 giây nếu sai pass/alias)
@@ -84,7 +84,7 @@ jobs:
             let src = fs.readFileSync(file, "utf8");
             const next = src
               .replace(/storeFile\s+file\([\x27"]debug\.keystore[\x27"]\)/g, "storeFile file(\x27release.keystore\x27)")
-              .replace(/storePassword\s+[\x27"]android[\x27"]/g, "storePassword System.getenv(\x27ANDROID_KEYSTORE_PASSWORD\x27) ?: \x27android\x27")
+              .replace(/storePassword\s+[\x27"]android[\x27"]/g, "storePassword System.getenv(\x27ANDROID_KEYSTORE_PASSWORD\x27) ?: (System.getenv(\x27ANDROID_KEY_PASSWORD\x27) ?: \x27android\x27)")
               .replace(/keyAlias\s+[\x27"]androiddebugkey[\x27"]/g, "keyAlias System.getenv(\x27ANDROID_KEY_ALIAS\x27) ?: \x27androiddebugkey\x27")
               .replace(/keyPassword\s+[\x27"]android[\x27"]/g, "keyPassword System.getenv(\x27ANDROID_KEY_PASSWORD\x27) ?: (System.getenv(\x27ANDROID_KEYSTORE_PASSWORD\x27) ?: \x27android\x27)");
             if (next === src) {
