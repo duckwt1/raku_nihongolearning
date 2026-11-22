@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -18,6 +18,7 @@ import {
 } from '@expo-google-fonts/zen-kaku-gothic-new';
 import { ThemeProvider, useRakuTheme } from '@/providers/ThemeProvider';
 import { StudyProvider } from '@/providers/StudyProvider';
+import { initHapticsPreference } from '@/services/haptics';
 
 function RootNavigator() {
   const { colors, mode, typography } = useRakuTheme();
@@ -66,6 +67,10 @@ function RootNavigator() {
 }
 
 export default function RootLayout() {
+  useEffect(() => {
+    void initHapticsPreference();
+  }, []);
+
   const [fontsLoaded] = useFonts({
     BeVietnamPro_400Regular,
     BeVietnamPro_500Medium,

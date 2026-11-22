@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -11,21 +11,123 @@ import {
   View
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import {
+  GoogleSignin,
+  isCancelledResponse,
+  isErrorWithCode,
+  isSuccessResponse,
+  statusCodes
+} from '@react-native-google-signin/google-signin';
 import { useRakuTheme } from '@/providers/ThemeProvider';
 import { useStudy } from '@/providers/StudyProvider';
 import { isFirebaseConfigured } from '@/services/firebase';
 import { hapticSelect, hapticSuccess, hapticTap, hapticWarning } from '@/services/haptics';
 
+const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+const isGoogleConfigured = Boolean(googleWebClientId);
+
+let googleSignInConfigured = false;
+function ensureGoogleSignInConfigured(): void {
+  if (googleSignInConfigured || !googleWebClientId) return;
+  GoogleSignin.configure({
+    webClientId: googleWebClientId,
+    ...(googleIosClientId ? { iosClientId: googleIosClientId } : {})
+  });
+  googleSignInConfigured = true;
+}
+
 export default function AuthModalScreen() {
   const router = useRouter();
   const { colors, typography } = useRakuTheme();
-  const { user, signInAsGuest, signInWithEmail, registerWithEmail, signOutAccount } = useStudy();
+  const { user, signInAsGuest, signInWithEmail, registerWithEmail, signInWithGoogle, signOutAccount } =
+    useStudy();
 
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      ensureGoogleSignInConfigured();
+    } catch {
+      // Ignore configuration errors on unsupported runtimes (e.g. Expo Go)
+    }
+  }, []);
+
+  const handleGoogle = async () => {
+    if (!isFirebaseConfigured || !isGoogleConfigured) {
+      setError(
+        'Chưa cấu hình EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (và Firebase) trong apps/mobile/.env.'
+      );
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    hapticTap();
+
+    try {
+      ensureGoogleSignInConfigured();
+
+      if (Platform.OS === 'android') {
+        await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      }
+
+      const response = await GoogleSignin.signIn();
+
+      if (isCancelledResponse(response)) {
+        return;
+      }
+
+      if (!isSuccessResponse(response)) {
+        setError('Đăng nhập Google không thành công.');
+        return;
+      }
+
+      let idToken = response.data.idToken;
+      if (!idToken) {
+        const tokens = await GoogleSignin.getTokens();
+        idToken = tokens.idToken;
+      }
+
+      if (!idToken) {
+        setError(
+          'Google không trả về idToken. Hãy kiểm tra lại EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID.'
+        );
+        return;
+      }
+
+      await signInWithGoogle(idToken);
+      hapticSuccess();
+      router.back();
+    } catch (err) {
+      if (isErrorWithCode(err)) {
+        if (err.code === statusCodes.SIGN_IN_CANCELLED) {
+          return;
+        }
+        hapticWarning();
+        if (err.code === statusCodes.IN_PROGRESS) {
+          setError('Đang xử lý đăng nhập Google, vui lòng đợi.');
+        } else if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+          setError('Google Play Services chưa sẵn sàng hoặc cần cập nhật.');
+        } else if (err.code === 'DEVELOPER_ERROR' || String(err.code) === '10') {
+          setError(
+            'Lỗi cấu hình Google Sign-In (DEVELOPER_ERROR). Kiểm tra lại SHA-1 keystore, package name và Web Client ID.'
+          );
+        } else {
+          setError(err.message || `Đăng nhập Google thất bại (${err.code}).`);
+        }
+      } else {
+        hapticWarning();
+        setError(err instanceof Error ? err.message : 'Đăng nhập Google thất bại.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!isFirebaseConfigured) {
@@ -136,7 +238,7 @@ export default function AuthModalScreen() {
               ]}
             >
               {user?.isAnonymous
-                ? 'Liên kết tài khoản Email'
+                ? 'Liên kết tài khoản'
                 : isRegister
                   ? 'Tạo tài khoản mới'
                   : 'Đăng nhập Raku'}
@@ -202,6 +304,23 @@ export default function AuthModalScreen() {
                   {isRegister ? 'Đăng ký' : 'Đăng nhập'}
                 </Text>
               )}
+            </Pressable>
+
+            <Pressable
+              disabled={loading}
+              onPress={() => void handleGoogle()}
+              style={({ pressed }) => [
+                styles.secondaryBtn,
+                {
+                  borderColor: colors.lineStrong,
+                  backgroundColor: pressed ? colors.subtle : 'transparent',
+                  opacity: loading ? 0.6 : 1
+                }
+              ]}
+            >
+              <Text style={[styles.secondaryBtnText, { color: colors.ink }]}>
+                Tiếp tục với Google
+              </Text>
             </Pressable>
 
             {!user && (
@@ -273,7 +392,8 @@ const styles = StyleSheet.create({
     fontSize: 15
   },
   errorText: {
-    fontSize: 12
+    fontSize: 12,
+    lineHeight: 17
   },
   primaryBtn: {
     height: 48,

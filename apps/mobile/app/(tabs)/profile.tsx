@@ -11,12 +11,19 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Bell, ChevronRight, Cloud, Download, RefreshCw, User as UserIcon } from 'lucide-react-native';
+import { Bell, ChevronRight, Cloud, Download, RefreshCw, Smartphone, User as UserIcon } from 'lucide-react-native';
 import { DAILY_NEW_WORD_GOAL_OPTIONS } from '@raku/sync';
 import { useRakuTheme, type ThemePreference } from '@/providers/ThemeProvider';
 import { useStudy } from '@/providers/StudyProvider';
 import { StudyHeatmapNative } from '@/components/StudyHeatmapNative';
-import { hapticSelect, hapticTap } from '@/services/haptics';
+import {
+  getHapticsEnabled,
+  hapticSelect,
+  hapticTap,
+  initHapticsPreference,
+  setHapticsEnabled,
+  subscribeHapticsEnabled
+} from '@/services/haptics';
 import {
   disableDailyReminder,
   enableDailyReminder,
@@ -53,10 +60,20 @@ export default function ProfileScreen() {
     hour: 20,
     minute: 0
   });
+  const [hapticsOn, setHapticsOn] = useState<boolean>(() => getHapticsEnabled());
 
   useEffect(() => {
     void loadReminderSettings().then(setReminder);
+    void initHapticsPreference().then(setHapticsOn);
+    return subscribeHapticsEnabled(setHapticsOn);
   }, []);
+
+  const handleToggleHaptics = async (nextEnabled: boolean) => {
+    await setHapticsEnabled(nextEnabled);
+    if (nextEnabled) {
+      hapticSelect();
+    }
+  };
 
   const handleToggleReminder = async (nextEnabled: boolean) => {
     hapticSelect();
@@ -298,6 +315,33 @@ export default function ProfileScreen() {
                 </Pressable>
               );
             })}
+          </View>
+        </View>
+
+        {/* Haptics Toggle */}
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+          <View style={styles.switchRow}>
+            <View style={styles.switchTitleWrap}>
+              <View style={styles.inlineTitle}>
+                <Smartphone size={16} color={colors.accent} />
+                <Text
+                  style={[
+                    styles.cardTitle,
+                    { color: colors.ink, fontFamily: typography.fontFamily.viNative.bold }
+                  ]}
+                >
+                  Phản hồi rung
+                </Text>
+              </View>
+              <Text style={[styles.cardSub, { color: colors.muted }]}>
+                Rung nhẹ khi chạm nút và kiểm tra đáp án (luôn tắt khi vuốt thẻ).
+              </Text>
+            </View>
+            <Switch
+              value={hapticsOn}
+              onValueChange={(v) => void handleToggleHaptics(v)}
+              trackColor={{ false: colors.lineStrong, true: colors.accent }}
+            />
           </View>
         </View>
 

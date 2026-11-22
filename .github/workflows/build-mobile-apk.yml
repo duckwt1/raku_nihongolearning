@@ -29,12 +29,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-
       # Cài đặt dependencies từ thư mục gốc của Monorepo
       - name: Install Monorepo dependencies
         run: npm install
 
-      # Tạo file .env trong apps/mobile với đầy đủ 5 biến Firebase
+      # Tạo file .env trong apps/mobile với đầy đủ biến Firebase và Google OAuth
       - name: Create .env file for mobile
         working-directory: apps/mobile
         run: |
@@ -44,6 +43,9 @@ jobs:
           EXPO_PUBLIC_FIREBASE_PROJECT_ID=${{ secrets.EXPO_PUBLIC_FIREBASE_PROJECT_ID }}
           EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=${{ secrets.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET }}
           EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+          EXPO_PUBLIC_FIREBASE_APP_ID=${{ secrets.EXPO_PUBLIC_FIREBASE_APP_ID }}
+          EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=${{ secrets.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID }}
+          EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID=${{ secrets.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID }}
           EOF
 
       # Sinh thư mục android từ cấu hình Expo
@@ -51,7 +53,13 @@ jobs:
         working-directory: apps/mobile
         run: npx expo prebuild --platform android --non-interactive
 
-      # Biên dịch ra file Debug APK
+      # Nạp Keystore cố định đè lên debug.keystore để giữ nguyên chữ ký SHA-1
+      - name: Restore Signing Keystore
+        working-directory: apps/mobile/android/app
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > debug.keystore
+
+      # Biên dịch ra file Release APK
       - name: Build Release APK
         working-directory: apps/mobile/android
         run: |

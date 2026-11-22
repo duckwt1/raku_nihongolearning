@@ -66,6 +66,8 @@ export const {
   createUserWithEmailAndPassword,
   linkWithCredential,
   EmailAuthProvider,
+  GoogleAuthProvider,
+  signInWithCredential,
   signOut
 } = FirebaseAuth;
 export type User = FirebaseAuth.User;

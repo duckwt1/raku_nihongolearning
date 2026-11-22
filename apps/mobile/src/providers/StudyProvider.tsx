@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import {
   DEFAULT_DECKS,
   DEFAULT_FOLDERS,
@@ -16,6 +17,7 @@ import {
 } from '@raku/core';
 import {
   EmailAuthProvider,
+  GoogleAuthProvider,
   auth,
   createUserWithEmailAndPassword,
   isFirebaseConfigured,
@@ -23,6 +25,7 @@ import {
   mobileSyncClient,
   onAuthStateChanged,
   signInAnonymously,
+  signInWithCredential,
   signInWithEmailAndPassword,
   signOut,
   type User
@@ -55,6 +58,7 @@ interface StudyContextValue {
   signInAsGuest: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   registerWithEmail: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: (idToken: string) => Promise<void>;
   signOutAccount: (clearLocal: boolean) => Promise<void>;
   refreshLocal: () => Promise<void>;
 }
@@ -308,10 +312,30 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const signInWithGoogle = useCallback(async (idToken: string) => {
+    const cred = GoogleAuthProvider.credential(idToken);
+    const current = auth.currentUser;
+    if (current?.isAnonymous) {
+      try {
+        await linkWithCredential(current, cred);
+        return;
+      } catch (err) {
+        const code = (err as { code?: string }).code;
+        if (code !== 'auth/credential-already-in-use' && code !== 'auth/email-already-in-use') throw err;
+      }
+    }
+    await signInWithCredential(auth, cred);
+  }, []);
+
   const signOutAccount = useCallback(async (clearLocal: boolean) => {
     const uid = userRef.current?.uid;
     if (clearLocal && uid) {
       await mobileRepository.clearUserData(uid);
+    }
+    try {
+      await GoogleSignin.signOut();
+    } catch {
+      // Ignore if not signed in with Google or running without native module
     }
     await signOut(auth);
   }, []);
@@ -347,6 +371,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
       signInAsGuest,
       signInWithEmail,
       registerWithEmail,
+      signInWithGoogle,
       signOutAccount,
       refreshLocal
     }),
@@ -376,6 +401,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
       signInAsGuest,
       signInWithEmail,
       registerWithEmail,
+      signInWithGoogle,
       signOutAccount,
       refreshLocal
     ]
