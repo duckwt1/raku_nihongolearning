@@ -25,17 +25,26 @@ import {
   subscribeHapticsEnabled
 } from '@/services/haptics';
 import {
+  DEFAULT_REMINDER,
   disableDailyReminder,
   enableDailyReminder,
+  formatReminderTime,
   loadReminderSettings,
   type DailyReminderSettings
 } from '@/services/notifications';
 
-const REMINDER_PRESETS = [
+const MORNING_PRESETS = [
+  { label: '06:30', hour: 6, minute: 30 },
+  { label: '07:00', hour: 7, minute: 0 },
   { label: '07:30', hour: 7, minute: 30 },
-  { label: '12:30', hour: 12, minute: 30 },
+  { label: '08:30', hour: 8, minute: 30 }
+] as const;
+
+const EVENING_PRESETS = [
   { label: '20:00', hour: 20, minute: 0 },
-  { label: '21:30', hour: 21, minute: 30 }
+  { label: '20:30', hour: 20, minute: 30 },
+  { label: '21:00', hour: 21, minute: 0 },
+  { label: '22:00', hour: 22, minute: 0 }
 ] as const;
 
 export default function ProfileScreen() {
@@ -55,11 +64,7 @@ export default function ProfileScreen() {
     pullFromCloud
   } = useStudy();
 
-  const [reminder, setReminder] = useState<DailyReminderSettings>({
-    enabled: false,
-    hour: 20,
-    minute: 0
-  });
+  const [reminder, setReminder] = useState<DailyReminderSettings>(DEFAULT_REMINDER);
   const [hapticsOn, setHapticsOn] = useState<boolean>(() => getHapticsEnabled());
 
   useEffect(() => {
@@ -78,11 +83,16 @@ export default function ProfileScreen() {
   const handleToggleReminder = async (nextEnabled: boolean) => {
     hapticSelect();
     if (!nextEnabled) {
-      const next = await disableDailyReminder(reminder.hour, reminder.minute);
+      const next = await disableDailyReminder(reminder);
       setReminder(next);
       return;
     }
-    const res = await enableDailyReminder(reminder.hour, reminder.minute);
+    const res = await enableDailyReminder(
+      reminder.morningHour,
+      reminder.morningMinute,
+      reminder.eveningHour,
+      reminder.eveningMinute
+    );
     setReminder(res.settings);
     if (!res.granted) {
       Alert.alert(
@@ -92,13 +102,33 @@ export default function ProfileScreen() {
     }
   };
 
-  const handlePickReminderTime = async (hour: number, minute: number) => {
+  const handlePickMorningTime = async (hour: number, minute: number) => {
     hapticSelect();
     if (reminder.enabled) {
-      const res = await enableDailyReminder(hour, minute);
+      const res = await enableDailyReminder(
+        hour,
+        minute,
+        reminder.eveningHour,
+        reminder.eveningMinute
+      );
       setReminder(res.settings);
     } else {
-      setReminder({ enabled: false, hour, minute });
+      setReminder((prev) => ({ ...prev, morningHour: hour, morningMinute: minute }));
+    }
+  };
+
+  const handlePickEveningTime = async (hour: number, minute: number) => {
+    hapticSelect();
+    if (reminder.enabled) {
+      const res = await enableDailyReminder(
+        reminder.morningHour,
+        reminder.morningMinute,
+        hour,
+        minute
+      );
+      setReminder(res.settings);
+    } else {
+      setReminder((prev) => ({ ...prev, eveningHour: hour, eveningMinute: minute }));
     }
   };
 
@@ -225,7 +255,9 @@ export default function ProfileScreen() {
                 </Text>
               </View>
               <Text style={[styles.cardSub, { color: colors.muted }]}>
-                Thông báo bản địa nhắc nhẹ để không đứt chuỗi học.
+                Nhắc đầu ngày lúc {formatReminderTime(reminder.morningHour, reminder.morningMinute)} ·
+                Ban đêm ({formatReminderTime(reminder.eveningHour, reminder.eveningMinute)}) chỉ
+                nhắc lại nếu hôm đó bạn chưa mở app.
               </Text>
             </View>
             <Switch
@@ -235,13 +267,52 @@ export default function ProfileScreen() {
             />
           </View>
 
+          <Text style={[styles.cardSub, { color: colors.muted, fontWeight: '600' }]}>
+            Giờ nhắc đầu ngày (mặc định 07:30)
+          </Text>
           <View style={styles.chipRow}>
-            {REMINDER_PRESETS.map((slot) => {
-              const active = reminder.hour === slot.hour && reminder.minute === slot.minute;
+            {MORNING_PRESETS.map((slot) => {
+              const active =
+                reminder.morningHour === slot.hour && reminder.morningMinute === slot.minute;
               return (
                 <Pressable
-                  key={slot.label}
-                  onPress={() => void handlePickReminderTime(slot.hour, slot.minute)}
+                  key={`m-${slot.label}`}
+                  onPress={() => void handlePickMorningTime(slot.hour, slot.minute)}
+                  style={[
+                    styles.choiceChip,
+                    {
+                      backgroundColor: active ? colors.accentSoft : colors.canvas,
+                      borderColor: active ? colors.accent : colors.line
+                    }
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.choiceChipText,
+                      {
+                        color: active ? colors.accent : colors.muted,
+                        fontFamily: typography.fontFamily.viNative.semibold
+                      }
+                    ]}
+                  >
+                    {slot.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Text style={[styles.cardSub, { color: colors.muted, fontWeight: '600', marginTop: 4 }]}>
+            Nhắc lại ban đêm (khi hôm đó chưa vào app)
+          </Text>
+          <View style={styles.chipRow}>
+            {EVENING_PRESETS.map((slot) => {
+              const active =
+                reminder.eveningHour === slot.hour && reminder.eveningMinute === slot.minute;
+              return (
+                <Pressable
+                  key={`e-${slot.label}`}
+                  onPress={() => void handlePickEveningTime(slot.hour, slot.minute)}
                   style={[
                     styles.choiceChip,
                     {

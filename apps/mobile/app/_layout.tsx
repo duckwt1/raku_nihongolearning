@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, AppState, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -19,6 +19,7 @@ import {
 import { ThemeProvider, useRakuTheme } from '@/providers/ThemeProvider';
 import { StudyProvider } from '@/providers/StudyProvider';
 import { initHapticsPreference } from '@/services/haptics';
+import { syncSmartRemindersOnAppOpen } from '@/services/notifications';
 
 function RootNavigator() {
   const { colors, mode, typography } = useRakuTheme();
@@ -69,6 +70,16 @@ function RootNavigator() {
 export default function RootLayout() {
   useEffect(() => {
     void initHapticsPreference();
+    void syncSmartRemindersOnAppOpen();
+
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        void syncSmartRemindersOnAppOpen();
+      }
+    });
+    return () => {
+      sub.remove();
+    };
   }, []);
 
   const [fontsLoaded] = useFonts({

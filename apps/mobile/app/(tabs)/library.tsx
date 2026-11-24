@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -10,11 +10,15 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronRight, Search } from 'lucide-react-native';
+import { ChevronRight, RefreshCw, Search } from 'lucide-react-native';
 import { SEED_KANJI, type Grammar, type JlptLevel } from '@raku/core';
 import { JLPT_LEVELS } from '@raku/sync';
 import { useRakuTheme } from '@/providers/ThemeProvider';
-import { isFirebaseConfigured, mobileSyncClient } from '@/services/firebase';
+import { isFirebaseConfigured } from '@/services/firebase';
+import {
+  fetchAndCacheGrammarPoints,
+  loadCachedGrammarPoints
+} from '@/services/grammarCache';
 import { KanjiBottomSheet } from '@/components/KanjiBottomSheet';
 import { hapticSelect, hapticTap } from '@/services/haptics';
 
@@ -32,36 +36,55 @@ export default function LibraryScreen() {
   const [grammarPoints, setGrammarPoints] = useState<Grammar[]>([]);
   const [grammarLoading, setGrammarLoading] = useState(false);
   const [grammarError, setGrammarError] = useState<string | null>(null);
+  const [reloadNonce, setReloadNonce] = useState(0);
 
-  useEffect(() => {
-    if (section !== 'grammar') return;
-    if (!isFirebaseConfigured) {
+  const loadGrammar = useCallback(async (targetLevel: JlptLevel, isCancelled: () => boolean) => {
+    setGrammarError(null);
+
+    const cached = await loadCachedGrammarPoints(targetLevel);
+    if (isCancelled()) return;
+
+    if (cached.length > 0) {
+      setGrammarPoints(cached);
+      setGrammarLoading(false);
+    } else {
       setGrammarPoints([]);
-      setGrammarError('Cần cấu hình EXPO_PUBLIC_FIREBASE_API_KEY để tải kho ngữ pháp từ Cloud.');
+      setGrammarLoading(true);
+    }
+
+    if (!isFirebaseConfigured) {
+      if (cached.length === 0) {
+        setGrammarError('Cần cấu hình EXPO_PUBLIC_FIREBASE_API_KEY để tải kho ngữ pháp từ Cloud.');
+      }
+      setGrammarLoading(false);
       return;
     }
 
-    let cancelled = false;
-    setGrammarLoading(true);
-    setGrammarError(null);
-    void mobileSyncClient
-      .fetchGrammarPoints(level)
-      .then((list) => {
-        if (!cancelled) setGrammarPoints(list);
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setGrammarError(err instanceof Error ? err.message : 'Không thể tải ngữ pháp.');
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setGrammarLoading(false);
-      });
+    try {
+      const fresh = await fetchAndCacheGrammarPoints(targetLevel);
+      if (!isCancelled()) {
+        setGrammarPoints(fresh);
+        setGrammarError(null);
+      }
+    } catch (err) {
+      if (!isCancelled() && cached.length === 0) {
+        setGrammarError(err instanceof Error ? err.message : 'Không thể tải ngữ pháp.');
+      }
+    } finally {
+      if (!isCancelled()) {
+        setGrammarLoading(false);
+      }
+    }
+  }, []);
 
+  useEffect(() => {
+    if (section !== 'grammar') return;
+    let cancelled = false;
+    void loadGrammar(level, () => cancelled);
     return () => {
       cancelled = true;
     };
-  }, [section, level]);
+  }, [section, level, reloadNonce, loadGrammar]);
 
   const filteredKanji = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -79,12 +102,16 @@ export default function LibraryScreen() {
   const filteredGrammar = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return grammarPoints;
-    return grammarPoints.filter(
-      (g) =>
-        g.pattern.toLowerCase().includes(q) ||
-        g.title.toLowerCase().includes(q) ||
-        g.meaningVi.some((m) => m.toLowerCase().includes(q))
-    );
+    return grammarPoints.filter((g) => {
+      const pattern = (g.pattern || '').toLowerCase();
+      const title = (g.title || '').toLowerCase();
+      const meanings = Array.isArray(g.meaningVi) ? g.meaningVi : [];
+      return (
+        pattern.includes(q) ||
+        title.includes(q) ||
+        meanings.some((m) => String(m).toLowerCase().includes(q))
+      );
+    });
   }, [grammarPoints, query]);
 
   return (
@@ -116,10 +143,7 @@ export default function LibraryScreen() {
                   setSection(item.id);
                   setQuery('');
                 }}
-                style={[
-                  styles.segmentBtn,
-                  active && { backgroundColor: colors.surface }
-                ]}
+                style={[styles.segmentBtn, active && { backgroundColor: colors.surface }]}
               >
                 <Text
                   style={[
@@ -175,7 +199,12 @@ export default function LibraryScreen() {
           </View>
         )}
 
-        <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.lineStrong }]}>
+        <View
+          style={[
+            styles.searchBox,
+            { backgroundColor: colors.surface, borderColor: colors.lineStrong }
+          ]}
+        >
           <Search size={16} color={colors.muted} />
           <TextInput
             value={query}
@@ -196,6 +225,7 @@ export default function LibraryScreen() {
 
       {section === 'kanji' ? (
         <FlatList
+          key="kanji-grid"
           data={filteredKanji}
           keyExtractor={(item) => item.char}
           numColumns={3}
@@ -253,9 +283,33 @@ export default function LibraryScreen() {
           <Text style={[styles.statusText, { color: colors.muted, textAlign: 'center' }]}>
             {grammarError}
           </Text>
+          <Pressable
+            onPress={() => {
+              hapticTap();
+              setReloadNonce((n) => n + 1);
+            }}
+            style={({ pressed }) => [
+              styles.retryBtn,
+              {
+                borderColor: colors.lineStrong,
+                backgroundColor: pressed ? colors.subtle : colors.surface
+              }
+            ]}
+          >
+            <RefreshCw size={14} color={colors.ink} />
+            <Text
+              style={[
+                styles.retryBtnText,
+                { color: colors.ink, fontFamily: typography.fontFamily.viNative.semibold }
+              ]}
+            >
+              Thử lại
+            </Text>
+          </Pressable>
         </View>
       ) : (
         <FlatList
+          key="grammar-list"
           data={filteredGrammar}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.grammarList}
@@ -273,7 +327,7 @@ export default function LibraryScreen() {
                 hapticTap();
                 router.push({
                   pathname: '/grammar/[id]',
-                  params: { id: item.id, level, payload: JSON.stringify(item) }
+                  params: { id: item.id, level }
                 });
               }}
               style={({ pressed }) => [
@@ -285,19 +339,29 @@ export default function LibraryScreen() {
               ]}
             >
               <View style={styles.grammarRowText}>
-                <Text
-                  style={[
-                    styles.grammarPattern,
-                    { color: colors.ink, fontFamily: typography.fontFamily.jpNative.bold }
-                  ]}
-                >
-                  {item.pattern}
-                </Text>
+                <View style={styles.grammarTitleLine}>
+                  <Text
+                    style={[
+                      styles.grammarPattern,
+                      { color: colors.ink, fontFamily: typography.fontFamily.jpNative.bold }
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {item.pattern}
+                  </Text>
+                  {item.lesson ? (
+                    <View style={[styles.lessonPill, { backgroundColor: colors.subtle }]}>
+                      <Text style={[styles.lessonPillText, { color: colors.muted }]}>
+                        Bài {item.lesson}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
                 <Text
                   style={[styles.grammarMeaning, { color: colors.muted }]}
                   numberOfLines={2}
                 >
-                  {item.meaningVi.join(' · ')}
+                  {Array.isArray(item.meaningVi) ? item.meaningVi.join(' · ') : ''}
                 </Text>
               </View>
               <ChevronRight size={16} color={colors.muted} />
@@ -413,8 +477,23 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 4
   },
+  grammarTitleLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8
+  },
   grammarPattern: {
-    fontSize: 16
+    fontSize: 16,
+    flexShrink: 1
+  },
+  lessonPill: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6
+  },
+  lessonPillText: {
+    fontSize: 10,
+    fontWeight: '600'
   },
   grammarMeaning: {
     fontSize: 12,
@@ -425,9 +504,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 28,
-    gap: 10
+    gap: 12
   },
   statusText: {
+    fontSize: 13
+  },
+  retryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    height: 40,
+    borderRadius: 10,
+    borderWidth: 1
+  },
+  retryBtnText: {
     fontSize: 13
   }
 });
