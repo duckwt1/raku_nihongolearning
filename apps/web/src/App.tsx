@@ -25,12 +25,15 @@ import {
   applyGrade,
   buildReviewQueue,
   buildCustomStudyCardFromPhrase,
+  buildHanVietBreakdownForSurface,
   createNewCard,
+  findMissingKanjiChars,
   isDuplicatePhraseInDeck,
   type StudyCard,
   type Deck,
   type Folder,
   type Grammar,
+  type Kanji,
   type SavedPhraseCandidate,
   type UserStudyStats,
   DEFAULT_FOLDERS,
@@ -82,8 +85,14 @@ import {
   pullDeckBundlesForDecks,
   deleteDeckFromCloud,
   mergeFoldersById,
-  mergeDecksById
+  mergeDecksById,
+  mergeCustomKanjiLists,
+  loadUserCustomKanji,
+  saveUserCustomKanji,
+  syncCustomKanjiBundle,
+  pullCustomKanjiBundle
 } from './services/firestoreSync';
+import { enrichKanjiWithAi } from './services/kanjiEnrichApi';
 import { syncPracticeHistoryWithCloud } from './services/practiceHistorySync';
 import {
   fetchCommunityDecks,
@@ -277,8 +286,19 @@ export function App() {
 
   // StudyCards state (Words and Grammar initialized for active flashcard review)
   const [allCards, setAllCards] = useState<StudyCard[]>(() => loadUserCards());
+  const [customKanji, setCustomKanji] = useState<Kanji[]>(() => loadUserCustomKanji());
   const [dailyNewWordGoal, setDailyNewWordGoal] = useState<number>(() =>
     loadDailyNewWordGoal()
+  );
+
+  const customKanjiMap = useMemo(
+    () => new Map<string, Kanji>(customKanji.map((k) => [k.char, k])),
+    [customKanji]
+  );
+
+  const allKanjiList = useMemo(
+    () => [...SEED_KANJI, ...customKanji],
+    [customKanji]
   );
 
   useEffect(() => {
@@ -289,6 +309,7 @@ export function App() {
   const decksRef = useRef<Deck[]>(decks);
   const foldersRef = useRef<Folder[]>(folders);
   const cardsRef = useRef<StudyCard[]>(allCards);
+  const customKanjiRef = useRef<Kanji[]>(customKanji);
   const userRef = useRef<User | null>(user);
 
   useEffect(() => {
@@ -300,6 +321,9 @@ export function App() {
   useEffect(() => {
     cardsRef.current = allCards;
   }, [allCards]);
+  useEffect(() => {
+    customKanjiRef.current = customKanji;
+  }, [customKanji]);
   const statsRef = useRef<UserStudyStats>(studyStats);
   useEffect(() => {
     statsRef.current = studyStats;
@@ -473,10 +497,14 @@ export function App() {
       setUser(currentUser);
       const uid = currentUser?.uid || 'guest';
       const uCards = loadUserCards(uid);
+      const uCustomKanji = loadUserCustomKanji(uid);
       const uStats = loadUserStudyStats(uid);
       const uFolders = loadUserFolders(uid);
       const uDecks = loadUserDecks(uid);
+      cardsRef.current = uCards;
+      customKanjiRef.current = uCustomKanji;
       setAllCards(uCards);
+      setCustomKanji(uCustomKanji);
       setStudyStats(uStats);
       setFolders(uFolders);
       setDecks(uDecks);
@@ -571,18 +599,18 @@ export function App() {
     setDarkMode((prev) => !prev);
   };
 
-  // Filtered Kanji list for Kanji tab
+  // Filtered Kanji list for Kanji tab (includes AI-enriched custom Kanji)
   const filteredKanji = useMemo(() => {
     const q = kanjiSearch.trim().toLowerCase();
-    if (!q) return SEED_KANJI.slice(0, 120);
-    return SEED_KANJI.filter((k) => {
+    if (!q) return [...customKanji, ...SEED_KANJI].slice(0, 120);
+    return allKanjiList.filter((k) => {
       return (
         k.char.includes(q) ||
         k.hanViet.some((hv) => hv.toLowerCase().includes(q)) ||
         k.meaningVi.toLowerCase().includes(q)
       );
     });
-  }, [kanjiSearch]);
+  }, [kanjiSearch, allKanjiList, customKanji]);
 
   // Overall totals due and new across all cards
   const { totalDueToday, totalNewToday } = useMemo(() => {
@@ -1025,10 +1053,14 @@ export function App() {
 
     // Chuyển sạch về hồ sơ khách vãng lai mặc định
     const gCards = loadUserCards('guest');
+    const gCustomKanji = loadUserCustomKanji('guest');
     const gStats = loadUserStudyStats('guest');
     const gFolders = loadUserFolders('guest');
     const gDecks = loadUserDecks('guest');
+    cardsRef.current = gCards;
+    customKanjiRef.current = gCustomKanji;
     setAllCards(gCards);
+    setCustomKanji(gCustomKanji);
     setStudyStats(gStats);
     setFolders(gFolders);
     setDecks(gDecks);
@@ -1072,6 +1104,7 @@ export function App() {
         saveUserDecks(currentUid, res.updatedDecks);
         setPendingCount(getPendingSyncCount(currentUid));
       }
+      await syncCustomKanjiBundle(currentUid, customKanjiRef.current).catch(() => {});
       showSyncToast(
         `✓ Đã tải thành công ${res.cardsSynced} thẻ học lên Cloud Firestore!`,
         'success'
@@ -1265,7 +1298,21 @@ export function App() {
           await syncUserStudyStats(currentUid, mergedStats);
         }
 
-        // 6. Đồng bộ lịch sử hội thoại & đặt câu (bounded queries)
+        // 6. Đồng bộ kho Kanji AI/custom (1 document duy nhất, 0 reads/writes nếu không đổi)
+        syncStage = 'đồng bộ kho Kanji mở rộng';
+        await syncCustomKanjiBundle(currentUid, customKanjiRef.current).catch(() => {});
+        const pulledKanji = await pullCustomKanjiBundle(
+          currentUid,
+          customKanjiRef.current,
+          remoteProgress.customKanjiHash
+        ).catch(() => null);
+        if (pulledKanji?.fetched && userRef.current?.uid === currentUid) {
+          customKanjiRef.current = pulledKanji.list;
+          setCustomKanji(pulledKanji.list);
+          saveUserCustomKanji(currentUid, pulledKanji.list);
+        }
+
+        // 7. Đồng bộ lịch sử hội thoại & đặt câu (bounded queries)
         syncStage = 'đồng bộ lịch sử hội thoại và đặt câu';
         await syncPracticeHistoryWithCloud(currentUid);
 
@@ -1359,6 +1406,121 @@ export function App() {
   };
 
   // ==========================================
+  // TỰ ĐỘNG BỔ SUNG KANJI CÒN THIẾU BẰNG AI
+  // ==========================================
+  const applyEnrichedKanji = useCallback(
+    (enriched: Kanji[], affectedCardIds?: ReadonlySet<string>) => {
+      if (enriched.length === 0) return 0;
+      const activeUid = userRef.current?.uid;
+      const merged = mergeCustomKanjiLists(customKanjiRef.current, enriched);
+      const nextMap = new Map<string, Kanji>(merged.list.map((k) => [k.char, k]));
+
+      if (merged.hasChanges) {
+        customKanjiRef.current = merged.list;
+        setCustomKanji(merged.list);
+        saveUserCustomKanji(activeUid, merged.list);
+        if (activeUid && (typeof navigator === 'undefined' || navigator.onLine)) {
+          void syncCustomKanjiBundle(activeUid, merged.list).catch(() => {});
+        }
+      }
+
+      // Tự điền Hán Việt cho các thẻ mới thêm nếu đang bỏ trống
+      if (affectedCardIds && affectedCardIds.size > 0) {
+        const affectedDeckIds = new Set<string>();
+        let cardsChanged = false;
+        const nextCards = cardsRef.current.map((card) => {
+          if (!affectedCardIds.has(card.id) || !card.word) return card;
+          if (card.word.hanVietBreakdown && card.word.hanVietBreakdown.length > 0) return card;
+          const hv = buildHanVietBreakdownForSurface(card.word.surface, nextMap);
+          if (hv.length === 0) return card;
+          cardsChanged = true;
+          if (card.deckId) affectedDeckIds.add(card.deckId);
+          return {
+            ...card,
+            word: {
+              ...card.word,
+              hanVietBreakdown: hv
+            }
+          };
+        });
+        if (cardsChanged) {
+          cardsRef.current = nextCards;
+          setAllCards(nextCards);
+          saveUserCards(activeUid, nextCards);
+          for (const deckId of affectedDeckIds) {
+            schedulePrivateDeckBundleSync(deckId);
+            scheduleDeckPublish(deckId);
+          }
+        }
+      }
+
+      return merged.addedCount;
+    },
+    []
+  );
+
+  const enrichMissingKanjiForCardsInBackground = useCallback(
+    (cardsToCheck: StudyCard[]) => {
+      const activeUser = userRef.current;
+      if (!activeUser || (typeof navigator !== 'undefined' && !navigator.onLine)) return;
+
+      const currentMap = new Map<string, Kanji>(customKanjiRef.current.map((k) => [k.char, k]));
+      const surfaces = cardsToCheck.map((c) => c.word?.surface || '').filter(Boolean);
+      const missingChars = findMissingKanjiChars(surfaces, currentMap);
+      if (missingChars.length === 0) return;
+
+      const contextWords = cardsToCheck
+        .filter((c) => Boolean(c.word?.surface))
+        .slice(0, 20)
+        .map((c) => ({
+          surface: c.word!.surface,
+          reading: c.word!.readings[0],
+          meaningVi: c.word!.meaningVi
+        }));
+      const targetCardIds = new Set(cardsToCheck.map((c) => c.id));
+
+      void enrichKanjiWithAi(missingChars, contextWords)
+        .then((enriched) => {
+          if (userRef.current?.uid !== activeUser.uid || enriched.length === 0) return;
+          const added = applyEnrichedKanji(enriched, targetCardIds);
+          if (added > 0) {
+            showSyncToast(
+              `✨ AI đã bổ sung ${added} chữ Kanji mới (${enriched.map((k) => k.char).slice(0, 6).join('')}${enriched.length > 6 ? '…' : ''}) vào kho tra cứu!`,
+              'info'
+            );
+          }
+        })
+        .catch((err) => {
+          console.warn('Tự động bổ sung Kanji bằng AI bỏ qua:', err);
+        });
+    },
+    [applyEnrichedKanji, showSyncToast]
+  );
+
+  const handleEnrichSingleKanji = useCallback(
+    async (char: string): Promise<Kanji | null> => {
+      const contextWords = cardsRef.current
+        .filter((c) => c.word?.surface.includes(char))
+        .slice(0, 8)
+        .map((c) => ({
+          surface: c.word!.surface,
+          reading: c.word!.readings[0],
+          meaningVi: c.word!.meaningVi
+        }));
+      const enriched = await enrichKanjiWithAi([char], contextWords);
+      const found = enriched.find((k) => k.char === char) || null;
+      if (found) {
+        const matchingIds = new Set(
+          cardsRef.current.filter((c) => c.word?.surface.includes(char)).map((c) => c.id)
+        );
+        applyEnrichedKanji([found], matchingIds);
+      }
+      return found;
+    },
+    [applyEnrichedKanji]
+  );
+
+  // ==========================================
   // XỬ LÝ NHẬP TỪ & THÊM THẺ MỚI (LƯU LOCAL)
   // ==========================================
   const handleImportCards = (
@@ -1414,6 +1576,9 @@ export function App() {
     if (deckObj && deckObj.origin === 'owned' && !deckObj.isDefault && user && isOnline) {
       schedulePrivateDeckBundleSync(deckObj.id);
     }
+
+    // Tự động gọi AI bổ sung các chữ Kanji chưa có trong kho (chạy ngầm, 1 batch)
+    enrichMissingKanjiForCardsInBackground(newCards);
 
     // 5. Đồng bộ lại lên communityDecks nếu bộ thẻ đang ở chế độ Cộng đồng
     if (
@@ -1506,6 +1671,9 @@ export function App() {
     // Gom nhiều lần thêm thẻ liên tiếp thành 1 lần ghi deckBundle (debounce, tiết kiệm Firestore writes)
     schedulePrivateDeckBundleSync(deckId);
     scheduleDeckPublish(deckId);
+
+    // Tự động gọi AI bổ sung các chữ Kanji chưa có trong kho (và tự điền Hán Việt nếu bỏ trống)
+    enrichMissingKanjiForCardsInBackground([newCard]);
   };
 
   const handleDeleteCard = (cardId: string, deckId: string) => {
@@ -1570,6 +1738,7 @@ export function App() {
     showSyncToast(`✓ Đã lưu "${phrase.surface}" vào "${deckName}" để ôn FSRS!`, 'success');
     schedulePrivateDeckBundleSync(targetDeckId);
     scheduleDeckPublish(targetDeckId);
+    enrichMissingKanjiForCardsInBackground([newCard]);
     return newCard.id;
   };
 
@@ -1710,6 +1879,17 @@ export function App() {
       if (data.statsNeedBackfill || !areStudyStatsEqual(data.stats, data.remoteStats)) {
         // Persist the compact summary so later pulls stay bounded and skip no-op writes.
         await syncUserStudyStats(currentUid, data.stats);
+      }
+
+      const pulledKanji = await pullCustomKanjiBundle(
+        currentUid,
+        customKanjiRef.current,
+        data.customKanjiHash
+      ).catch(() => null);
+      if (pulledKanji?.fetched && userRef.current?.uid === currentUid) {
+        customKanjiRef.current = pulledKanji.list;
+        setCustomKanji(pulledKanji.list);
+        saveUserCustomKanji(currentUid, pulledKanji.list);
       }
 
       await syncPracticeHistoryWithCloud(currentUid);
@@ -2111,7 +2291,7 @@ export function App() {
                     : 'text-raku-muted hover:text-raku-ink'
                 }`}
               >
-                Kanji ({SEED_KANJI.length})
+                Kanji ({SEED_KANJI.length + customKanji.length})
               </button>
               <button
                 type="button"
@@ -2641,6 +2821,10 @@ export function App() {
       <KanjiModal
         char={selectedKanjiChar}
         onClose={() => setSelectedKanjiChar(null)}
+        customKanjiMap={customKanjiMap}
+        userCards={allCards}
+        onEnrichKanji={handleEnrichSingleKanji}
+        canUseAi={Boolean(user && isOnline)}
       />
 
       {/* Data Licenses Modal */}

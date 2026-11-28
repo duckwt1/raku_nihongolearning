@@ -12,6 +12,7 @@ import {
   handleSentenceCheck,
   stripJsonFence
 } from './conversationHandlers.js';
+import { handleKanjiEnrich } from './kanjiEnrichHandler.js';
 import worker from './index.js';
 
 function createMockProvider(
@@ -94,6 +95,7 @@ describe('Worker API Routing & AI endpoints', () => {
     expect(healthRes.headers.get('Permissions-Policy')).toContain('microphone=(self)');
 
     for (const path of [
+      '/api/ai/kanji-enrich',
       '/api/ai/sentence-check',
       '/api/ai/conversation/reply',
       '/api/ai/conversation/hint',
@@ -272,5 +274,51 @@ describe('Conversation & Sentence Check AI Handlers', () => {
 
     const cleaned = stripJsonFence('<think>reasoning here</think>\n```json\n{"ok":true}\n```');
     expect(JSON.parse(cleaned)).toEqual({ ok: true });
+  });
+
+  it('enriches requested Kanji chars with AI, tags source=ai, and filters hallucinated chars', async () => {
+    const mock = createMockProvider(() =>
+      JSON.stringify({
+        kanji: [
+          {
+            char: '猫',
+            hanViet: ['miêu'],
+            onyomi: ['ビョウ'],
+            kunyomi: ['ねこ'],
+            meaningVi: 'con mèo',
+            jlpt: 'N3',
+            strokeCount: 11,
+            lookalikes: ['描', '猫'],
+            radicals: ['犭']
+          },
+          {
+            char: '犬',
+            hanViet: ['KHUYỂN'],
+            onyomi: ['ケン'],
+            kunyomi: ['いぬ'],
+            meaningVi: 'con chó'
+          }
+        ]
+      })
+    );
+
+    const bad = await handleKanjiEnrich({ chars: ['abc'] }, mock);
+    expect(bad.ok).toBe(false);
+
+    const res = await handleKanjiEnrich(
+      {
+        chars: ['猫'],
+        contextWords: [{ surface: '猫', reading: 'ねこ', meaningVi: 'con mèo' }]
+      },
+      mock
+    );
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.data.kanji).toHaveLength(1);
+      expect(res.data.kanji[0]?.char).toBe('猫');
+      expect(res.data.kanji[0]?.hanViet).toEqual(['MIÊU']);
+      expect(res.data.kanji[0]?.source).toBe('ai');
+      expect(res.data.kanji[0]?.lookalikes).toEqual(['描']);
+    }
   });
 });

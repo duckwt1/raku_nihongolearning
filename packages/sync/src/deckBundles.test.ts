@@ -9,11 +9,13 @@ import {
 } from '@raku/core';
 import {
   DECK_BUNDLE_CHUNK_SIZE,
+  computeCustomKanjiHash,
   computeDeckCardsHash,
   getDeckBundleDocId,
   isCustomBundleCard,
   isOwnedCustomDeck,
   mergeCommunityDecksIntoLocalState,
+  mergeCustomKanjiLists,
   mergeDeckBundleCardsIntoLocal,
   mergeDecksById,
   packDeckCards,
@@ -198,5 +200,37 @@ describe('deckBundles', () => {
     expect(merged.map((d) => d.id)).toEqual(['deck_mobile_only', 'deck_shared']);
     expect(merged.find((d) => d.id === 'deck_shared')?.cardsHash).toBe('hash-v2');
     expect(merged.find((d) => d.id === 'deck_shared')?.name).toBe('New Name');
+  });
+
+  it('hashes and merges custom AI Kanji deterministically without overriding SEED_KANJI', () => {
+    const k1 = {
+      char: '鞄',
+      hanViet: ['BÀO'],
+      onyomi: ['ホウ'],
+      kunyomi: ['かばん'],
+      meaningVi: 'cặp sách, túi xách',
+      lookalikes: ['抱'],
+      radicals: ['革'],
+      source: 'ai' as const
+    };
+    const k2 = {
+      char: '曖',
+      hanViet: ['ÁI'],
+      onyomi: ['アイ'],
+      kunyomi: [],
+      meaningVi: 'mơ hồ, không rõ ràng',
+      lookalikes: ['愛'],
+      radicals: ['日'],
+      source: 'ai' as const
+    };
+
+    const hA = computeCustomKanjiHash([k1, k2]);
+    const hB = computeCustomKanjiHash([k2, k1]);
+    expect(hA).toBeTruthy();
+    expect(hA).toBe(hB);
+
+    const merged = mergeCustomKanjiLists([k1], [k2]);
+    expect(merged.addedCount).toBe(1);
+    expect(merged.list.map((k) => k.char)).toEqual(['曖', '鞄']);
   });
 });

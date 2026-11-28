@@ -15,7 +15,8 @@ export const KanjiSchema = z.object({
   jlpt: JlptLevelSchema.optional(),
   strokeCount: z.number().int().positive().optional(),
   lookalikes: z.array(z.string()).default([]),
-  radicals: z.array(z.string()).default([])
+  radicals: z.array(z.string()).default([]),
+  source: z.enum(['seed', 'ai', 'user']).optional()
 });
 export type Kanji = z.infer<typeof KanjiSchema>;
 

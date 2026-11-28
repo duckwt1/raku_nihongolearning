@@ -2,6 +2,7 @@ import {
   ConversationSessionSchema,
   DEFAULT_DECKS,
   DEFAULT_FOLDERS,
+  KanjiSchema,
   SentenceAttemptRecordSchema,
   buildDefaultCards,
   createInitialStudyStats,
@@ -11,6 +12,7 @@ import {
   type ConversationSession,
   type Deck,
   type Folder,
+  type Kanji,
   type SentenceAttemptRecord,
   type StudyCard,
   type UserStudyStats
@@ -124,6 +126,10 @@ export interface UserRepository {
     userId: string | null | undefined,
     hashes: Record<string, string>
   ): Promise<void>;
+  loadCustomKanji(userId?: string | null): Promise<Kanji[]>;
+  saveCustomKanji(userId: string | null | undefined, kanji: Kanji[]): Promise<void>;
+  loadSyncedCustomKanjiHash(userId?: string | null): Promise<string>;
+  saveSyncedCustomKanjiHash(userId: string | null | undefined, hash: string): Promise<void>;
   clearUserData(userId?: string | null): Promise<void>;
 }
 
@@ -348,6 +354,39 @@ export function createUserRepository(storage: AsyncKeyValueStorage): UserReposit
       );
     },
 
+    async loadCustomKanji(userId) {
+      try {
+        const raw = await storage.getItem(getUserStorageKey('custom_kanji', userId));
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return [];
+        const valid: Kanji[] = [];
+        for (const item of parsed) {
+          const check = KanjiSchema.safeParse(item);
+          if (check.success) valid.push(check.data);
+        }
+        return valid;
+      } catch {
+        return [];
+      }
+    },
+
+    async saveCustomKanji(userId, kanji) {
+      await storage.setItem(getUserStorageKey('custom_kanji', userId), JSON.stringify(kanji));
+    },
+
+    async loadSyncedCustomKanjiHash(userId) {
+      try {
+        return (await storage.getItem(getUserStorageKey('custom_kanji_hash', userId))) || '';
+      } catch {
+        return '';
+      }
+    },
+
+    async saveSyncedCustomKanjiHash(userId, hash) {
+      await storage.setItem(getUserStorageKey('custom_kanji_hash', userId), hash);
+    },
+
     async clearUserData(userId) {
       const bases = [
         'cards',
@@ -357,6 +396,8 @@ export function createUserRepository(storage: AsyncKeyValueStorage): UserReposit
         'offline_queue',
         'deck_sync_prefs',
         'deck_bundle_hashes',
+        'custom_kanji',
+        'custom_kanji_hash',
         'grammar_exercises',
         'grammar_practice_stats',
         'daily_new_word_goal',

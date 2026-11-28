@@ -7,16 +7,19 @@ import {
   applyGrade,
   buildCustomStudyCardFromPhrase,
   buildDefaultCards,
+  buildHanVietBreakdownForSurface,
   buildReviewQueue,
   calculateStudyStreaks,
   createInitialStudyStats,
   createNewCard,
+  findMissingKanjiChars,
   getDailyNewWordCounts,
   getTodayDateString,
   isDuplicatePhraseInDeck,
   recordStudyActivity,
   type Deck,
   type Folder,
+  type Kanji,
   type SavedPhraseCandidate,
   type StudyCard,
   type UserStudyStats
@@ -24,8 +27,10 @@ import {
 import {
   isOwnedCustomDeck,
   mergeConversationSessions,
+  mergeCustomKanjiLists,
   mergeSentenceHistory
 } from '@raku/sync';
+import { enrichKanjiWithAi } from '@/services/apiClient';
 import {
   EmailAuthProvider,
   GoogleAuthProvider,
@@ -59,6 +64,8 @@ interface StudyContextValue {
   cards: StudyCard[];
   folders: Folder[];
   decks: Deck[];
+  customKanji: Kanji[];
+  customKanjiMap: ReadonlyMap<string, Kanji>;
   stats: UserStudyStats;
   dailyGoal: number;
   pendingSyncCount: number;
@@ -76,6 +83,7 @@ interface StudyContextValue {
   addPhraseToDeck: (phrase: SavedPhraseCandidate, preferredDeckId?: string) => string | null;
   addCardToDeck: (deckId: string, cardData: MobileNewCardInput) => StudyCard;
   deleteCardFromDeck: (cardId: string, deckId: string) => void;
+  enrichKanjiChar: (char: string) => Promise<Kanji | null>;
   recordStudySeconds: (seconds: number) => void;
   setDailyGoal: (goal: number) => void;
   syncNow: () => Promise<string>;
@@ -97,15 +105,22 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
   const [cards, setCards] = useState<StudyCard[]>(() => buildDefaultCards());
   const [folders, setFolders] = useState<Folder[]>(() => DEFAULT_FOLDERS);
   const [decks, setDecks] = useState<Deck[]>(() => DEFAULT_DECKS);
+  const [customKanji, setCustomKanji] = useState<Kanji[]>([]);
   const [stats, setStats] = useState<UserStudyStats>(() => createInitialStudyStats());
   const [dailyGoal, setDailyGoalState] = useState<number>(10);
   const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncMessage, setLastSyncMessage] = useState<string | null>(null);
 
+  const customKanjiMap = useMemo(
+    () => new Map<string, Kanji>(customKanji.map((k) => [k.char, k])),
+    [customKanji]
+  );
+
   const cardsRef = useRef(cards);
   const foldersRef = useRef(folders);
   const decksRef = useRef(decks);
+  const customKanjiRef = useRef(customKanji);
   const statsRef = useRef(stats);
   const userRef = useRef(user);
   const bundleSyncTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -114,6 +129,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
   cardsRef.current = cards;
   foldersRef.current = folders;
   decksRef.current = decks;
+  customKanjiRef.current = customKanji;
   statsRef.current = stats;
   userRef.current = user;
 
@@ -166,11 +182,12 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const hydrateForUser = useCallback(async (uid?: string | null) => {
-    const [loadedCards, loadedFolders, loadedDecks, loadedStats, loadedGoal, queue] =
+    const [loadedCards, loadedFolders, loadedDecks, loadedCustomKanji, loadedStats, loadedGoal, queue] =
       await Promise.all([
         mobileRepository.loadCards(uid),
         mobileRepository.loadFolders(uid),
         mobileRepository.loadDecks(uid),
+        mobileRepository.loadCustomKanji(uid),
         mobileRepository.loadStudyStats(uid),
         mobileRepository.loadDailyNewWordGoal(uid),
         mobileRepository.getOfflineQueue(uid)
@@ -178,10 +195,12 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     cardsRef.current = loadedCards;
     foldersRef.current = loadedFolders;
     decksRef.current = loadedDecks;
+    customKanjiRef.current = loadedCustomKanji;
     statsRef.current = loadedStats;
     setCards(loadedCards);
     setFolders(loadedFolders);
     setDecks(loadedDecks);
+    setCustomKanji(loadedCustomKanji);
     setStats(loadedStats);
     setDailyGoalState(loadedGoal);
     setPendingSyncCount(queue.length);
@@ -363,6 +382,105 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     [rateCard]
   );
 
+  const applyEnrichedKanji = useCallback(
+    (enriched: Kanji[], affectedCardIds?: ReadonlySet<string>) => {
+      if (enriched.length === 0) return;
+      const uid = userRef.current?.uid ?? null;
+      const merged = mergeCustomKanjiLists(customKanjiRef.current, enriched);
+      const nextMap = new Map<string, Kanji>(merged.list.map((k) => [k.char, k]));
+
+      if (merged.hasChanges) {
+        customKanjiRef.current = merged.list;
+        setCustomKanji(merged.list);
+        void mobileRepository.saveCustomKanji(uid, merged.list);
+        if (uid && isFirebaseConfigured) {
+          void mobileSyncClient.syncCustomKanjiBundle(uid, merged.list).catch(() => {});
+        }
+      }
+
+      if (affectedCardIds && affectedCardIds.size > 0) {
+        const affectedDeckIds = new Set<string>();
+        let changed = false;
+        const nextCards = cardsRef.current.map((card) => {
+          if (!affectedCardIds.has(card.id) || !card.word) return card;
+          if (card.word.hanVietBreakdown && card.word.hanVietBreakdown.length > 0) return card;
+          const hv = buildHanVietBreakdownForSurface(card.word.surface, nextMap);
+          if (hv.length === 0) return card;
+          changed = true;
+          if (card.deckId) affectedDeckIds.add(card.deckId);
+          return {
+            ...card,
+            word: {
+              ...card.word,
+              hanVietBreakdown: hv
+            }
+          };
+        });
+        if (changed) {
+          cardsRef.current = nextCards;
+          setCards(nextCards);
+          void mobileRepository.saveCards(uid, nextCards);
+          for (const deckId of affectedDeckIds) {
+            scheduleDeckBundleSync(deckId);
+          }
+        }
+      }
+    },
+    [scheduleDeckBundleSync]
+  );
+
+  const enrichMissingKanjiInBackground = useCallback(
+    (cardsToCheck: StudyCard[]) => {
+      const activeUser = userRef.current;
+      if (!activeUser) return;
+      const currentMap = new Map<string, Kanji>(customKanjiRef.current.map((k) => [k.char, k]));
+      const surfaces = cardsToCheck.map((c) => c.word?.surface || '').filter(Boolean);
+      const missingChars = findMissingKanjiChars(surfaces, currentMap);
+      if (missingChars.length === 0) return;
+
+      const contextWords = cardsToCheck
+        .filter((c) => Boolean(c.word?.surface))
+        .slice(0, 20)
+        .map((c) => ({
+          surface: c.word!.surface,
+          reading: c.word!.readings[0],
+          meaningVi: c.word!.meaningVi
+        }));
+      const targetIds = new Set(cardsToCheck.map((c) => c.id));
+
+      void enrichKanjiWithAi(missingChars, contextWords)
+        .then((enriched) => {
+          if (userRef.current?.uid !== activeUser.uid || enriched.length === 0) return;
+          applyEnrichedKanji(enriched, targetIds);
+        })
+        .catch(() => {});
+    },
+    [applyEnrichedKanji]
+  );
+
+  const enrichKanjiChar = useCallback(
+    async (char: string): Promise<Kanji | null> => {
+      const contextWords = cardsRef.current
+        .filter((c) => c.word?.surface.includes(char))
+        .slice(0, 8)
+        .map((c) => ({
+          surface: c.word!.surface,
+          reading: c.word!.readings[0],
+          meaningVi: c.word!.meaningVi
+        }));
+      const enriched = await enrichKanjiWithAi([char], contextWords);
+      const found = enriched.find((k) => k.char === char) || null;
+      if (found) {
+        const matchingIds = new Set(
+          cardsRef.current.filter((c) => c.word?.surface.includes(char)).map((c) => c.id)
+        );
+        applyEnrichedKanji([found], matchingIds);
+      }
+      return found;
+    },
+    [applyEnrichedKanji]
+  );
+
   const addPhraseToDeck = useCallback(
     (phrase: SavedPhraseCandidate, preferredDeckId?: string): string | null => {
       const uid = userRef.current?.uid ?? null;
@@ -408,10 +526,11 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
       void mobileRepository.saveCards(uid, nextCards);
 
       scheduleDeckBundleSync(targetDeckId);
+      enrichMissingKanjiInBackground([newCard]);
 
       return newCard.id;
     },
-    [scheduleDeckBundleSync]
+    [scheduleDeckBundleSync, enrichMissingKanjiInBackground]
   );
 
   const addCardToDeck = useCallback(
@@ -452,9 +571,10 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
       setCards(nextCards);
       void mobileRepository.saveCards(uid, nextCards);
       scheduleDeckBundleSync(deckId);
+      enrichMissingKanjiInBackground([newCard]);
       return newCard;
     },
-    [scheduleDeckBundleSync]
+    [scheduleDeckBundleSync, enrichMissingKanjiInBackground]
   );
 
   const deleteCardFromDeck = useCallback(
@@ -520,16 +640,22 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
         setDecks(pulled.decks);
         await mobileRepository.saveDecks(activeUser.uid, pulled.decks);
       }
+      if (pulled.customKanji) {
+        customKanjiRef.current = pulled.customKanji;
+        setCustomKanji(pulled.customKanji);
+        await mobileRepository.saveCustomKanji(activeUser.uid, pulled.customKanji);
+      }
       statsRef.current = pulled.stats;
       setStats(pulled.stats);
       await mobileRepository.saveStudyStats(activeUser.uid, pulled.stats);
 
-      // 3. Push merged structure & stats back to Cloud
+      // 3. Push merged structure, custom Kanji bundle (0 writes if unchanged) & stats back to Cloud
       await mobileSyncClient.syncFoldersAndDecks(
         activeUser.uid,
         foldersRef.current,
         decksRef.current
       );
+      await mobileSyncClient.syncCustomKanjiBundle(activeUser.uid, customKanjiRef.current).catch(() => {});
       await mobileSyncClient.syncStudyStats(activeUser.uid, statsRef.current);
 
       // Sync conversation sessions & sentence history (bounded queries)
@@ -612,6 +738,11 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
         decksRef.current = pulled.decks;
         setDecks(pulled.decks);
         await mobileRepository.saveDecks(activeUser.uid, pulled.decks);
+      }
+      if (pulled.customKanji) {
+        customKanjiRef.current = pulled.customKanji;
+        setCustomKanji(pulled.customKanji);
+        await mobileRepository.saveCustomKanji(activeUser.uid, pulled.customKanji);
       }
       statsRef.current = pulled.stats;
       setStats(pulled.stats);
@@ -706,6 +837,8 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
       cards,
       folders,
       decks,
+      customKanji,
+      customKanjiMap,
       stats,
       dailyGoal,
       pendingSyncCount,
@@ -723,6 +856,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
       addPhraseToDeck,
       addCardToDeck,
       deleteCardFromDeck,
+      enrichKanjiChar,
       recordStudySeconds,
       setDailyGoal,
       syncNow,
@@ -741,6 +875,8 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
       cards,
       folders,
       decks,
+      customKanji,
+      customKanjiMap,
       stats,
       dailyGoal,
       pendingSyncCount,
@@ -758,6 +894,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
       addPhraseToDeck,
       addCardToDeck,
       deleteCardFromDeck,
+      enrichKanjiChar,
       recordStudySeconds,
       setDailyGoal,
       syncNow,

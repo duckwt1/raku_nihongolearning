@@ -1,7 +1,8 @@
-import type { StudyCard, Folder, Deck, UserStudyStats } from '@raku/core';
+import type { StudyCard, Folder, Deck, UserStudyStats, Kanji } from '@raku/core';
 import {
   DEFAULT_FOLDERS,
   DEFAULT_DECKS,
+  KanjiSchema,
   buildDefaultCards,
   createInitialStudyStats,
   getTodayDateString,
@@ -327,9 +328,60 @@ export function removeOfflineReviewItems(userId: string, itemIds: string[]): voi
  */
 export function clearUserDataFromBrowser(userId?: string | null): void {
   if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
-  const bases = ['cards', 'study_stats', 'folders', 'decks', 'offline_queue', 'deck_sync_prefs', 'deck_bundle_hashes', 'grammar_exercises', 'grammar_practice_stats', 'daily_new_word_goal', 'conversation_sessions', 'sentence_history'];
+  const bases = ['cards', 'study_stats', 'folders', 'decks', 'offline_queue', 'deck_sync_prefs', 'deck_bundle_hashes', 'custom_kanji', 'custom_kanji_hash', 'grammar_exercises', 'grammar_practice_stats', 'daily_new_word_goal', 'conversation_sessions', 'sentence_history'];
   for (const b of bases) {
     localStorage.removeItem(getUserStorageKey(b, userId));
+  }
+}
+
+export function loadUserCustomKanji(userId?: string | null): Kanji[] {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(getUserStorageKey('custom_kanji', userId));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    const valid: Kanji[] = [];
+    for (const item of parsed) {
+      const check = KanjiSchema.safeParse(item);
+      if (check.success) valid.push(check.data);
+    }
+    return valid;
+  } catch {
+    return [];
+  }
+}
+
+export function saveUserCustomKanji(
+  userId: string | null | undefined,
+  kanji: Kanji[]
+): void {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(getUserStorageKey('custom_kanji', userId), JSON.stringify(kanji));
+  } catch {
+    // ignore storage quota errors
+  }
+}
+
+export function loadSyncedCustomKanjiHash(userId?: string | null): string {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return '';
+  try {
+    return localStorage.getItem(getUserStorageKey('custom_kanji_hash', userId)) || '';
+  } catch {
+    return '';
+  }
+}
+
+export function saveSyncedCustomKanjiHash(
+  userId: string | null | undefined,
+  hash: string
+): void {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(getUserStorageKey('custom_kanji_hash', userId), hash);
+  } catch {
+    // ignore
   }
 }
 

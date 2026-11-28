@@ -1,15 +1,17 @@
 import Constants from 'expo-constants';
-import type {
-  ConversationHint,
-  ConversationMessage,
-  ConversationReplyResponse,
-  ConversationScenario,
-  ConversationSummary,
-  JlptLevel,
-  PolitenessLevel,
-  PracticeTargetWord,
-  SentenceFeedback,
-  SentencePracticeMode
+import {
+  KanjiSchema,
+  type ConversationHint,
+  type ConversationMessage,
+  type ConversationReplyResponse,
+  type ConversationScenario,
+  type ConversationSummary,
+  type JlptLevel,
+  type Kanji,
+  type PolitenessLevel,
+  type PracticeTargetWord,
+  type SentenceFeedback,
+  type SentencePracticeMode
 } from '@raku/core';
 import { auth } from './firebase';
 
@@ -34,9 +36,7 @@ function resolveApiBaseUrl(): string {
     return 'http://localhost:8787';
   }
 
-  throw new Error(
-    'Chưa cấu hình EXPO_PUBLIC_API_BASE_URL cho máy chủ AI Worker. Vui lòng thiết lập trong apps/mobile/.env.'
-  );
+  return 'https://rakunihongo-duckwt.pages.dev';
 }
 
 async function postAiEndpoint<T>(path: string, payload: Record<string, unknown>): Promise<T> {
@@ -118,4 +118,29 @@ export async function fetchConversationSummary(params: {
     params
   );
   return data.summary;
+}
+
+export async function enrichKanjiWithAi(
+  chars: string[],
+  contextWords: Array<{ surface: string; reading?: string; meaningVi?: string }> = []
+): Promise<Kanji[]> {
+  const uniqueChars = Array.from(new Set(chars.filter(Boolean)));
+  if (uniqueChars.length === 0) return [];
+
+  const results: Kanji[] = [];
+  const BATCH_SIZE = 25;
+  for (let i = 0; i < uniqueChars.length; i += BATCH_SIZE) {
+    const chunk = uniqueChars.slice(i, i + BATCH_SIZE);
+    const data = await postAiEndpoint<{ kanji?: unknown[] }>('/api/ai/kanji-enrich', {
+      chars: chunk,
+      contextWords: contextWords.slice(0, 20)
+    });
+    if (Array.isArray(data.kanji)) {
+      for (const item of data.kanji) {
+        const parsed = KanjiSchema.safeParse(item);
+        if (parsed.success) results.push(parsed.data);
+      }
+    }
+  }
+  return results;
 }

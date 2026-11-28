@@ -1,11 +1,21 @@
-import { useEffect } from 'react';
-import { Volume2, X } from 'lucide-react';
-import { KANJI_BY_CHAR, getWordsByKanji } from '@raku/core';
+import { useEffect, useMemo, useState } from 'react';
+import { Loader2, Sparkles, Volume2, X } from 'lucide-react';
+import {
+  getKanjiByChar,
+  getWordsByKanji,
+  type Kanji,
+  type StudyCard,
+  type Word
+} from '@raku/core';
 
 interface KanjiModalProps {
   char: string | null;
   onClose: () => void;
   onSelectWord?: (wordId: string) => void;
+  customKanjiMap?: ReadonlyMap<string, Kanji>;
+  userCards?: StudyCard[];
+  onEnrichKanji?: (char: string) => Promise<Kanji | null>;
+  canUseAi?: boolean;
 }
 
 function speakWord(text: string) {
@@ -21,7 +31,23 @@ function speakWord(text: string) {
   }
 }
 
-export function KanjiModal({ char, onClose, onSelectWord }: KanjiModalProps) {
+export function KanjiModal({
+  char,
+  onClose,
+  onSelectWord,
+  customKanjiMap,
+  userCards,
+  onEnrichKanji,
+  canUseAi = true
+}: KanjiModalProps) {
+  const [isEnriching, setIsEnriching] = useState(false);
+  const [enrichError, setEnrichError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setIsEnriching(false);
+    setEnrichError(null);
+  }, [char]);
+
   useEffect(() => {
     if (!char) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -31,11 +57,36 @@ export function KanjiModal({ char, onClose, onSelectWord }: KanjiModalProps) {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [char, onClose]);
 
+  const extraWords = useMemo<Word[]>(() => {
+    if (!userCards || userCards.length === 0) return [];
+    const list: Word[] = [];
+    for (const c of userCards) {
+      if (c.word) list.push(c.word);
+    }
+    return list;
+  }, [userCards]);
+
   if (!char) return null;
 
-  const kanji = KANJI_BY_CHAR.get(char);
-  const words = getWordsByKanji(char);
+  const kanji = getKanjiByChar(char, customKanjiMap);
+  const words = getWordsByKanji(char, extraWords);
   const canSpeak = typeof window !== 'undefined' && 'speechSynthesis' in window;
+
+  const handleEnrich = async () => {
+    if (!onEnrichKanji || isEnriching) return;
+    setIsEnriching(true);
+    setEnrichError(null);
+    try {
+      const result = await onEnrichKanji(char);
+      if (!result) {
+        setEnrichError('AI chưa trả về dữ liệu cho chữ này. Vui lòng thử lại.');
+      }
+    } catch (err: unknown) {
+      setEnrichError(err instanceof Error ? err.message : 'Không thể tra cứu bằng AI.');
+    } finally {
+      setIsEnriching(false);
+    }
+  };
 
   return (
     <div
@@ -61,7 +112,15 @@ export function KanjiModal({ char, onClose, onSelectWord }: KanjiModalProps) {
               {char}
             </div>
             <div className="min-w-0">
-              <div className="text-xs font-medium text-raku-muted">Hán Việt</div>
+              <div className="flex items-center gap-1.5 text-xs font-medium text-raku-muted">
+                <span>Hán Việt</span>
+                {kanji?.source === 'ai' && (
+                  <span className="inline-flex items-center gap-0.5 rounded bg-raku-accent-soft px-1.5 py-0.5 text-[10px] font-semibold text-raku-accent">
+                    <Sparkles className="h-2.5 w-2.5" aria-hidden="true" />
+                    AI
+                  </span>
+                )}
+              </div>
               <h2 className="text-lg font-bold text-raku-accent">
                 {kanji?.hanViet.join(' · ') || 'Chưa có'}
               </h2>
@@ -81,6 +140,38 @@ export function KanjiModal({ char, onClose, onSelectWord }: KanjiModalProps) {
 
         {/* Body */}
         <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5 text-sm text-raku-body">
+          {/* AI Enrich prompt when Kanji is not yet in seed or custom cache */}
+          {!kanji && onEnrichKanji && (
+            <div className="rounded-xl border border-raku-accent/30 bg-raku-accent-soft/50 p-4 space-y-2.5">
+              <p className="text-xs leading-relaxed text-raku-ink">
+                Chữ <strong className="font-jp">「{char}」</strong> chưa có trong kho 609 chữ N3 mặc định. Bạn có thể dùng AI để bổ sung Hán Việt, cách đọc, nghĩa và lưu vĩnh viễn vào kho của bạn.
+              </p>
+              <button
+                type="button"
+                disabled={isEnriching || !canUseAi}
+                onClick={() => void handleEnrich()}
+                className="raku-btn-primary min-h-9 w-full px-3 text-xs disabled:opacity-50"
+              >
+                {isEnriching ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                    <span>Đang tra cứu bằng AI...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span>
+                      {canUseAi ? `Tra & lưu「${char}」bằng AI` : 'Đăng nhập & kết nối mạng để dùng AI'}
+                    </span>
+                  </>
+                )}
+              </button>
+              {enrichError && (
+                <p className="text-xs text-raku-signal">{enrichError}</p>
+              )}
+            </div>
+          )}
+
           {/* Compact metadata row */}
           <dl className="grid grid-cols-3 divide-x divide-raku-line rounded-xl border border-raku-line bg-raku-canvas text-center">
             <div className="py-2.5">

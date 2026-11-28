@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Dimensions,
   Modal,
   Pressable,
@@ -17,10 +18,11 @@ import Animated, {
   withTiming
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Volume2, X } from 'lucide-react-native';
-import { KANJI_BY_CHAR, getWordsByKanji } from '@raku/core';
+import { Sparkles, Volume2, X } from 'lucide-react-native';
+import { getKanjiByChar, getWordsByKanji, type Word } from '@raku/core';
 import { useRakuTheme } from '@/providers/ThemeProvider';
-import { hapticSelect, hapticTap } from '@/services/haptics';
+import { useStudy } from '@/providers/StudyProvider';
+import { hapticSelect, hapticSuccess, hapticTap } from '@/services/haptics';
 import { speakJapanese } from '@/services/speech';
 
 interface KanjiBottomSheetProps {
@@ -32,15 +34,28 @@ const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 export function KanjiBottomSheet({ char, onClose }: KanjiBottomSheetProps) {
   const { colors, typography } = useRakuTheme();
+  const { user, cards, customKanjiMap, enrichKanjiChar } = useStudy();
   const insets = useSafeAreaInsets();
   const translateY = useSharedValue(SCREEN_HEIGHT);
+  const [isEnriching, setIsEnriching] = useState(false);
+  const [enrichError, setEnrichError] = useState<string | null>(null);
 
   useEffect(() => {
+    setIsEnriching(false);
+    setEnrichError(null);
     if (char) {
       translateY.value = SCREEN_HEIGHT * 0.5;
       translateY.value = withSpring(0, { damping: 24, stiffness: 260 });
     }
   }, [char, translateY]);
+
+  const extraWords = useMemo<Word[]>(() => {
+    const list: Word[] = [];
+    for (const c of cards) {
+      if (c.word) list.push(c.word);
+    }
+    return list;
+  }, [cards]);
 
   const dismiss = () => {
     hapticSelect();
@@ -71,8 +86,27 @@ export function KanjiBottomSheet({ char, onClose }: KanjiBottomSheetProps) {
 
   if (!char) return null;
 
-  const kanji = KANJI_BY_CHAR.get(char);
-  const words = getWordsByKanji(char);
+  const kanji = getKanjiByChar(char, customKanjiMap);
+  const words = getWordsByKanji(char, extraWords);
+
+  const handleEnrich = async () => {
+    if (isEnriching) return;
+    hapticTap();
+    setIsEnriching(true);
+    setEnrichError(null);
+    try {
+      const result = await enrichKanjiChar(char);
+      if (result) {
+        hapticSuccess();
+      } else {
+        setEnrichError('AI chưa trả về dữ liệu cho chữ này. Vui lòng thử lại.');
+      }
+    } catch (err) {
+      setEnrichError(err instanceof Error ? err.message : 'Không thể tra cứu bằng AI.');
+    } finally {
+      setIsEnriching(false);
+    }
+  };
 
   return (
     <Modal visible={Boolean(char)} transparent animationType="fade" onRequestClose={dismiss}>
@@ -111,14 +145,22 @@ export function KanjiBottomSheet({ char, onClose }: KanjiBottomSheetProps) {
                     </Text>
                   </View>
                   <View style={styles.headerText}>
-                    <Text
-                      style={[
-                        styles.kicker,
-                        { color: colors.muted, fontFamily: typography.fontFamily.viNative.medium }
-                      ]}
-                    >
-                      Hán Việt
-                    </Text>
+                    <View style={styles.kickerRow}>
+                      <Text
+                        style={[
+                          styles.kicker,
+                          { color: colors.muted, fontFamily: typography.fontFamily.viNative.medium }
+                        ]}
+                      >
+                        Hán Việt
+                      </Text>
+                      {kanji?.source === 'ai' && (
+                        <View style={[styles.aiBadge, { backgroundColor: colors.accentSoft }]}>
+                          <Sparkles size={10} color={colors.accent} />
+                          <Text style={[styles.aiBadgeText, { color: colors.accent }]}>AI</Text>
+                        </View>
+                      )}
+                    </View>
                     <Text
                       style={[
                         styles.hanViet,
@@ -162,6 +204,51 @@ export function KanjiBottomSheet({ char, onClose }: KanjiBottomSheetProps) {
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
+            {!kanji && (
+              <View
+                style={[
+                  styles.aiPromptCard,
+                  { backgroundColor: colors.accentSoft, borderColor: colors.accent }
+                ]}
+              >
+                <Text style={[styles.aiPromptText, { color: colors.ink }]}>
+                  Chữ 「{char}」 chưa có trong kho 609 chữ N3. Dùng AI bổ sung Hán Việt, cách đọc, nghĩa và lưu vĩnh viễn vào kho của bạn.
+                </Text>
+                <Pressable
+                  disabled={isEnriching || !user}
+                  onPress={() => void handleEnrich()}
+                  style={({ pressed }) => [
+                    styles.aiPromptBtn,
+                    {
+                      backgroundColor: pressed ? colors.accentHover : colors.accent,
+                      opacity: isEnriching || !user ? 0.55 : 1
+                    }
+                  ]}
+                >
+                  {isEnriching ? (
+                    <ActivityIndicator size="small" color={colors.onAccent} />
+                  ) : (
+                    <Sparkles size={14} color={colors.onAccent} />
+                  )}
+                  <Text
+                    style={[
+                      styles.aiPromptBtnText,
+                      { color: colors.onAccent, fontFamily: typography.fontFamily.viNative.semibold }
+                    ]}
+                  >
+                    {isEnriching
+                      ? 'Đang tra cứu bằng AI...'
+                      : user
+                        ? `Tra & lưu「${char}」bằng AI`
+                        : 'Đăng nhập để dùng AI tra Kanji'}
+                  </Text>
+                </Pressable>
+                {enrichError ? (
+                  <Text style={[styles.aiErrorText, { color: colors.signal }]}>{enrichError}</Text>
+                ) : null}
+              </View>
+            )}
+
             {/* Compact metadata */}
             <View
               style={[
@@ -535,5 +622,46 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 13
+  },
+  kickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6
+  },
+  aiBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 5
+  },
+  aiBadgeText: {
+    fontSize: 10,
+    fontWeight: '700'
+  },
+  aiPromptCard: {
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 12,
+    gap: 10
+  },
+  aiPromptText: {
+    fontSize: 12,
+    lineHeight: 18
+  },
+  aiPromptBtn: {
+    height: 40,
+    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6
+  },
+  aiPromptBtnText: {
+    fontSize: 13
+  },
+  aiErrorText: {
+    fontSize: 12
   }
 });

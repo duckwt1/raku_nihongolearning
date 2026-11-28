@@ -8,6 +8,7 @@ import {
   sanitizePromptBoundary,
   stripJsonFence
 } from './conversationHandlers.js';
+import { handleKanjiEnrich } from './kanjiEnrichHandler.js';
 import {
   Question,
   QuestionSchema,
@@ -319,8 +320,9 @@ ${safeText}
         }
       }
 
-      // AI Sentence Check & Conversation Endpoints
+      // AI Sentence Check, Conversation & Kanji Enrich Endpoints
       if (
+        url.pathname === '/api/ai/kanji-enrich' ||
         url.pathname === '/api/ai/sentence-check' ||
         url.pathname === '/api/ai/conversation/reply' ||
         url.pathname === '/api/ai/conversation/hint' ||
@@ -333,7 +335,7 @@ ${safeText}
         const authResult = await authenticateRequest(
           request,
           env,
-          'Cần đăng nhập (Firebase ID token) để sử dụng tính năng luyện tập AI'
+          'Cần đăng nhập (Firebase ID token) để sử dụng tính năng AI'
         );
         if (!authResult.ok) return authResult.response;
 
@@ -350,6 +352,12 @@ ${safeText}
           rawBody = await request.json();
         } catch {
           return jsonResponse({ error: 'Dữ liệu JSON gửi lên không hợp lệ' }, 400);
+        }
+
+        if (url.pathname === '/api/ai/kanji-enrich') {
+          const result = await handleKanjiEnrich(rawBody, provider);
+          if (!result.ok) return jsonResponse({ error: result.error }, result.status);
+          return jsonResponse({ success: true, ...result.data });
         }
 
         if (url.pathname === '/api/ai/sentence-check') {

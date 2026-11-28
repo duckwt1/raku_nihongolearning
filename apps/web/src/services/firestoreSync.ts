@@ -17,6 +17,7 @@ import {
   type StudyCard,
   type Folder,
   type Deck,
+  type Kanji,
   type UserStudyStats,
   type CardReviewLog,
   WordSchema,
@@ -30,16 +31,19 @@ import {
 } from '@raku/core';
 import {
   deleteDeckFromCloudWithDb,
+  mergeCustomKanjiLists,
   mergeDecksById,
   mergeFoldersById,
   normalizePackedWord,
+  pullCustomKanjiBundleWithDb,
   pullDeckBundlesWithDb,
+  syncCustomKanjiBundleWithDb,
   syncDirtyDeckBundlesWithDb,
   syncSingleDeckBundleWithDb
 } from '@raku/sync';
 import { db } from './firebase';
 
-export { mergeDecksById, mergeFoldersById };
+export { mergeCustomKanjiLists, mergeDecksById, mergeFoldersById };
 
 /**
  * Đồng bộ thông tin người dùng lên collection /users/{uid}
@@ -87,6 +91,10 @@ export {
   saveDeckSyncPrefs,
   loadSyncedBundleHashes,
   saveSyncedBundleHashes,
+  loadUserCustomKanji,
+  saveUserCustomKanji,
+  loadSyncedCustomKanjiHash,
+  saveSyncedCustomKanjiHash,
   loadDailyNewWordGoal,
   saveDailyNewWordGoal,
   DAILY_NEW_WORD_GOAL_OPTIONS
@@ -96,7 +104,9 @@ import {
   enqueueOfflineReview,
   removeOfflineReviewItems,
   loadSyncedBundleHashes,
-  saveSyncedBundleHashes
+  saveSyncedBundleHashes,
+  loadSyncedCustomKanjiHash,
+  saveSyncedCustomKanjiHash
 } from './userStorage';
 
 /**
@@ -576,6 +586,7 @@ export async function pullDataFromFirestore(
   statsNeedBackfill: boolean;
   remoteStats?: UserStudyStats;
   structureFingerprint?: string;
+  customKanjiHash?: string;
   legacyUpdatedCards?: StudyCard[];
 }> {
   try {
@@ -645,6 +656,9 @@ export async function pullDataFromFirestore(
       remoteStats: isUserStudyStats(profile?.stats) ? profile.stats : undefined,
       structureFingerprint: typeof profile?.structureFingerprint === 'string'
         ? profile.structureFingerprint
+        : undefined,
+      customKanjiHash: typeof profile?.customKanjiHash === 'string'
+        ? profile.customKanjiHash
         : undefined,
       legacyUpdatedCards
     };
@@ -1041,4 +1055,39 @@ export async function deleteDeckFromCloud(
     delete syncedHashes[deckId];
     saveSyncedBundleHashes(userId, syncedHashes);
   }
+}
+
+/**
+ * Đẩy toàn bộ kho Kanji AI/custom của user vào 1 document duy nhất (0 writes nếu không đổi).
+ */
+export async function syncCustomKanjiBundle(
+  userId: string,
+  customKanji: Kanji[]
+): Promise<boolean> {
+  if (!userId || userId === 'local_device') return false;
+  const lastHash = loadSyncedCustomKanjiHash(userId);
+  const res = await syncCustomKanjiBundleWithDb(db, userId, customKanji, lastHash);
+  if (res.synced && res.hash) {
+    saveSyncedCustomKanjiHash(userId, res.hash);
+  }
+  return res.synced;
+}
+
+/**
+ * Tải kho Kanji AI/custom của user CHỈ khi customKanjiHash đổi (0 reads nếu không đổi).
+ */
+export async function pullCustomKanjiBundle(
+  userId: string,
+  localKanji: Kanji[],
+  remoteHash?: string
+): Promise<{ list: Kanji[]; fetched: boolean; addedCount: number }> {
+  if (!userId || userId === 'local_device') {
+    return { list: localKanji, fetched: false, addedCount: 0 };
+  }
+  const lastHash = loadSyncedCustomKanjiHash(userId);
+  const res = await pullCustomKanjiBundleWithDb(db, userId, localKanji, remoteHash, lastHash);
+  if (res.fetched && res.hash) {
+    saveSyncedCustomKanjiHash(userId, res.hash);
+  }
+  return { list: res.list, fetched: res.fetched, addedCount: res.addedCount };
 }

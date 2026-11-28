@@ -32,6 +32,7 @@ import {
   type GrammarExercise,
   type GrammarLevel,
   type JlptLevel,
+  type Kanji,
   type SentenceAttemptRecord,
   type StudyCard,
   type UserStudyStats
@@ -58,6 +59,10 @@ import {
   fetchCommunityDecksFromDb,
   mergeCommunityDecksIntoLocalState
 } from './communityDecks.js';
+import {
+  pullCustomKanjiBundleWithDb,
+  syncCustomKanjiBundleWithDb
+} from './customKanji.js';
 
 export const JLPT_LEVELS: JlptLevel[] = ['N5', 'N4', 'N3', 'N2', 'N1'];
 
@@ -290,6 +295,7 @@ export interface PullCloudResult {
   cards: StudyCard[];
   folders?: Folder[];
   decks?: Deck[];
+  customKanji?: Kanji[];
   stats: UserStudyStats;
   cloudCardCount: number;
   bundlesFetchedCount: number;
@@ -890,6 +896,28 @@ export function createFirestoreSyncClient(deps: { db: Firestore; repository: Use
       }
     },
 
+    async syncCustomKanjiBundle(userId: string, customKanji: Kanji[]): Promise<boolean> {
+      const lastHash = await repository.loadSyncedCustomKanjiHash(userId);
+      const res = await syncCustomKanjiBundleWithDb(db, userId, customKanji, lastHash);
+      if (res.synced && res.hash) {
+        await repository.saveSyncedCustomKanjiHash(userId, res.hash);
+      }
+      return res.synced;
+    },
+
+    async pullCustomKanjiBundle(
+      userId: string,
+      localKanji: Kanji[],
+      remoteHash?: string
+    ): Promise<{ list: Kanji[]; fetched: boolean; addedCount: number }> {
+      const lastHash = await repository.loadSyncedCustomKanjiHash(userId);
+      const res = await pullCustomKanjiBundleWithDb(db, userId, localKanji, remoteHash, lastHash);
+      if (res.fetched && res.hash) {
+        await repository.saveSyncedCustomKanjiHash(userId, res.hash);
+      }
+      return { list: res.list, fetched: res.fetched, addedCount: res.addedCount };
+    },
+
     async pullDecksAndBundlesOnly(
       userId: string,
       currentFolders: Folder[],
@@ -1052,6 +1080,27 @@ export function createFirestoreSyncClient(deps: { db: Firestore; repository: Use
       const mergedCards = mergeFirestoreCardProgress(communityRes.updatedCards, cloudCards);
 
       const profileData = userSnap.exists() ? (userSnap.data() as Record<string, unknown>) : undefined;
+      const remoteKanjiHash =
+        typeof profileData?.customKanjiHash === 'string' ? profileData.customKanjiHash : '';
+      let mergedCustomKanji: Kanji[] | undefined;
+      if (remoteKanjiHash) {
+        const [localCustomKanji, lastKanjiHash] = await Promise.all([
+          repository.loadCustomKanji(userId),
+          repository.loadSyncedCustomKanjiHash(userId)
+        ]);
+        const kanjiRes = await pullCustomKanjiBundleWithDb(
+          db,
+          userId,
+          localCustomKanji,
+          remoteKanjiHash,
+          lastKanjiHash
+        );
+        if (kanjiRes.fetched) {
+          await repository.saveSyncedCustomKanjiHash(userId, kanjiRes.hash);
+          mergedCustomKanji = kanjiRes.list;
+        }
+      }
+
       const remoteStats = profileData?.stats as UserStudyStats | undefined;
       const today = getTodayDateString();
       const mergedStats: UserStudyStats = remoteStats
@@ -1096,6 +1145,7 @@ export function createFirestoreSyncClient(deps: { db: Firestore; repository: Use
         cards: mergedCards,
         folders: communityRes.updatedFolders.length > 0 ? communityRes.updatedFolders : resolvedFolders,
         decks: communityRes.updatedDecks.length > 0 ? communityRes.updatedDecks : resolvedDecks,
+        customKanji: mergedCustomKanji,
         stats: mergedStats,
         cloudCardCount: Object.keys(cloudCards).length,
         bundlesFetchedCount: bundleRes.fetchedDeckCount,

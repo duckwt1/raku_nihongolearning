@@ -14,6 +14,7 @@ import { ChevronRight, RefreshCw, Search } from 'lucide-react-native';
 import { SEED_KANJI, type Grammar, type JlptLevel } from '@raku/core';
 import { JLPT_LEVELS } from '@raku/sync';
 import { useRakuTheme } from '@/providers/ThemeProvider';
+import { useStudy } from '@/providers/StudyProvider';
 import { isFirebaseConfigured } from '@/services/firebase';
 import {
   fetchAndCacheGrammarPoints,
@@ -27,6 +28,7 @@ type LibrarySection = 'kanji' | 'grammar';
 export default function LibraryScreen() {
   const router = useRouter();
   const { colors, typography } = useRakuTheme();
+  const { customKanji } = useStudy();
 
   const [section, setSection] = useState<LibrarySection>('kanji');
   const [query, setQuery] = useState('');
@@ -86,10 +88,12 @@ export default function LibraryScreen() {
     };
   }, [section, level, reloadNonce, loadGrammar]);
 
+  const allKanji = useMemo(() => [...customKanji, ...SEED_KANJI], [customKanji]);
+
   const filteredKanji = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return SEED_KANJI;
-    return SEED_KANJI.filter(
+    if (!q) return allKanji;
+    return allKanji.filter(
       (k) =>
         k.char.includes(q) ||
         k.meaningVi.toLowerCase().includes(q) ||
@@ -97,7 +101,7 @@ export default function LibraryScreen() {
         k.onyomi.some((o) => o.toLowerCase().includes(q)) ||
         k.kunyomi.some((ku) => ku.toLowerCase().includes(q))
     );
-  }, [query]);
+  }, [query, allKanji]);
 
   const filteredGrammar = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -130,7 +134,7 @@ export default function LibraryScreen() {
         <View style={[styles.segmented, { backgroundColor: colors.subtle, borderColor: colors.line }]}>
           {(
             [
-              { id: 'kanji', label: `Kanji (${SEED_KANJI.length})` },
+              { id: 'kanji', label: `Kanji (${allKanji.length})` },
               { id: 'grammar', label: 'Ngữ pháp JLPT' }
             ] as const
           ).map((item) => {
