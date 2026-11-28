@@ -29,7 +29,7 @@ export const WordSchema = z.object({
   meaningVi: z.string().min(1),
   pos: z.string().optional(), // Part of speech, e.g. 動詞, 名詞
   jlpt: JlptLevelSchema.optional(),
-  kanji: z.array(z.string().length(1)).default([]), // Ordered kanji in surface
+  kanji: z.array(z.string().min(1)).default([]), // Ordered kanji in surface
   hanVietBreakdown: z.array(z.string()).default([]),
   exampleIds: z.array(z.string()).default([]),
   exampleJp: z.string().optional(),
@@ -281,6 +281,12 @@ export const DeckSchema = z.object({
   sourceDeckId: z.string().optional(),
   authorName: z.string().optional(),
   authorUid: z.string().optional(),
+  /** Hash nội dung từ vựng trong deck để bỏ qua đọc/ghi bundle khi không đổi */
+  cardsHash: z.string().optional(),
+  /** Số lượng chunk trong deckBundles (mặc định 1) */
+  bundleChunkCount: z.number().int().positive().optional(),
+  /** Tổng số thẻ custom đã đóng gói trong bundle */
+  cardCount: z.number().int().nonnegative().optional(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional()
 });

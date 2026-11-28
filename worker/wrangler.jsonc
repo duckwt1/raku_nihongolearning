@@ -11,5 +11,8 @@
   "vars": {
     "FIREBASE_PROJECT_ID": "raku-nihongolearning"
   },
+  "placement": {
+    "mode": "smart"
+  },
   "workers_dev": false
 }

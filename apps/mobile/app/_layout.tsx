@@ -41,6 +41,14 @@ function RootNavigator() {
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
+          name="deck/[id]"
+          options={{
+            title: 'Bộ thẻ',
+            headerBackTitle: 'Học',
+            animation: 'slide_from_right'
+          }}
+        />
+        <Stack.Screen
           name="study/[target]"
           options={{
             headerBackTitle: 'Học',

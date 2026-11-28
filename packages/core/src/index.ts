@@ -12,3 +12,7 @@ export * from './arena/arenaQuiz.js';
 export * from './decks/deckManager.js';
 export * from './decks/deckMigration.js';
 export * from './decks/deckOwnership.js';
+export * from './conversation/schemas.js';
+export * from './conversation/scenarios.js';
+export * from './conversation/quickReplyBank.js';
+export * from './conversation/sentencePrompts.js';

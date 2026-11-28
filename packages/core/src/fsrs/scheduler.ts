@@ -3,13 +3,14 @@ import {
   fsrs,
   generatorParameters,
   Rating,
+  State,
   type Card,
   type FSRSParameters,
   type Grade,
   type RecordLogItem
 } from 'ts-fsrs';
 
-export { Rating, type Card, type Grade, type RecordLogItem };
+export { Rating, State, type Card, type Grade, type RecordLogItem };
 
 export interface FSRSOptions {
   request_retention?: number;

@@ -327,9 +327,38 @@ export function removeOfflineReviewItems(userId: string, itemIds: string[]): voi
  */
 export function clearUserDataFromBrowser(userId?: string | null): void {
   if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
-  const bases = ['cards', 'study_stats', 'folders', 'decks', 'offline_queue', 'deck_sync_prefs', 'grammar_exercises', 'grammar_practice_stats', 'daily_new_word_goal'];
+  const bases = ['cards', 'study_stats', 'folders', 'decks', 'offline_queue', 'deck_sync_prefs', 'deck_bundle_hashes', 'grammar_exercises', 'grammar_practice_stats', 'daily_new_word_goal', 'conversation_sessions', 'sentence_history'];
   for (const b of bases) {
     localStorage.removeItem(getUserStorageKey(b, userId));
+  }
+}
+
+export function loadSyncedBundleHashes(userId?: string | null): Record<string, string> {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(getUserStorageKey('deck_bundle_hashes', userId));
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    const clean: Record<string, string> = {};
+    for (const [k, v] of Object.entries(parsed)) {
+      if (typeof v === 'string') clean[k] = v;
+    }
+    return clean;
+  } catch {
+    return {};
+  }
+}
+
+export function saveSyncedBundleHashes(
+  userId: string | null | undefined,
+  hashes: Record<string, string>
+): void {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(getUserStorageKey('deck_bundle_hashes', userId), JSON.stringify(hashes));
+  } catch {
+    // ignore storage quota errors
   }
 }
 

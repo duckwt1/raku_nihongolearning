@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { ChevronRight } from 'lucide-react-native';
+import { ChevronRight, Play } from 'lucide-react-native';
 import type { Deck } from '@raku/core';
 import { useRakuTheme } from '@/providers/ThemeProvider';
 import { hapticTap } from '@/services/haptics';
@@ -13,6 +13,7 @@ interface DeckRowProps {
   dueCount: number;
   isFirst?: boolean;
   onPress: () => void;
+  onStudyPress?: () => void;
 }
 
 export function DeckRow({
@@ -22,7 +23,8 @@ export function DeckRow({
   learnCount,
   dueCount,
   isFirst = false,
-  onPress
+  onPress,
+  onStudyPress
 }: DeckRowProps) {
   const { colors, typography } = useRakuTheme();
 
@@ -64,7 +66,35 @@ export function DeckRow({
           <Text style={[styles.countText, { color: colors.signal }]}>{learnCount}</Text>
           <Text style={[styles.countText, { color: colors.accent }]}>{dueCount}</Text>
         </View>
-        <ChevronRight size={16} color={colors.muted} />
+
+        {onStudyPress ? (
+          <Pressable
+            onPress={(e) => {
+              e.stopPropagation();
+              hapticTap();
+              onStudyPress();
+            }}
+            hitSlop={6}
+            accessibilityLabel={`Học nhanh bộ ${deck.name}`}
+            style={({ pressed }) => [
+              styles.studyBtn,
+              {
+                backgroundColor: pressed ? colors.accent : colors.accentSoft,
+                borderColor: colors.line
+              }
+            ]}
+          >
+            {({ pressed }) => (
+              <Play
+                size={12}
+                color={pressed ? colors.onAccent : colors.accent}
+                fill={pressed ? colors.onAccent : colors.accent}
+              />
+            )}
+          </Pressable>
+        ) : (
+          <ChevronRight size={16} color={colors.muted} />
+        )}
       </View>
     </Pressable>
   );
@@ -99,7 +129,7 @@ const styles = StyleSheet.create({
   counts: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10
+    gap: 8
   },
   countText: {
     minWidth: 20,
@@ -107,5 +137,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     fontVariant: ['tabular-nums']
+  },
+  studyBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center'
   }
 });

@@ -4,6 +4,7 @@ import {
   ChevronDown,
   ChevronRight,
   ListChecks,
+  PenLine,
   RefreshCw,
   Search
 } from 'lucide-react';
@@ -19,6 +20,7 @@ interface GrammarPracticeViewProps {
   user: User | null;
   onNotify?: (message: string, type?: 'success' | 'info' | 'warning') => void;
   onOpenExercises?: (grammarId: string, level: JlptLevel) => void;
+  onOpenSentenceStudio?: (grammar: Grammar) => void;
 }
 
 function Section({
@@ -53,7 +55,12 @@ function Section({
   );
 }
 
-export function GrammarPracticeView({ user, onNotify, onOpenExercises }: GrammarPracticeViewProps) {
+export function GrammarPracticeView({
+  user,
+  onNotify,
+  onOpenExercises,
+  onOpenSentenceStudio
+}: GrammarPracticeViewProps) {
   const [levels, setLevels] = useState<GrammarLevel[]>([]);
   const [level, setLevel] = useState<JlptLevel>('N3');
   const [points, setPoints] = useState<Grammar[]>([]);
@@ -278,15 +285,29 @@ export function GrammarPracticeView({ user, onNotify, onOpenExercises }: Grammar
             ))}
           </div>
 
-          {onOpenExercises && (
-            <button
-              type="button"
-              onClick={() => onOpenExercises(selected.id, selected.jlpt)}
-              className="inline-flex w-fit items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700"
-            >
-              <ListChecks className="h-3.5 w-3.5" />
-              Luyện bài tập của mẫu này
-            </button>
+          {(onOpenExercises || onOpenSentenceStudio) && (
+            <div className="flex flex-wrap gap-2">
+              {onOpenExercises && (
+                <button
+                  type="button"
+                  onClick={() => onOpenExercises(selected.id, selected.jlpt)}
+                  className="inline-flex w-fit items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700"
+                >
+                  <ListChecks className="h-3.5 w-3.5" />
+                  Luyện bài tập của mẫu này
+                </button>
+              )}
+              {onOpenSentenceStudio && (
+                <button
+                  type="button"
+                  onClick={() => onOpenSentenceStudio(selected)}
+                  className="inline-flex w-fit items-center gap-1.5 rounded-xl border border-raku-accent bg-raku-accent-soft px-3.5 py-2 text-xs font-bold text-raku-accent hover:bg-raku-accent hover:text-raku-on-accent"
+                >
+                  <PenLine className="h-3.5 w-3.5" />
+                  Đặt câu với AI
+                </button>
+              )}
+            </div>
           )}
 
           <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">

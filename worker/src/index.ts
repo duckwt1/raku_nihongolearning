@@ -1,5 +1,13 @@
 import { extractBearerToken, verifyFirebaseIdToken } from './auth.js';
-import { GeminiAiProvider } from './aiProvider.js';
+import { resolveAiProvider, type AiProviderEnv } from './aiProvider.js';
+import {
+  handleConversationHint,
+  handleConversationReply,
+  handleConversationSummary,
+  handleSentenceCheck,
+  sanitizePromptBoundary,
+  stripJsonFence
+} from './conversationHandlers.js';
 import {
   Question,
   QuestionSchema,
@@ -9,18 +17,16 @@ import {
   SEED_WORDS
 } from '@raku/core';
 
-export interface Env {
+export interface Env extends AiProviderEnv {
   ASSETS?: Fetcher;
   FIREBASE_PROJECT_ID?: string;
-  GEMINI_API_KEY?: string;
-  AI_MODEL?: string;
 }
 
 const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
+  'Permissions-Policy': 'camera=(), microphone=(self), geolocation=()'
 };
 
 const CORS_HEADERS = {
@@ -44,10 +50,6 @@ function jsonResponse(data: unknown, status = 200, extraHeaders: HeadersInit = {
 const MAX_AI_PROMPT_LENGTH = 4000;
 const MAX_IMPORT_ANALYZE_LENGTH = 10000;
 const VALID_JLPT_LEVELS = new Set(['N5', 'N4', 'N3', 'N2', 'N1']);
-
-function sanitizePromptBoundary(text: string): string {
-  return text.replace(/<<<\/?(?:END_)?USER_INPUT>>>/gi, '');
-}
 
 async function authenticateRequest(
   request: Request,
@@ -89,9 +91,11 @@ export default {
 
       // Health endpoint
       if (url.pathname === '/api/health') {
+        const activeProvider = resolveAiProvider(env);
         return jsonResponse({
           status: 'ok',
           service: 'Raku Nihongo Worker',
+          aiProvider: activeProvider ? `${activeProvider.name} (${activeProvider.model})` : 'unconfigured',
           timestamp: new Date().toISOString(),
           version: '0.1.0'
         });
@@ -121,10 +125,10 @@ export default {
         );
         if (!authResult.ok) return authResult.response;
 
-        const apiKey = env.GEMINI_API_KEY;
-        if (!apiKey) {
+        const provider = resolveAiProvider(env);
+        if (!provider) {
           return jsonResponse(
-            { error: 'Chưa cấu hình GEMINI_API_KEY trong wrangler secret. Vui lòng thiết lập biến môi trường.' },
+            { error: 'Chưa cấu hình API key cho AI (GROQ_API_KEY, XAI_API_KEY, OPENROUTER_API_KEY, AI_API_KEY hoặc GEMINI_API_KEY).' },
             503
           );
         }
@@ -149,8 +153,6 @@ export default {
           return jsonResponse({ error: `Yêu cầu quá dài (tối đa ${MAX_AI_PROMPT_LENGTH} ký tự)` }, 400);
         }
         const safePrompt = sanitizePromptBoundary(rawPrompt || `Trắc nghiệm từ vựng trình độ ${jlpt}`);
-
-        const provider = new GeminiAiProvider(apiKey, env.AI_MODEL || 'gemini-1.5-flash');
 
         // Prepare dictionary context for relevant sample words
         const sampleDict = SEED_WORDS.slice(0, 15).map((w) => ({
@@ -190,7 +192,7 @@ Từ điển tham khảo chuẩn: ${JSON.stringify(sampleDict)}`;
 
         try {
           const rawResult = await provider.generateText({ systemPrompt, userPrompt });
-          const parsed = JSON.parse(rawResult);
+          const parsed = JSON.parse(stripJsonFence(rawResult));
           const rawQuestions: unknown[] = Array.isArray(parsed) ? parsed : [parsed];
 
           const validQuestions: Question[] = [];
@@ -229,10 +231,10 @@ Từ điển tham khảo chuẩn: ${JSON.stringify(sampleDict)}`;
         );
         if (!authResult.ok) return authResult.response;
 
-        const apiKey = env.GEMINI_API_KEY;
-        if (!apiKey) {
+        const provider = resolveAiProvider(env);
+        if (!provider) {
           return jsonResponse(
-            { error: 'Chưa cấu hình GEMINI_API_KEY trong wrangler secret. Vui lòng thiết lập biến môi trường.' },
+            { error: 'Chưa cấu hình API key cho AI (GROQ_API_KEY, XAI_API_KEY, OPENROUTER_API_KEY, AI_API_KEY hoặc GEMINI_API_KEY).' },
             503
           );
         }
@@ -259,8 +261,6 @@ Từ điển tham khảo chuẩn: ${JSON.stringify(sampleDict)}`;
             400
           );
         }
-
-        const provider = new GeminiAiProvider(apiKey, env.AI_MODEL || 'gemini-1.5-flash');
 
         const systemPrompt = `Bạn là trợ lý AI chuyên phân tích và bóc tách danh sách từ vựng tiếng Nhật từ văn bản tự do của người học.
 QUY TẮC BẮT BUỘC:
@@ -289,7 +289,7 @@ ${safeText}
 
         try {
           const rawResult = await provider.generateText({ systemPrompt, userPrompt });
-          const parsed = JSON.parse(rawResult);
+          const parsed = JSON.parse(stripJsonFence(rawResult));
           const rawItems: unknown[] = Array.isArray(parsed) ? parsed : [parsed];
 
           const validRecords: ImportRecord[] = [];
@@ -317,6 +317,62 @@ ${safeText}
           const msg = err instanceof Error ? err.message : 'Lỗi khi phân tích bằng AI';
           return jsonResponse({ error: `Phân tích AI thất bại: ${msg}` }, 500);
         }
+      }
+
+      // AI Sentence Check & Conversation Endpoints
+      if (
+        url.pathname === '/api/ai/sentence-check' ||
+        url.pathname === '/api/ai/conversation/reply' ||
+        url.pathname === '/api/ai/conversation/hint' ||
+        url.pathname === '/api/ai/conversation/summary'
+      ) {
+        if (request.method !== 'POST') {
+          return jsonResponse({ error: 'Method Not Allowed' }, 405);
+        }
+
+        const authResult = await authenticateRequest(
+          request,
+          env,
+          'Cần đăng nhập (Firebase ID token) để sử dụng tính năng luyện tập AI'
+        );
+        if (!authResult.ok) return authResult.response;
+
+        const provider = resolveAiProvider(env);
+        if (!provider) {
+          return jsonResponse(
+            { error: 'Chưa cấu hình API key cho AI (GROQ_API_KEY, XAI_API_KEY, OPENROUTER_API_KEY, AI_API_KEY hoặc GEMINI_API_KEY).' },
+            503
+          );
+        }
+
+        let rawBody: unknown;
+        try {
+          rawBody = await request.json();
+        } catch {
+          return jsonResponse({ error: 'Dữ liệu JSON gửi lên không hợp lệ' }, 400);
+        }
+
+        if (url.pathname === '/api/ai/sentence-check') {
+          const result = await handleSentenceCheck(rawBody, provider);
+          if (!result.ok) return jsonResponse({ error: result.error }, result.status);
+          return jsonResponse({ success: true, ...result.data });
+        }
+
+        if (url.pathname === '/api/ai/conversation/reply') {
+          const result = await handleConversationReply(rawBody, provider);
+          if (!result.ok) return jsonResponse({ error: result.error }, result.status);
+          return jsonResponse({ success: true, ...result.data });
+        }
+
+        if (url.pathname === '/api/ai/conversation/hint') {
+          const result = await handleConversationHint(rawBody, provider);
+          if (!result.ok) return jsonResponse({ error: result.error }, result.status);
+          return jsonResponse({ success: true, ...result.data });
+        }
+
+        const result = await handleConversationSummary(rawBody, provider);
+        if (!result.ok) return jsonResponse({ error: result.error }, result.status);
+        return jsonResponse({ success: true, ...result.data });
       }
 
       return jsonResponse({ error: 'Endpoint Not Found' }, 404);

@@ -1,17 +1,30 @@
 import {
+  ConversationSessionSchema,
   DEFAULT_DECKS,
   DEFAULT_FOLDERS,
+  SentenceAttemptRecordSchema,
   buildDefaultCards,
   createInitialStudyStats,
   getTodayDateString,
   migrateDecks,
   migrateFolders,
+  type ConversationSession,
   type Deck,
   type Folder,
+  type SentenceAttemptRecord,
   type StudyCard,
   type UserStudyStats
 } from '@raku/core';
 import { getUserStorageKey, type AsyncKeyValueStorage } from './storageAdapter.js';
+
+export const MAX_LOCAL_CONVERSATION_SESSIONS = 30;
+export const MAX_LOCAL_SENTENCE_HISTORY = 400;
+const MAX_HIDDEN_IDS = 500;
+
+export interface DeckSyncPrefs {
+  hiddenDeckIds: string[];
+  hiddenFolderIds: string[];
+}
 
 export interface OfflineReviewItem {
   id: string;
@@ -94,6 +107,23 @@ export interface UserRepository {
   clearOfflineQueue(userId?: string | null): Promise<void>;
   loadDailyNewWordGoal(userId?: string | null): Promise<number>;
   saveDailyNewWordGoal(userId: string | null | undefined, goal: number): Promise<void>;
+  loadConversationSessions(userId?: string | null): Promise<ConversationSession[]>;
+  saveConversationSessions(
+    userId: string | null | undefined,
+    sessions: ConversationSession[]
+  ): Promise<void>;
+  loadSentenceHistory(userId?: string | null): Promise<SentenceAttemptRecord[]>;
+  saveSentenceHistory(
+    userId: string | null | undefined,
+    attempts: SentenceAttemptRecord[]
+  ): Promise<void>;
+  loadDeckSyncPrefs(userId?: string | null): Promise<DeckSyncPrefs>;
+  saveDeckSyncPrefs(userId: string | null | undefined, prefs: DeckSyncPrefs): Promise<void>;
+  loadSyncedBundleHashes(userId?: string | null): Promise<Record<string, string>>;
+  saveSyncedBundleHashes(
+    userId: string | null | undefined,
+    hashes: Record<string, string>
+  ): Promise<void>;
   clearUserData(userId?: string | null): Promise<void>;
 }
 
@@ -216,6 +246,108 @@ export function createUserRepository(storage: AsyncKeyValueStorage): UserReposit
       await storage.setItem(getUserStorageKey('daily_new_word_goal', userId), String(goal));
     },
 
+    async loadConversationSessions(userId) {
+      try {
+        const raw = await storage.getItem(getUserStorageKey('conversation_sessions', userId));
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return [];
+        const valid: ConversationSession[] = [];
+        for (const item of parsed) {
+          const check = ConversationSessionSchema.safeParse(item);
+          if (check.success) valid.push(check.data);
+        }
+        return valid
+          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+          .slice(0, MAX_LOCAL_CONVERSATION_SESSIONS);
+      } catch {
+        return [];
+      }
+    },
+
+    async saveConversationSessions(userId, sessions) {
+      const trimmed = [...sessions]
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+        .slice(0, MAX_LOCAL_CONVERSATION_SESSIONS);
+      await storage.setItem(
+        getUserStorageKey('conversation_sessions', userId),
+        JSON.stringify(trimmed)
+      );
+    },
+
+    async loadSentenceHistory(userId) {
+      try {
+        const raw = await storage.getItem(getUserStorageKey('sentence_history', userId));
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return [];
+        const valid: SentenceAttemptRecord[] = [];
+        for (const item of parsed) {
+          const check = SentenceAttemptRecordSchema.safeParse(item);
+          if (check.success) valid.push(check.data);
+        }
+        return valid
+          .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+          .slice(0, MAX_LOCAL_SENTENCE_HISTORY);
+      } catch {
+        return [];
+      }
+    },
+
+    async saveSentenceHistory(userId, attempts) {
+      const trimmed = [...attempts]
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .slice(0, MAX_LOCAL_SENTENCE_HISTORY);
+      await storage.setItem(getUserStorageKey('sentence_history', userId), JSON.stringify(trimmed));
+    },
+
+    async loadDeckSyncPrefs(userId) {
+      try {
+        const raw = await storage.getItem(getUserStorageKey('deck_sync_prefs', userId));
+        if (!raw) return { hiddenDeckIds: [], hiddenFolderIds: [] };
+        const parsed = JSON.parse(raw) as Partial<DeckSyncPrefs>;
+        return {
+          hiddenDeckIds: Array.isArray(parsed.hiddenDeckIds) ? parsed.hiddenDeckIds : [],
+          hiddenFolderIds: Array.isArray(parsed.hiddenFolderIds) ? parsed.hiddenFolderIds : []
+        };
+      } catch {
+        return { hiddenDeckIds: [], hiddenFolderIds: [] };
+      }
+    },
+
+    async saveDeckSyncPrefs(userId, prefs) {
+      await storage.setItem(
+        getUserStorageKey('deck_sync_prefs', userId),
+        JSON.stringify({
+          hiddenDeckIds: prefs.hiddenDeckIds.slice(-MAX_HIDDEN_IDS),
+          hiddenFolderIds: prefs.hiddenFolderIds.slice(-MAX_HIDDEN_IDS)
+        })
+      );
+    },
+
+    async loadSyncedBundleHashes(userId) {
+      try {
+        const raw = await storage.getItem(getUserStorageKey('deck_bundle_hashes', userId));
+        if (!raw) return {};
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+        const clean: Record<string, string> = {};
+        for (const [key, val] of Object.entries(parsed)) {
+          if (typeof val === 'string') clean[key] = val;
+        }
+        return clean;
+      } catch {
+        return {};
+      }
+    },
+
+    async saveSyncedBundleHashes(userId, hashes) {
+      await storage.setItem(
+        getUserStorageKey('deck_bundle_hashes', userId),
+        JSON.stringify(hashes)
+      );
+    },
+
     async clearUserData(userId) {
       const bases = [
         'cards',
@@ -224,9 +356,12 @@ export function createUserRepository(storage: AsyncKeyValueStorage): UserReposit
         'decks',
         'offline_queue',
         'deck_sync_prefs',
+        'deck_bundle_hashes',
         'grammar_exercises',
         'grammar_practice_stats',
-        'daily_new_word_goal'
+        'daily_new_word_goal',
+        'conversation_sessions',
+        'sentence_history'
       ];
       await Promise.all(bases.map((base) => storage.removeItem(getUserStorageKey(base, userId))));
     }

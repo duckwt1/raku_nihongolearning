@@ -19,13 +19,27 @@ import {
   type Deck,
   type UserStudyStats,
   type CardReviewLog,
+  WordSchema,
+  WORDS_BY_ID,
+  createNewCard,
   applyReviewLogsToCards,
   getTodayDateString,
   SEED_KANJI,
   SEED_WORDS,
   SEED_SENTENCES
 } from '@raku/core';
+import {
+  deleteDeckFromCloudWithDb,
+  mergeDecksById,
+  mergeFoldersById,
+  normalizePackedWord,
+  pullDeckBundlesWithDb,
+  syncDirtyDeckBundlesWithDb,
+  syncSingleDeckBundleWithDb
+} from '@raku/sync';
 import { db } from './firebase';
+
+export { mergeDecksById, mergeFoldersById };
 
 /**
  * Đồng bộ thông tin người dùng lên collection /users/{uid}
@@ -71,6 +85,8 @@ export {
   saveUserDecks,
   loadDeckSyncPrefs,
   saveDeckSyncPrefs,
+  loadSyncedBundleHashes,
+  saveSyncedBundleHashes,
   loadDailyNewWordGoal,
   saveDailyNewWordGoal,
   DAILY_NEW_WORD_GOAL_OPTIONS
@@ -78,7 +94,9 @@ export {
 import {
   getOfflineReviewQueue,
   enqueueOfflineReview,
-  removeOfflineReviewItems
+  removeOfflineReviewItems,
+  loadSyncedBundleHashes,
+  saveSyncedBundleHashes
 } from './userStorage';
 
 /**
@@ -215,8 +233,14 @@ export async function flushOfflineQueue(userId: string): Promise<number> {
     for (const [cardId, item] of latestReviewByCard) {
       const fsrs = item.card.fsrsCard;
       const cardRef = doc(db, 'users', userId, 'cards', cardId);
+      const isCustomWord =
+        item.card.type === 'word' &&
+        Boolean(item.card.word) &&
+        !WORDS_BY_ID.has(item.card.refId);
       batch.set(cardRef, sanitizeFirestoreData({
         id: cardId, refId: item.card.refId || cardId, type: item.card.type || 'word',
+        deckId: item.card.deckId,
+        ...(isCustomWord && item.card.word ? { word: item.card.word } : {}),
         due: safeISOString(fsrs?.due), stability: safeNumber(fsrs?.stability),
         difficulty: safeNumber(fsrs?.difficulty), elapsed_days: safeNumber(fsrs?.elapsed_days),
         scheduled_days: safeNumber(fsrs?.scheduled_days), reps: safeNumber(fsrs?.reps),
@@ -258,7 +282,7 @@ export async function saveCardProgress(userId: string, card: StudyCard, rating: 
     const batch = writeBatch(db);
     const cardRef = doc(db, 'users', userId, 'cards', card.id);
     batch.set(cardRef, sanitizeFirestoreData({
-      id: card.id, refId: card.refId, type: card.type,
+      id: card.id, refId: card.refId, type: card.type, deckId: card.deckId,
       due: safeISOString(card.fsrsCard.due), stability: safeNumber(card.fsrsCard.stability),
       difficulty: safeNumber(card.fsrsCard.difficulty), elapsed_days: safeNumber(card.fsrsCard.elapsed_days),
       scheduled_days: safeNumber(card.fsrsCard.scheduled_days), reps: safeNumber(card.fsrsCard.reps),
@@ -630,12 +654,14 @@ export async function pullDataFromFirestore(
   }
 }
 
-/** Merge the latest cloud FSRS snapshots into the local full card objects. */
+/** Merge the latest cloud FSRS snapshots into the local full card objects and append cloud-only custom cards. */
 export function mergeFirestoreCardProgress(
   cards: StudyCard[],
   cloudCards: Record<string, any>
 ): StudyCard[] {
-  return cards.map((card) => {
+  const existingIds = new Set<string>();
+  const merged = cards.map((card) => {
+    existingIds.add(card.id);
     const cloud = cloudCards[card.id];
     if (!cloud) return card;
 
@@ -690,6 +716,92 @@ export function mergeFirestoreCardProgress(
       isDue: !isNew && due.getTime() <= Date.now()
     };
   });
+
+  for (const [cardId, cloud] of Object.entries(cloudCards)) {
+    if (existingIds.has(cardId) || !cloud || typeof cloud !== 'object') continue;
+    const parsedWord = WordSchema.safeParse(cloud.word);
+    const wordData = parsedWord.success
+      ? parsedWord.data
+      : normalizePackedWord(
+          cloud.word,
+          typeof cloud.refId === 'string' && cloud.refId ? cloud.refId : cardId
+        );
+    if (!wordData) continue;
+
+    const baseCard = createNewCard();
+    const due = parseReviewDate(cloud.due) || baseCard.due;
+    const lastReview = parseReviewDate(cloud.last_review);
+    const reps = safeNumber(cloud.reps, 0);
+    const state = safeNumber(cloud.state, 0);
+    const isNew = reps === 0 && !lastReview && state === 0;
+
+    merged.push({
+      id: cardId,
+      type: 'word',
+      refId: typeof cloud.refId === 'string' && cloud.refId ? cloud.refId : wordData.id,
+      deckId: typeof cloud.deckId === 'string' && cloud.deckId ? cloud.deckId : undefined,
+      word: wordData,
+      firstLearnedAt:
+        typeof cloud.firstLearnedAt === 'string' && cloud.firstLearnedAt.trim()
+          ? cloud.firstLearnedAt
+          : undefined,
+      learnedAt:
+        typeof cloud.learnedAt === 'string' && cloud.learnedAt.trim()
+          ? cloud.learnedAt
+          : undefined,
+      fsrsCard: {
+        ...baseCard,
+        due,
+        stability: safeNumber(cloud.stability, baseCard.stability),
+        difficulty: safeNumber(cloud.difficulty, baseCard.difficulty),
+        elapsed_days: safeNumber(cloud.elapsed_days, baseCard.elapsed_days),
+        scheduled_days: safeNumber(cloud.scheduled_days, baseCard.scheduled_days),
+        reps,
+        lapses: safeNumber(cloud.lapses, 0),
+        state,
+        last_review: lastReview
+      },
+      isNew,
+      isDue: !isNew && due.getTime() <= Date.now()
+    });
+  }
+
+  return merged;
+}
+
+/**
+ * Lưu ngay một thẻ từ vựng custom (kèm payload word) lên Firestore để đồng bộ Web <-> Mobile.
+ */
+export async function saveCustomCardToCloud(userId: string, card: StudyCard): Promise<void> {
+  if (!userId || userId === 'local_device' || !card.word) return;
+  try {
+    const fsrs = card.fsrsCard;
+    await setDoc(
+      doc(db, 'users', userId, 'cards', card.id),
+      sanitizeFirestoreData({
+        id: card.id,
+        refId: card.refId || card.id,
+        type: card.type || 'word',
+        deckId: card.deckId,
+        word: card.word,
+        due: safeISOString(fsrs?.due),
+        stability: safeNumber(fsrs?.stability),
+        difficulty: safeNumber(fsrs?.difficulty),
+        elapsed_days: safeNumber(fsrs?.elapsed_days),
+        scheduled_days: safeNumber(fsrs?.scheduled_days),
+        reps: safeNumber(fsrs?.reps),
+        lapses: safeNumber(fsrs?.lapses),
+        state: safeNumber(fsrs?.state),
+        last_review: safeISOString(fsrs?.last_review),
+        firstLearnedAt: card.firstLearnedAt || undefined,
+        learnedAt: card.learnedAt || undefined,
+        updatedAt: serverTimestamp()
+      }),
+      { merge: true }
+    );
+  } catch (err) {
+    console.warn('Lưu thẻ custom lên Firestore thất bại:', err);
+  }
 }
 
 /**
@@ -770,8 +882,8 @@ export async function uploadEntireLocalStateToFirestore(
   folders: Folder[],
   decks: Deck[],
   stats: UserStudyStats
-): Promise<{ cardsSynced: number }> {
-  if (!userId || userId === 'local_device') return { cardsSynced: 0 };
+): Promise<{ cardsSynced: number; updatedDecks: Deck[] }> {
+  if (!userId || userId === 'local_device') return { cardsSynced: 0, updatedDecks: decks };
 
   // 1. Chỉ đẩy các thẻ đã học hoặc có lịch sử ôn tập để tối ưu hiệu năng
   const learnedCards = cards.filter(
@@ -831,10 +943,102 @@ export async function uploadEntireLocalStateToFirestore(
     cardsSynced += chunk.length;
   }
 
-  // 2. Đẩy folders, decks, stats và flush hàng đợi theo thứ tự tuần tự để tránh nghẽn kết nối WebChannel trên mobile
-  await syncFoldersAndDecks(userId, folders, decks);
+  // 2. Đồng bộ gói từ vựng (deckBundles) cho tất cả bộ thẻ custom (kể cả thẻ chưa ôn) chỉ với 1 write/deck
+  const bundleSync = await syncDirtyDeckBundles(userId, decks, cards);
+
+  // 3. Đẩy folders, decks (đã gắn cardsHash), stats và flush hàng đợi theo thứ tự tuần tự
+  await syncFoldersAndDecks(userId, folders, bundleSync.updatedDecks);
   await syncUserStudyStats(userId, stats);
   await flushOfflineQueue(userId);
 
-  return { cardsSynced };
+  return { cardsSynced, updatedDecks: bundleSync.updatedDecks };
+}
+
+/**
+ * Đẩy các gói từ vựng custom (deckBundles) chỉ cho các deck thực sự có thay đổi (0 writes nếu không đổi).
+ */
+export async function syncDirtyDeckBundles(
+  userId: string,
+  decks: Deck[],
+  cards: StudyCard[],
+  forceDeckIds?: ReadonlySet<string>
+): Promise<{
+  updatedDecks: Deck[];
+  syncedDeckIds: string[];
+  writesCount: number;
+}> {
+  if (!userId || userId === 'local_device') {
+    return { updatedDecks: decks, syncedDeckIds: [], writesCount: 0 };
+  }
+  const syncedHashes = loadSyncedBundleHashes(userId);
+  const res = await syncDirtyDeckBundlesWithDb(db, userId, decks, cards, {
+    syncedHashes,
+    forceDeckIds
+  });
+  saveSyncedBundleHashes(userId, res.hashes);
+  return {
+    updatedDecks: res.updatedDecks,
+    syncedDeckIds: res.syncedDeckIds,
+    writesCount: res.writesCount
+  };
+}
+
+/**
+ * Đẩy nguyên tử 1 bộ thẻ custom (metadata + gói từ vựng = ~2 writes bất kể bộ có 5 hay 500 từ).
+ */
+export async function syncSingleDeckBundle(
+  userId: string,
+  deck: Deck,
+  cardsInDeck: StudyCard[],
+  folder?: Folder
+): Promise<Deck> {
+  if (!userId || userId === 'local_device') return deck;
+  const syncedHashes = loadSyncedBundleHashes(userId);
+  const res = await syncSingleDeckBundleWithDb(db, userId, deck, cardsInDeck, syncedHashes, folder);
+  saveSyncedBundleHashes(userId, res.hashes);
+  return res.updatedDeck;
+}
+
+/**
+ * Tải các gói từ vựng từ Firestore CHỈ cho các deck có cardsHash khác máy (0 reads nếu không đổi).
+ */
+export async function pullDeckBundlesForDecks(
+  userId: string,
+  remoteDecks: Deck[],
+  currentCards: StudyCard[]
+): Promise<{
+  cards: StudyCard[];
+  fetchedDeckCount: number;
+  readsCount: number;
+}> {
+  if (!userId || userId === 'local_device') {
+    return { cards: currentCards, fetchedDeckCount: 0, readsCount: 0 };
+  }
+  const syncedHashes = loadSyncedBundleHashes(userId);
+  const res = await pullDeckBundlesWithDb(db, userId, remoteDecks, currentCards, syncedHashes);
+  if (res.fetchedDeckCount > 0) {
+    saveSyncedBundleHashes(userId, res.hashes);
+  }
+  return {
+    cards: res.cards,
+    fetchedDeckCount: res.fetchedDeckCount,
+    readsCount: res.readsCount
+  };
+}
+
+/**
+ * Xoá bộ thẻ custom và gói từ vựng tương ứng trên Firestore (1-2 deletes).
+ */
+export async function deleteDeckFromCloud(
+  userId: string,
+  deckId: string,
+  chunkCount = 1
+): Promise<void> {
+  if (!userId || userId === 'local_device') return;
+  await deleteDeckFromCloudWithDb(db, userId, deckId, chunkCount);
+  const syncedHashes = loadSyncedBundleHashes(userId);
+  if (deckId in syncedHashes) {
+    delete syncedHashes[deckId];
+    saveSyncedBundleHashes(userId, syncedHashes);
+  }
 }

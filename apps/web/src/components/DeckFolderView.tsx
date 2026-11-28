@@ -13,6 +13,7 @@ import {
   Trash2,
   FileUp,
   Globe,
+  List,
   Lock
 } from 'lucide-react';
 import type { Deck, Folder, StudyCard } from '@raku/core';
@@ -24,6 +25,7 @@ interface DeckFolderViewProps {
   cards: StudyCard[];
   currentUid?: string | null;
   onSelectDeckToStudy: (deck: Deck) => void;
+  onOpenDeckDetail?: (deck: Deck) => void;
   onSelectFolderToStudy: (folder: Folder) => void;
   onCreateFolder: (name: string, description?: string, color?: string) => void;
   onCreateDeck: (
@@ -61,6 +63,7 @@ export function DeckFolderView({
   cards,
   currentUid,
   onSelectDeckToStudy,
+  onOpenDeckDetail,
   onSelectFolderToStudy,
   onCreateFolder,
   onCreateDeck,
@@ -206,9 +209,9 @@ export function DeckFolderView({
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <button
                 type="button"
-                onClick={() => onSelectDeckToStudy(deck)}
+                onClick={() => (onOpenDeckDetail ? onOpenDeckDetail(deck) : onSelectDeckToStudy(deck))}
                 className="truncate text-left text-sm font-semibold text-raku-ink hover:text-raku-accent"
-                title={deck.name}
+                title={onOpenDeckDetail ? `Xem danh sách từ trong ${deck.name}` : deck.name}
               >
                 {deck.name}
               </button>
@@ -267,6 +270,18 @@ export function DeckFolderView({
           </div>
 
           <div className="flex items-center gap-1">
+            {onOpenDeckDetail && (
+              <button
+                type="button"
+                onClick={() => onOpenDeckDetail(deck)}
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-raku-muted transition-colors hover:bg-raku-subtle hover:text-raku-ink"
+                title={`Xem danh sách từ trong ${deck.name}`}
+                aria-label={`Xem danh sách từ trong ${deck.name}`}
+              >
+                <List className="h-4 w-4" />
+              </button>
+            )}
+
             {onAddCard && (
               <button
                 type="button"

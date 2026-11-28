@@ -400,4 +400,82 @@ describe('Arena Firestore security rules', () => {
       hostHeartbeatAt: serverTimestamp()
     }));
   });
+
+  it('enforces owner access and bounds for conversationSessions and sentenceHistory', async () => {
+    const ownerDb = modularFirestore(testEnv.authenticatedContext(hostUid));
+    const otherDb = modularFirestore(testEnv.authenticatedContext(otherUid));
+
+    const validSessionRef = doc(ownerDb, 'users', hostUid, 'conversationSessions', 'sess_1');
+    await assertSucceeds(
+      setDoc(validSessionRef, {
+        id: 'sess_1',
+        updatedAt: '2026-11-25T10:00:00.000Z',
+        messages: [{ id: 'm1', role: 'assistant', textJp: 'こんにちは' }]
+      })
+    );
+    await assertSucceeds(getDoc(validSessionRef));
+    await assertFails(getDoc(doc(otherDb, 'users', hostUid, 'conversationSessions', 'sess_1')));
+
+    // Reject mismatched id or oversized messages array (> 60)
+    await assertFails(
+      setDoc(doc(ownerDb, 'users', hostUid, 'conversationSessions', 'sess_bad_id'), {
+        id: 'wrong_id',
+        updatedAt: '2026-11-25T10:00:00.000Z',
+        messages: []
+      })
+    );
+    await assertFails(
+      setDoc(doc(ownerDb, 'users', hostUid, 'conversationSessions', 'sess_big'), {
+        id: 'sess_big',
+        updatedAt: '2026-11-25T10:00:00.000Z',
+        messages: Array.from({ length: 61 }, (_, idx) => ({ id: `m${idx}` }))
+      })
+    );
+
+    const validAttemptRef = doc(ownerDb, 'users', hostUid, 'sentenceHistory', 'att_1');
+    await assertSucceeds(
+      setDoc(validAttemptRef, {
+        id: 'att_1',
+        createdAt: '2026-11-25T10:00:00.000Z',
+        userSentence: '東京に住んでいます。'
+      })
+    );
+    await assertFails(getDoc(doc(otherDb, 'users', hostUid, 'sentenceHistory', 'att_1')));
+    await assertFails(
+      setDoc(doc(ownerDb, 'users', hostUid, 'sentenceHistory', 'att_too_long'), {
+        id: 'att_too_long',
+        createdAt: '2026-11-25T10:00:00.000Z',
+        userSentence: 'あ'.repeat(1001)
+      })
+    );
+  });
+
+  it('enforces owner access and chunk size bounds for deckBundles', async () => {
+    const ownerDb = modularFirestore(testEnv.authenticatedContext(hostUid));
+    const otherDb = modularFirestore(testEnv.authenticatedContext(otherUid));
+
+    const validBundleRef = doc(ownerDb, 'users', hostUid, 'deckBundles', 'deck_custom_1');
+    await assertSucceeds(
+      setDoc(validBundleRef, {
+        deckId: 'deck_custom_1',
+        chunkIndex: 0,
+        chunkCount: 1,
+        cardsHash: 'abc123-def456',
+        cards: [{ id: 'c_1', refId: 'w_1', type: 'word', word: { id: 'w_1', surface: '猫', readings: ['ねこ'], meaningVi: 'mèo' } }]
+      })
+    );
+    await assertSucceeds(getDoc(validBundleRef));
+    await assertFails(getDoc(doc(otherDb, 'users', hostUid, 'deckBundles', 'deck_custom_1')));
+
+    // Reject oversized chunk (> 600 cards)
+    await assertFails(
+      setDoc(doc(ownerDb, 'users', hostUid, 'deckBundles', 'deck_too_big'), {
+        deckId: 'deck_too_big',
+        chunkIndex: 0,
+        chunkCount: 1,
+        cardsHash: 'big',
+        cards: Array.from({ length: 601 }, (_, idx) => ({ id: `c_${idx}` }))
+      })
+    );
+  });
 });

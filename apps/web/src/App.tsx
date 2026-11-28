@@ -21,11 +21,17 @@ import {
 } from 'lucide-react';
 import {
   SEED_KANJI,
+  Rating,
+  applyGrade,
   buildReviewQueue,
+  buildCustomStudyCardFromPhrase,
   createNewCard,
+  isDuplicatePhraseInDeck,
   type StudyCard,
   type Deck,
   type Folder,
+  type Grammar,
+  type SavedPhraseCandidate,
   type UserStudyStats,
   DEFAULT_FOLDERS,
   DEFAULT_DECKS,
@@ -70,8 +76,15 @@ import {
   saveDailyNewWordGoal,
   DAILY_NEW_WORD_GOAL_OPTIONS,
   clearOfflineReviewQueue,
-  clearUserDataFromBrowser
+  clearUserDataFromBrowser,
+  syncDirtyDeckBundles,
+  syncSingleDeckBundle,
+  pullDeckBundlesForDecks,
+  deleteDeckFromCloud,
+  mergeFoldersById,
+  mergeDecksById
 } from './services/firestoreSync';
+import { syncPracticeHistoryWithCloud } from './services/practiceHistorySync';
 import {
   fetchCommunityDecks,
   publishDeckToCommunity,
@@ -94,13 +107,17 @@ import { KanjiModal } from './components/KanjiModal';
 import { TodayStatsBar } from './components/TodayStatsBar';
 import { StudyHeatmap } from './components/StudyHeatmap';
 import { DeckFolderView } from './components/DeckFolderView';
+import { DeckDetailView } from './components/DeckDetailView';
 import { CloudConflictModal } from './components/CloudConflictModal';
 
 const ArenaView = lazy(() => import('./components/ArenaView').then(({ ArenaView: View }) => ({ default: View })));
+const OutputPracticeHub = lazy(() =>
+  import('./components/OutputPracticeHub').then(({ OutputPracticeHub: Hub }) => ({ default: Hub }))
+);
 
 type AppTab = 'study' | 'library' | 'practice' | 'profile';
 type LibrarySection = 'kanji' | 'grammar';
-type PracticeSection = 'exercises' | 'arena';
+type PracticeSection = 'exercises' | 'output' | 'arena';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -130,6 +147,7 @@ export function App() {
     grammarId: string;
     level: 'N5' | 'N4' | 'N3' | 'N2' | 'N1';
   } | null>(null);
+  const [sentenceTargetGrammar, setSentenceTargetGrammar] = useState<Grammar | null>(null);
 
   // Khi cần bật lại kiểm tra mật khẩu Firestore:
   // const [isSyncPasswordModalOpen, setIsSyncPasswordModalOpen] = useState(false);
@@ -169,6 +187,7 @@ export function App() {
     new URLSearchParams(window.location.search).has('arena') ? 'arena' : 'exercises'
   );
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [selectedDeckIdForDetail, setSelectedDeckIdForDetail] = useState<string | null>(null);
   const [hasVisitedArena, setHasVisitedArena] = useState(() =>
     new URLSearchParams(window.location.search).has('arena')
   );
@@ -319,6 +338,42 @@ export function App() {
 
   const cancelDeckPublish = (deckId: string) => {
     deckPublishQueue.cancel(`deck:${deckId}`);
+    deckPublishQueue.cancel(`bundle:${deckId}`);
+  };
+
+  const schedulePrivateDeckBundleSync = (deckId: string) => {
+    const currentUser = userRef.current;
+    if (!currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) return;
+    const deck = decksRef.current.find((d) => d.id === deckId);
+    if (!deck || deck.origin !== 'owned' || deck.isDefault) return;
+
+    deckPublishQueue.schedule(`bundle:${deckId}`, async () => {
+      const activeUser = userRef.current;
+      const latestDeck = decksRef.current.find((d) => d.id === deckId);
+      if (!activeUser || !latestDeck || latestDeck.origin !== 'owned' || latestDeck.isDefault) {
+        return;
+      }
+      const folder = foldersRef.current.find((f) => f.id === latestDeck.folderId);
+      const cardsInDeck = cardsRef.current.filter((c) => c.deckId === deckId);
+      try {
+        const updatedDeck = await syncSingleDeckBundle(
+          activeUser.uid,
+          latestDeck,
+          cardsInDeck,
+          folder
+        );
+        if (userRef.current?.uid === activeUser.uid) {
+          applyDeckPatch(deckId, {
+            cardsHash: updatedDeck.cardsHash,
+            bundleChunkCount: updatedDeck.bundleChunkCount,
+            cardCount: updatedDeck.cardCount,
+            updatedAt: updatedDeck.updatedAt
+          });
+        }
+      } catch (err: any) {
+        console.warn('Lỗi đồng bộ gói từ vựng bộ thẻ:', err);
+      }
+    });
   };
 
   // Ghi nốt các thay đổi đang chờ khi ẩn tab hoặc rời trang
@@ -346,6 +401,7 @@ export function App() {
     setStudySessionCards([]);
     setIsStudying(false);
     setIsImportOpen(false);
+    setSelectedDeckIdForDetail(null);
     if (tab === 'practice') {
       setExerciseTarget(null);
       if (practiceSection === 'arena') setHasVisitedArena(true);
@@ -411,6 +467,7 @@ export function App() {
       // Huỷ các publish đang chờ và dừng phiên ôn tập của tài khoản trước
       deckPublishQueue.cancelAll();
       setIsStudying(false);
+      setSelectedDeckIdForDetail(null);
       setStudySessionCards([]);
       setActiveStudyTarget(null);
       setUser(currentUser);
@@ -689,6 +746,7 @@ export function App() {
       createdAt: new Date().toISOString()
     };
     const updated = [...folders, newFolder];
+    foldersRef.current = updated;
     setFolders(updated);
     saveUserFolders(user?.uid, updated);
   };
@@ -718,6 +776,7 @@ export function App() {
       createdAt: new Date().toISOString()
     };
     const updated = [...decks, newDeck];
+    decksRef.current = updated;
     setDecks(updated);
     saveUserDecks(user?.uid, updated);
 
@@ -807,10 +866,21 @@ export function App() {
 
     const updatedDecks = decks.filter((d) => d.id !== deckId);
     const updatedCards = allCards.filter((c) => c.deckId !== deckId);
+    decksRef.current = updatedDecks;
+    cardsRef.current = updatedCards;
     setDecks(updatedDecks);
     saveUserDecks(user?.uid, updatedDecks);
     setAllCards(updatedCards);
     saveUserCards(user?.uid, updatedCards);
+    if (selectedDeckIdForDetail === deckId) {
+      setSelectedDeckIdForDetail(null);
+    }
+
+    if (user && isOnline && deck.origin === 'owned' && !deck.isDefault) {
+      void deleteDeckFromCloud(user.uid, deckId, deck.bundleChunkCount || 1).catch((err) => {
+        console.warn('Không thể xoá deck bundle trên Cloud:', err);
+      });
+    }
 
     if (shouldUnpublish) {
       void deckPublishQueue
@@ -997,6 +1067,9 @@ export function App() {
         statsRef.current
       );
       if (userRef.current?.uid === currentUid) {
+        decksRef.current = res.updatedDecks;
+        setDecks(res.updatedDecks);
+        saveUserDecks(currentUid, res.updatedDecks);
         setPendingCount(getPendingSyncCount(currentUid));
       }
       showSyncToast(
@@ -1099,17 +1172,59 @@ export function App() {
         const flushed = await flushOfflineQueue(currentUid);
         if (cancelled || userRef.current?.uid !== currentUid) return flushed;
 
-        // 2. Read latest card snapshots and compact stats. Recent review logs only
-        // reconcile activity not yet reflected in the saved stats summary.
+        // 2. Đẩy các gói từ vựng custom (deckBundles) CHỈ cho deck thay đổi (0 writes nếu không đổi)
+        syncStage = 'đồng bộ gói từ vựng bộ thẻ';
+        const dirtyBundleRes = await syncDirtyDeckBundles(
+          currentUid,
+          decksRef.current,
+          cardsRef.current
+        );
+        if (cancelled || userRef.current?.uid !== currentUid) return flushed;
+        if (dirtyBundleRes.syncedDeckIds.length > 0) {
+          decksRef.current = dirtyBundleRes.updatedDecks;
+          setDecks(dirtyBundleRes.updatedDecks);
+          saveUserDecks(currentUid, dirtyBundleRes.updatedDecks);
+        }
+
+        // 3. Đọc tiến độ thẻ, stats và cấu trúc deck/folder (đồng bộ 2 chiều Web <-> Mobile)
         syncStage = 'đọc hồ sơ, thẻ, thư mục, decks và review logs';
         const remoteProgress = await pullDataFromFirestore(currentUid, {
           existingStats: statsRef.current,
           currentCards: cardsRef.current,
-          includeStructure: false
+          includeStructure: true
         });
         if (cancelled || userRef.current?.uid !== currentUid) return flushed;
 
-        const latestCards = cardsRef.current;
+        const syncPrefs = loadDeckSyncPrefs(currentUid);
+        const hiddenDeckIds = new Set(syncPrefs.hiddenDeckIds);
+        const hiddenFolderIds = new Set(syncPrefs.hiddenFolderIds);
+
+        const mergedFolders = remoteProgress.folders
+          ? mergeFoldersById(foldersRef.current, remoteProgress.folders, hiddenFolderIds)
+          : foldersRef.current;
+        const mergedDecks = remoteProgress.decks
+          ? mergeDecksById(decksRef.current, remoteProgress.decks, currentUid, hiddenDeckIds)
+          : decksRef.current;
+
+        if (folderDeckFingerprint(foldersRef.current, decksRef.current) !== folderDeckFingerprint(mergedFolders, mergedDecks)) {
+          foldersRef.current = mergedFolders;
+          decksRef.current = mergedDecks;
+          setFolders(mergedFolders);
+          setDecks(mergedDecks);
+          saveUserFolders(currentUid, mergedFolders);
+          saveUserDecks(currentUid, mergedDecks);
+        }
+
+        // 4. Tải gói từ vựng (deckBundles) CHỈ cho deck mới/đổi hash từ thiết bị khác (0 reads nếu không đổi)
+        syncStage = 'tải gói từ vựng bộ thẻ mới';
+        const pulledBundles = await pullDeckBundlesForDecks(
+          currentUid,
+          mergedDecks,
+          cardsRef.current
+        );
+        if (cancelled || userRef.current?.uid !== currentUid) return flushed;
+
+        const latestCards = pulledBundles.cards;
         const baseCards = remoteProgress.legacyUpdatedCards
           ? mergeFirestoreCardProgress(latestCards, Object.fromEntries(
               remoteProgress.legacyUpdatedCards
@@ -1121,7 +1236,12 @@ export function App() {
           baseCards,
           remoteProgress.cards
         ).filter((card) => card.type !== 'grammar' && card.deckId !== 'deck_n3_grammar');
-        if (Object.keys(remoteProgress.cards).length > 0 || remoteProgress.legacyUpdatedCards) {
+        if (
+          Object.keys(remoteProgress.cards).length > 0 ||
+          remoteProgress.legacyUpdatedCards ||
+          pulledBundles.fetchedDeckCount > 0
+        ) {
+          cardsRef.current = mergedCards;
           setAllCards(mergedCards);
           saveUserCards(currentUid, mergedCards);
         }
@@ -1129,10 +1249,13 @@ export function App() {
         setStudyStats(mergedStats);
         saveUserStudyStats(currentUid, mergedStats);
 
-        // 3. Skip unchanged structure/stats so repeated manual syncs do not issue no-op writes.
+        // 5. Skip unchanged structure/stats so repeated manual syncs do not issue no-op writes.
         const currentFolders = foldersRef.current;
         const currentDecks = decksRef.current;
-        if (remoteProgress.structureFingerprint !== folderDeckFingerprint(currentFolders, currentDecks)) {
+        if (
+          dirtyBundleRes.syncedDeckIds.length > 0 ||
+          remoteProgress.structureFingerprint !== folderDeckFingerprint(currentFolders, currentDecks)
+        ) {
           syncStage = 'ghi thư mục và decks';
           await syncFoldersAndDecks(currentUid, currentFolders, currentDecks);
         }
@@ -1141,6 +1264,10 @@ export function App() {
           syncStage = 'ghi thống kê học tập';
           await syncUserStudyStats(currentUid, mergedStats);
         }
+
+        // 6. Đồng bộ lịch sử hội thoại & đặt câu (bounded queries)
+        syncStage = 'đồng bộ lịch sử hội thoại và đặt câu';
+        await syncPracticeHistoryWithCloud(currentUid);
 
         return flushed;
       };
@@ -1246,6 +1373,7 @@ export function App() {
     let updatedFolders = folders;
     if (newFolder && !folders.some((f) => f.id === newFolder.id)) {
       updatedFolders = [...folders, newFolder];
+      foldersRef.current = updatedFolders;
       setFolders(updatedFolders);
       saveUserFolders(currentUid, updatedFolders);
     }
@@ -1260,12 +1388,14 @@ export function App() {
         authorName: user?.displayName || user?.email?.split('@')[0] || 'Thành viên'
       };
       updatedDecks = [...decks, savedNewDeck];
+      decksRef.current = updatedDecks;
       setDecks(updatedDecks);
       saveUserDecks(currentUid, updatedDecks);
     }
 
     // 3. Nạp danh sách thẻ mới vào allCards và lưu LocalStorage
     const updatedCards = [...allCards, ...newCards];
+    cardsRef.current = updatedCards;
     setAllCards(updatedCards);
     saveUserCards(currentUid, updatedCards);
 
@@ -1279,8 +1409,13 @@ export function App() {
       'success'
     );
 
-    // 4. Chỉ đồng bộ lại lên Cloud nếu bộ thẻ đang ở chế độ Cộng đồng
-    const deckObj = savedNewDeck || decks.find((d) => d.id === targetDeckId);
+    // 4. Đóng gói & đồng bộ 1 document bundle cho bộ thẻ tự tạo (1-2 writes cho cả bộ thay vì N writes)
+    const deckObj = savedNewDeck || updatedDecks.find((d) => d.id === targetDeckId);
+    if (deckObj && deckObj.origin === 'owned' && !deckObj.isDefault && user && isOnline) {
+      schedulePrivateDeckBundleSync(deckObj.id);
+    }
+
+    // 5. Đồng bộ lại lên communityDecks nếu bộ thẻ đang ở chế độ Cộng đồng
     if (
       deckObj &&
       deckObj.origin !== 'community' &&
@@ -1289,7 +1424,7 @@ export function App() {
     ) {
       const folderObj = newFolder || folders.find((f) => f.id === deckObj.folderId);
       const allCardsForThisDeck = updatedCards.filter((c) => c.deckId === deckObj.id);
-      cancelDeckPublish(deckObj.id);
+      deckPublishQueue.cancel(`deck:${deckObj.id}`);
       void publishDeckToCommunity(deckObj, folderObj, allCardsForThisDeck, user).catch(
         (err) => {
           console.warn('Lỗi auto sync community deck sau import:', err);
@@ -1315,6 +1450,7 @@ export function App() {
     setAllCards(updatedCards);
     saveUserCards(currentUid, updatedCards);
     for (const deckId of affectedDeckIds) {
+      schedulePrivateDeckBundleSync(deckId);
       scheduleDeckPublish(deckId);
     }
     showSyncToast(`✓ Đã hoàn tác lượt nhập (${cardIds.length} từ).`, 'info');
@@ -1360,14 +1496,107 @@ export function App() {
     };
 
     const updated = [...allCards, newCard];
+    cardsRef.current = updated;
     setAllCards(updated);
     saveUserCards(currentUid, updated);
 
     const deckName = decks.find((d) => d.id === deckId)?.name || 'Bộ thẻ';
     showSyncToast(`✓ Đã thêm từ "${cardData.surface}" vào bộ thẻ "${deckName}" (Lưu trên máy)!`, 'success');
 
-    // Gom nhiều lần thêm thẻ liên tiếp thành 1 lần ghi Firestore (debounce)
+    // Gom nhiều lần thêm thẻ liên tiếp thành 1 lần ghi deckBundle (debounce, tiết kiệm Firestore writes)
+    schedulePrivateDeckBundleSync(deckId);
     scheduleDeckPublish(deckId);
+  };
+
+  const handleDeleteCard = (cardId: string, deckId: string) => {
+    const currentUid = user?.uid;
+    const updatedCards = allCards.filter((c) => c.id !== cardId);
+    cardsRef.current = updatedCards;
+    setAllCards(updatedCards);
+    saveUserCards(currentUid, updatedCards);
+    schedulePrivateDeckBundleSync(deckId);
+    scheduleDeckPublish(deckId);
+    showSyncToast('✓ Đã xoá từ khỏi bộ thẻ.', 'info');
+  };
+
+  const handleSavePhraseToDeck = (
+    phrase: SavedPhraseCandidate,
+    preferredDeckId?: string
+  ): string | null => {
+    const currentUid = user?.uid || auth.currentUser?.uid;
+    let targetDeckId = preferredDeckId;
+    let nextDecks = decks;
+
+    if (!targetDeckId || !decks.some((d) => d.id === targetDeckId)) {
+      const CONV_DECK_ID = 'deck_conversation_phrases';
+      targetDeckId = CONV_DECK_ID;
+      if (!decks.some((d) => d.id === CONV_DECK_ID)) {
+        const now = new Date().toISOString();
+        const convDeck: Deck = {
+          id: CONV_DECK_ID,
+          folderId: null,
+          name: 'Cụm từ hội thoại & Đặt câu',
+          description: 'Các cụm từ hay được lưu từ Đặt câu thông minh và Hội thoại nhập vai AI.',
+          color: '#245C52',
+          cardType: 'word',
+          cardIds: [],
+          newCardsPerDay: 20,
+          maxReviewsPerDay: 50,
+          isDefault: false,
+          origin: 'owned',
+          visibility: 'private',
+          createdAt: now,
+          updatedAt: now
+        };
+        nextDecks = [...decks, convDeck];
+        decksRef.current = nextDecks;
+        setDecks(nextDecks);
+        saveUserDecks(currentUid, nextDecks);
+      }
+    }
+
+    if (isDuplicatePhraseInDeck(phrase.surface, targetDeckId, allCards)) {
+      showSyncToast(`"${phrase.surface}" đã có sẵn trong bộ thẻ rồi.`, 'info');
+      return null;
+    }
+
+    const newCard = buildCustomStudyCardFromPhrase(phrase, targetDeckId);
+    const updated = [...allCards, newCard];
+    cardsRef.current = updated;
+    setAllCards(updated);
+    saveUserCards(currentUid, updated);
+
+    const deckName = nextDecks.find((d) => d.id === targetDeckId)?.name || 'Bộ thẻ';
+    showSyncToast(`✓ Đã lưu "${phrase.surface}" vào "${deckName}" để ôn FSRS!`, 'success');
+    schedulePrivateDeckBundleSync(targetDeckId);
+    scheduleDeckPublish(targetDeckId);
+    return newCard.id;
+  };
+
+  const handleRecordPracticeTime = (seconds: number) => {
+    const currentUid = user?.uid || auth.currentUser?.uid;
+    setStudyStats((prev) => {
+      const next = recordStudyActivity(prev, seconds);
+      saveUserStudyStats(currentUid, next);
+      return next;
+    });
+  };
+
+  const handleMarkCardGoodFromPractice = (cardId: string) => {
+    const target = allCards.find((c) => c.id === cardId);
+    if (!target) return;
+    const now = new Date();
+    const graded = applyGrade(target.fsrsCard, Rating.Good, now);
+    const nowIso = now.toISOString();
+    const updatedCard: StudyCard = {
+      ...target,
+      fsrsCard: graded.card,
+      isNew: false,
+      isDue: false,
+      firstLearnedAt: target.firstLearnedAt || nowIso,
+      learnedAt: nowIso
+    };
+    handleRateCard(updatedCard, Rating.Good);
   };
 
   const handleNavigateToImport = (deckId: string, folderId?: string) => {
@@ -1390,6 +1619,12 @@ export function App() {
   const handleOpenExercises = (grammarId: string, level: JlptLevel) => {
     setExerciseTarget({ grammarId, level });
     setPracticeSection('exercises');
+    setActiveTab('practice');
+  };
+
+  const handleOpenSentenceStudio = (grammar: Grammar) => {
+    setSentenceTargetGrammar(grammar);
+    setPracticeSection('output');
     setActiveTab('practice');
   };
 
@@ -1432,29 +1667,42 @@ export function App() {
       });
       if (userRef.current?.uid !== currentUid) return;
 
+      const resolvedDecks = data.decks
+        ? migrateDecks(
+            data.decks.filter((deck) => deck.id !== 'deck_n3_grammar'),
+            currentUid
+          )
+        : decksRef.current;
+
+      const pulledBundles = await pullDeckBundlesForDecks(
+        currentUid,
+        resolvedDecks,
+        data.legacyUpdatedCards || cardsRef.current
+      );
+      if (userRef.current?.uid !== currentUid) return;
+
       const cardCount = Object.keys(data.cards).length;
       const cardsWithCloudProgress = mergeFirestoreCardProgress(
-        data.legacyUpdatedCards || cardsRef.current,
+        pulledBundles.cards,
         data.cards
       ).filter((card) => card.type !== 'grammar' && card.deckId !== 'deck_n3_grammar');
-      if (cardCount > 0 || data.legacyUpdatedCards) {
+      if (cardCount > 0 || data.legacyUpdatedCards || pulledBundles.fetchedDeckCount > 0) {
+        cardsRef.current = cardsWithCloudProgress;
         setAllCards(cardsWithCloudProgress);
         saveUserCards(currentUid, cardsWithCloudProgress);
       }
 
       if (data.folders) {
         const migratedFolders = migrateFolders(data.folders);
+        foldersRef.current = migratedFolders;
         setFolders(migratedFolders);
         saveUserFolders(currentUid, migratedFolders);
       }
 
       if (data.decks) {
-        const filteredDecks = migrateDecks(
-          data.decks.filter((deck) => deck.id !== 'deck_n3_grammar'),
-          currentUid
-        );
-        setDecks(filteredDecks);
-        saveUserDecks(currentUid, filteredDecks);
+        decksRef.current = resolvedDecks;
+        setDecks(resolvedDecks);
+        saveUserDecks(currentUid, resolvedDecks);
       }
 
       setStudyStats(data.stats);
@@ -1463,6 +1711,8 @@ export function App() {
         // Persist the compact summary so later pulls stay bounded and skip no-op writes.
         await syncUserStudyStats(currentUid, data.stats);
       }
+
+      await syncPracticeHistoryWithCloud(currentUid);
 
       const todayDone = data.stats.todayStats.reviewedCount;
       const logScope = data.statsNeedBackfill ? 'lượt review cũ' : 'lượt review gần đây';
@@ -1733,6 +1983,30 @@ export function App() {
                   onNavigateToStudy={handleNavigateToStudy}
                 />
               </div>
+            ) : !isStudying && selectedDeckIdForDetail && decks.some((d) => d.id === selectedDeckIdForDetail) ? (
+              (() => {
+                const detailDeck = decks.find((d) => d.id === selectedDeckIdForDetail)!;
+                const detailFolder = folders.find((f) => f.id === detailDeck.folderId);
+                return (
+                  <DeckDetailView
+                    deck={detailDeck}
+                    folder={detailFolder}
+                    allCards={allCards}
+                    onBack={() => setSelectedDeckIdForDetail(null)}
+                    onStartStudy={(d) => {
+                      setSelectedDeckIdForDetail(null);
+                      handleSelectDeckToStudy(d);
+                    }}
+                    onSelectKanji={(char) => setSelectedKanjiChar(char)}
+                    onAddCard={handleAddCard}
+                    onDeleteCard={handleDeleteCard}
+                    onNavigateToImport={(deckId, folderId) => {
+                      setSelectedDeckIdForDetail(null);
+                      handleNavigateToImport(deckId, folderId);
+                    }}
+                  />
+                );
+              })()
             ) : !isStudying ? (
               <div className="space-y-6">
                 <TodayStatsBar
@@ -1753,6 +2027,7 @@ export function App() {
                   cards={allCards}
                   currentUid={user?.uid}
                   onSelectDeckToStudy={handleSelectDeckToStudy}
+                  onOpenDeckDetail={(deck) => setSelectedDeckIdForDetail(deck.id)}
                   onSelectFolderToStudy={handleSelectFolderToStudy}
                   onCreateFolder={handleCreateFolder}
                   onCreateDeck={handleCreateDeck}
@@ -1903,26 +2178,27 @@ export function App() {
                 user={user}
                 onNotify={showSyncToast}
                 onOpenExercises={handleOpenExercises}
+                onOpenSentenceStudio={handleOpenSentenceStudio}
               />
             )}
           </div>
         )}
 
-        {/* TAB 3: LUYỆN TẬP (Bài tập ngữ pháp | Đấu trường) */}
+        {/* TAB 3: LUYỆN TẬP (Bài tập ngữ pháp | Hội thoại & Đặt câu | Đấu trường) */}
         {activeTab === 'practice' && (
           <div className="space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div
                 role="tablist"
                 aria-label="Phân mục Luyện tập"
-                className="inline-flex rounded-xl border border-raku-line bg-raku-subtle p-1"
+                className="inline-flex flex-wrap rounded-xl border border-raku-line bg-raku-subtle p-1"
               >
                 <button
                   type="button"
                   role="tab"
                   aria-selected={practiceSection === 'exercises'}
                   onClick={() => selectPracticeSection('exercises')}
-                  className={`min-h-9 rounded-lg px-4 text-sm font-semibold transition-colors ${
+                  className={`min-h-9 rounded-lg px-3.5 text-sm font-semibold transition-colors ${
                     practiceSection === 'exercises'
                       ? 'bg-raku-surface text-raku-ink shadow-xs'
                       : 'text-raku-muted hover:text-raku-ink'
@@ -1933,9 +2209,22 @@ export function App() {
                 <button
                   type="button"
                   role="tab"
+                  aria-selected={practiceSection === 'output'}
+                  onClick={() => selectPracticeSection('output')}
+                  className={`min-h-9 rounded-lg px-3.5 text-sm font-semibold transition-colors ${
+                    practiceSection === 'output'
+                      ? 'bg-raku-surface text-raku-ink shadow-xs'
+                      : 'text-raku-muted hover:text-raku-ink'
+                  }`}
+                >
+                  Hội thoại & Đặt câu
+                </button>
+                <button
+                  type="button"
+                  role="tab"
                   aria-selected={practiceSection === 'arena'}
                   onClick={() => selectPracticeSection('arena')}
-                  className={`min-h-9 rounded-lg px-4 text-sm font-semibold transition-colors ${
+                  className={`min-h-9 rounded-lg px-3.5 text-sm font-semibold transition-colors ${
                     practiceSection === 'arena'
                       ? 'bg-raku-surface text-raku-ink shadow-xs'
                       : 'text-raku-muted hover:text-raku-ink'
@@ -1961,6 +2250,31 @@ export function App() {
                 onNotify={showSyncToast}
                 initialTarget={exerciseTarget}
               />
+            )}
+
+            {practiceSection === 'output' && (
+              <Suspense
+                fallback={
+                  <div
+                    className="raku-card px-4 py-6 text-center text-sm text-raku-muted"
+                    role="status"
+                  >
+                    Đang mở phòng luyện Hội thoại & Đặt câu…
+                  </div>
+                }
+              >
+                <OutputPracticeHub
+                  user={user}
+                  cards={allCards}
+                  decks={decks}
+                  initialGrammar={sentenceTargetGrammar}
+                  onSelectKanji={(char) => setSelectedKanjiChar(char)}
+                  onSavePhraseToDeck={handleSavePhraseToDeck}
+                  onRecordPracticeTime={handleRecordPracticeTime}
+                  onMarkCardGood={handleMarkCardGoodFromPractice}
+                  onNotify={showSyncToast}
+                />
+              </Suspense>
             )}
           </div>
         )}

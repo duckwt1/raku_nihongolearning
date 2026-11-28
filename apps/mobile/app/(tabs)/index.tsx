@@ -20,6 +20,7 @@ export default function StudyHomeScreen() {
   const router = useRouter();
   const { colors, typography } = useRakuTheme();
   const {
+    user,
     cards,
     folders,
     decks,
@@ -29,7 +30,8 @@ export default function StudyHomeScreen() {
     totalNewToday,
     newWordsToday,
     currentStreak,
-    refreshLocal
+    refreshLocal,
+    refreshDecksFromCloud
   } = useStudy();
 
   const [refreshing, setRefreshing] = useState(false);
@@ -70,6 +72,9 @@ export default function StudyHomeScreen() {
   const onRefresh = async () => {
     setRefreshing(true);
     await refreshLocal();
+    if (user) {
+      await refreshDecksFromCloud();
+    }
     setRefreshing(false);
   };
 
@@ -258,7 +263,7 @@ export default function StudyHomeScreen() {
         {/* Folders & Decks */}
         {folders.map((folder) => {
           const childDecks = decks.filter((d) => d.folderId === folder.id);
-          if (childDecks.length === 0) return null;
+          if (childDecks.length === 0 && folder.isDefault) return null;
 
           return (
             <View
@@ -267,6 +272,7 @@ export default function StudyHomeScreen() {
             >
               <Pressable
                 onPress={() => {
+                  if (childDecks.length === 0) return;
                   hapticTap();
                   router.push({
                     pathname: '/study/[target]',
@@ -292,32 +298,48 @@ export default function StudyHomeScreen() {
                     {folder.name}
                   </Text>
                 </View>
-                <Text style={[styles.folderAction, { color: colors.accent }]}>Ôn cả mục</Text>
+                {childDecks.length > 0 && (
+                  <Text style={[styles.folderAction, { color: colors.accent }]}>Ôn cả mục</Text>
+                )}
               </Pressable>
 
-              {childDecks.map((deck, idx) => {
-                const counts = calculateDeckCounts(cards, deck.id, {
-                  newCardsPerDay: deck.newCardsPerDay,
-                  maxReviewsPerDay: deck.maxReviewsPerDay
-                });
-                return (
-                  <DeckRow
-                    key={deck.id}
-                    deck={deck}
-                    totalCards={counts.totalCards}
-                    newCount={counts.newCount}
-                    learnCount={counts.learnCount}
-                    dueCount={counts.dueCount}
-                    isFirst={idx === 0}
-                    onPress={() =>
-                      router.push({
-                        pathname: '/study/[target]',
-                        params: { target: `deck:${deck.id}` }
-                      })
-                    }
-                  />
-                );
-              })}
+              {childDecks.length === 0 ? (
+                <View style={styles.emptyFolderRow}>
+                  <Text style={[styles.emptyFolderText, { color: colors.muted }]}>
+                    Chưa có bộ thẻ nào trong thư mục này.
+                  </Text>
+                </View>
+              ) : (
+                childDecks.map((deck, idx) => {
+                  const counts = calculateDeckCounts(cards, deck.id, {
+                    newCardsPerDay: deck.newCardsPerDay,
+                    maxReviewsPerDay: deck.maxReviewsPerDay
+                  });
+                  return (
+                    <DeckRow
+                      key={deck.id}
+                      deck={deck}
+                      totalCards={counts.totalCards}
+                      newCount={counts.newCount}
+                      learnCount={counts.learnCount}
+                      dueCount={counts.dueCount}
+                      isFirst={idx === 0}
+                      onPress={() =>
+                        router.push({
+                          pathname: '/deck/[id]',
+                          params: { id: deck.id }
+                        })
+                      }
+                      onStudyPress={() =>
+                        router.push({
+                          pathname: '/study/[target]',
+                          params: { target: `deck:${deck.id}` }
+                        })
+                      }
+                    />
+                  );
+                })
+              )}
             </View>
           );
         })}
@@ -353,6 +375,12 @@ export default function StudyHomeScreen() {
                   dueCount={counts.dueCount}
                   isFirst={idx === 0}
                   onPress={() =>
+                    router.push({
+                      pathname: '/deck/[id]',
+                      params: { id: deck.id }
+                    })
+                  }
+                  onStudyPress={() =>
                     router.push({
                       pathname: '/study/[target]',
                       params: { target: `deck:${deck.id}` }
@@ -555,5 +583,12 @@ const styles = StyleSheet.create({
   folderAction: {
     fontSize: 12,
     fontWeight: '600'
+  },
+  emptyFolderRow: {
+    paddingHorizontal: 16,
+    paddingVertical: 14
+  },
+  emptyFolderText: {
+    fontSize: 12
   }
 });

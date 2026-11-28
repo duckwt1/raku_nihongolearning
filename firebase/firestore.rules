@@ -477,6 +477,38 @@ service cloud.firestore {
           allow read, write: if isOwner(uid);
         }
       }
+
+      // Packed custom deck card bundles (1 doc per custom deck, <= 600 cards/chunk)
+      match /deckBundles/{bundleId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.deckId is string
+          && request.resource.data.cards is list
+          && request.resource.data.cards.size() <= 600;
+        allow delete: if isOwner(uid);
+      }
+
+      // AI Conversation practice sessions
+      match /conversationSessions/{sessionId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.id == sessionId
+          && request.resource.data.updatedAt is string
+          && request.resource.data.messages is list
+          && request.resource.data.messages.size() <= 60;
+        allow delete: if isOwner(uid);
+      }
+
+      // AI Sentence practice attempts history
+      match /sentenceHistory/{attemptId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.id == attemptId
+          && request.resource.data.createdAt is string
+          && request.resource.data.userSentence is string
+          && request.resource.data.userSentence.size() <= 1000;
+        allow delete: if isOwner(uid);
+      }
     }
   }
 }

@@ -93,3 +93,15 @@ export function normalizeKana(text: string): string {
   const fullWidthKana = halfWidthKatakanaToFullWidth(withoutSpaces);
   return katakanaToHiragana(fullWidthKana);
 }
+
+/**
+ * Normalizes a Japanese word/phrase surface for deduplication and matching.
+ * Preserves Kanji and Katakana/Hiragana distinction while normalizing Unicode NFC,
+ * half-width katakana, surrounding punctuation, and whitespace.
+ */
+export function normalizeJapaneseSurface(text: string): string {
+  if (!text) return '';
+  const nfc = normalizeNfc(text).trim();
+  const withoutSpaces = nfc.replace(/[\s\u3000]+/g, '');
+  return halfWidthKatakanaToFullWidth(withoutSpaces).replace(/^[「『（(]+|[」』）)。、.!！？]+$/g, '');
+}

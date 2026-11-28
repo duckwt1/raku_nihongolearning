@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { Swords, Volume2 } from 'lucide-react-native';
+import { PenLine, Swords, Volume2 } from 'lucide-react-native';
 import type { Grammar, JlptLevel } from '@raku/core';
 import { useRakuTheme } from '@/providers/ThemeProvider';
 import { getGrammarPointById } from '@/services/grammarCache';
@@ -278,6 +278,39 @@ export default function GrammarDetailScreen() {
           ]}
         >
           Luyện tập mẫu ngữ pháp này
+        </Text>
+      </Pressable>
+
+      <Pressable
+        onPress={() => {
+          hapticTap();
+          router.push({
+            pathname: '/(tabs)/practice',
+            params: {
+              tab: 'sentence',
+              level: grammar.jlpt,
+              grammarId: grammar.id,
+              grammarPattern: grammar.pattern
+            }
+          });
+        }}
+        style={({ pressed }) => [
+          styles.practiceBtn,
+          {
+            backgroundColor: pressed ? colors.subtle : colors.accentSoft,
+            borderWidth: 1,
+            borderColor: colors.accent
+          }
+        ]}
+      >
+        <PenLine size={16} color={colors.accent} />
+        <Text
+          style={[
+            styles.practiceBtnText,
+            { color: colors.accent, fontFamily: typography.fontFamily.viNative.semibold }
+          ]}
+        >
+          Đặt câu với AI
         </Text>
       </Pressable>
     </ScrollView>

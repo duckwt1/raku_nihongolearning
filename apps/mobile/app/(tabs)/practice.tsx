@@ -21,12 +21,16 @@ import {
 } from 'lucide-react-native';
 import {
   SEED_WORDS,
+  pickTargetWordsForPractice,
+  type ConversationScenario,
+  type ConversationSession,
   type GrammarExercise,
   type GrammarExerciseType,
   type JlptLevel,
   type Word
 } from '@raku/core';
 import { JLPT_LEVELS } from '@raku/sync';
+import { useStudy } from '@/providers/StudyProvider';
 import { useRakuTheme } from '@/providers/ThemeProvider';
 import { isFirebaseConfigured } from '@/services/firebase';
 import {
@@ -37,10 +41,17 @@ import {
   GrammarExercisePlayerNative,
   grammarExerciseTypeLabel
 } from '@/components/GrammarExercisePlayerNative';
+import {
+  ConversationChatShellNative,
+  ConversationLobbyNative,
+  useMobileConversationSessions
+} from '@/components/ConversationRoleplayNative';
+import { KanjiBottomSheet } from '@/components/KanjiBottomSheet';
+import { SentenceStudioNative } from '@/components/SentenceStudioNative';
 import { hapticSelect, hapticSuccess, hapticTap, hapticWarning } from '@/services/haptics';
 import { speakJapanese } from '@/services/speech';
 
-type PracticeTab = 'vocab' | 'grammar';
+type PracticeTab = 'vocab' | 'grammar' | 'sentence' | 'roleplay';
 
 interface QuickQuizQuestion {
   word: Word;
@@ -88,6 +99,7 @@ function buildQuickVocabQuiz(count = 10): QuickQuizQuestion[] {
 
 export default function PracticeScreen() {
   const { colors, typography } = useRakuTheme();
+  const { user, cards } = useStudy();
   const params = useLocalSearchParams<{
     tab?: string;
     level?: string;
@@ -96,7 +108,22 @@ export default function PracticeScreen() {
   }>();
 
   const [activeTab, setActiveTab] = useState<PracticeTab>(
-    params.tab === 'grammar' ? 'grammar' : 'vocab'
+    params.tab === 'grammar'
+      ? 'grammar'
+      : params.tab === 'sentence'
+        ? 'sentence'
+        : params.tab === 'roleplay'
+          ? 'roleplay'
+          : 'vocab'
+  );
+  const [selectedKanjiChar, setSelectedKanjiChar] = useState<string | null>(null);
+  const {
+    sessions: roleplaySessions,
+    upsertSession: upsertRoleplaySession,
+    deleteSession: deleteRoleplaySession
+  } = useMobileConversationSessions(user?.uid ?? null);
+  const [activeRoleplaySession, setActiveRoleplaySession] = useState<ConversationSession | null>(
+    null
   );
 
   // ---- Vocab Quick Quiz state ----
@@ -121,11 +148,16 @@ export default function PracticeScreen() {
     exercises: GrammarExercise[];
   } | null>(null);
 
-  // Sync incoming navigation params (e.g. "Luyện tập mẫu ngữ pháp này" from grammar/[id])
+  // Sync incoming navigation params (e.g. from grammar/[id])
   useEffect(() => {
     if (params.tab === 'grammar') {
       setActiveTab('grammar');
       setActiveGrammarSession(null);
+    } else if (params.tab === 'sentence') {
+      setActiveTab('sentence');
+      setActiveRoleplaySession(null);
+    } else if (params.tab === 'roleplay') {
+      setActiveTab('roleplay');
     }
     if (
       params.level === 'N5' ||
@@ -266,6 +298,36 @@ export default function PracticeScreen() {
     setFinished(false);
   };
 
+  const startRoleplayScenario = (scenario: ConversationScenario, attachWords: boolean) => {
+    const now = new Date().toISOString();
+    const targetWords = attachWords
+      ? pickTargetWordsForPractice(cards, { jlpt: scenario.jlpt, count: 4 })
+      : [];
+    const newSession: ConversationSession = {
+      id: `conv_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      scenarioId: scenario.id,
+      scenario,
+      targetWords,
+      messages: [
+        {
+          id: `msg_0_${Date.now()}`,
+          role: 'assistant',
+          textJp: scenario.starterJp,
+          readingJp: scenario.starterReading,
+          meaningVi: scenario.starterVi,
+          createdAt: now
+        }
+      ],
+      completedMissionIds: [],
+      usedTargetWords: [],
+      status: 'active',
+      startedAt: now,
+      updatedAt: now
+    };
+    upsertRoleplaySession(newSession);
+    setActiveRoleplaySession(newSession);
+  };
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.canvas }]} edges={['top']}>
       {activeTab === 'grammar' && activeGrammarSession ? (
@@ -276,6 +338,16 @@ export default function PracticeScreen() {
             onExit={() => setActiveGrammarSession(null)}
           />
         </View>
+      ) : activeTab === 'roleplay' && activeRoleplaySession ? (
+        <ConversationChatShellNative
+          session={activeRoleplaySession}
+          onUpdateSession={(updated) => {
+            setActiveRoleplaySession(updated);
+            upsertRoleplaySession(updated);
+          }}
+          onExit={() => setActiveRoleplaySession(null)}
+          onSelectKanji={(ch) => setSelectedKanjiChar(ch)}
+        />
       ) : (
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
@@ -290,21 +362,26 @@ export default function PracticeScreen() {
             <Text style={[styles.pageSub, { color: colors.muted }]}>
               {activeTab === 'vocab'
                 ? 'Trắc nghiệm nhanh 10 từ vựng N3 chạy hoàn toàn ngoại tuyến.'
-                : 'Luyện bài tập ngữ pháp theo cấp độ JLPT (điền trống, sắp xếp, dịch câu).'}
+                : activeTab === 'grammar'
+                  ? 'Luyện bài tập ngữ pháp theo cấp độ JLPT (điền trống, sắp xếp, dịch câu).'
+                  : activeTab === 'sentence'
+                    ? 'Đặt câu tự do từ Deck/Ngữ pháp & nhận chấm sửa 4 chiều bằng AI.'
+                    : 'Nhập vai hội thoại tiếng Nhật có nhiệm vụ & sửa lỗi song song bằng AI.'}
             </Text>
           </View>
 
-          {/* Segmented switch: Từ vựng | Ngữ pháp */}
-          <View
-            style={[
-              styles.segmented,
-              { backgroundColor: colors.subtle, borderColor: colors.line }
-            ]}
+          {/* Horizontal tab pills: Từ vựng | Ngữ pháp | Đặt câu | Hội thoại */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.typeFilterRow}
           >
             {(
               [
                 { id: 'vocab', label: 'Từ vựng' },
-                { id: 'grammar', label: 'Ngữ pháp' }
+                { id: 'grammar', label: 'Ngữ pháp' },
+                { id: 'sentence', label: 'Đặt câu AI' },
+                { id: 'roleplay', label: 'Hội thoại AI' }
               ] as const
             ).map((tab) => {
               const active = activeTab === tab.id;
@@ -315,13 +392,19 @@ export default function PracticeScreen() {
                     hapticSelect();
                     setActiveTab(tab.id);
                   }}
-                  style={[styles.segmentBtn, active && { backgroundColor: colors.surface }]}
+                  style={[
+                    styles.typeChip,
+                    {
+                      backgroundColor: active ? colors.accent : colors.surface,
+                      borderColor: active ? colors.accent : colors.line
+                    }
+                  ]}
                 >
                   <Text
                     style={[
                       styles.segmentLabel,
                       {
-                        color: active ? colors.ink : colors.muted,
+                        color: active ? colors.onAccent : colors.muted,
                         fontFamily: active
                           ? typography.fontFamily.viNative.semibold
                           : typography.fontFamily.viNative.medium
@@ -333,7 +416,7 @@ export default function PracticeScreen() {
                 </Pressable>
               );
             })}
-          </View>
+          </ScrollView>
 
           {activeTab === 'vocab' ? (
             finished || !current ? (
@@ -520,6 +603,19 @@ export default function PracticeScreen() {
                 )}
               </View>
             )
+          ) : activeTab === 'sentence' ? (
+            <SentenceStudioNative
+              initialLevel={level}
+              initialGrammarId={grammarFilterId}
+              onSelectKanji={(ch) => setSelectedKanjiChar(ch)}
+            />
+          ) : activeTab === 'roleplay' ? (
+            <ConversationLobbyNative
+              sessions={roleplaySessions}
+              onOpenSession={(session) => setActiveRoleplaySession(session)}
+              onStartScenario={startRoleplayScenario}
+              onDeleteSession={deleteRoleplaySession}
+            />
           ) : (
             /* GRAMMAR PRACTICE TAB */
             <View style={styles.grammarTabBody}>
@@ -874,6 +970,11 @@ export default function PracticeScreen() {
           )}
         </ScrollView>
       )}
+
+      <KanjiBottomSheet
+        char={selectedKanjiChar}
+        onClose={() => setSelectedKanjiChar(null)}
+      />
     </SafeAreaView>
   );
 }
